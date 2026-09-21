@@ -76,3 +76,23 @@ Este documento rastrea las decisiones estratégicas y arquitectónicas clave tom
 *Regla para la IA: Cada vez que el usuario tome una decisión estratégica (Ej. elegir un framework, decidir una pasarela de pago, cambiar el enfoque), debes documentarla aquí añadiendo la fecha, la decisión y el razonamiento.*
 
 
+## [21 de Septiembre 2026] - SDD Ciclo 3: Refactorización de main.py
+- **Decisión:** Se refactorizó `main.py` (de ~1900 líneas a ~40 líneas) dividiendo las rutas en módulos funcionales dentro de un nuevo directorio `routes/`.
+- **Razón:** El archivo principal se había vuelto inmanejable. Según las directivas de `AGENTS.md`, se debían agrupar las rutas. Para no romper los templates HTML del frontend modificando las URLs, se optó por crear routers (`APIRouter`) separados lógicamente (`auth.py`, `ui.py`, `v2.py`, `cotizador_api.py`, `catalog_api.py`, `marketing_api.py`, `clientes_api.py`, `media_api.py`, `webhook.py`) pero conservando las mismas rutas (endpoints) originales. Las variables de configuración y funciones compartidas (`get_current_user`, `sessions`, `USERS`) se extrajeron a un nuevo archivo `dependencies.py`.
+- **Archivos afectados:** `main.py` (reducido), `dependencies.py` (creado), múltiples archivos en `routes/` (creados).
+- **Verificación:** FastAPI inicia correctamente sin errores de dependencias circulares.
+
+---
+
+## [21 de Septiembre 2026] - SDD Ciclo 4: Separación de dependencias de testing
+- **Decisión:** Se creó el archivo `requirements-dev.txt` para incluir las dependencias exclusivas de testing (`pytest`, `httpx`, `pytest-asyncio`), separándolas de `requirements.txt`.
+- **Razón:** Mantener el entorno de producción limpio y ligero, instalando únicamente los paquetes necesarios para que la aplicación funcione. Las dependencias de testing solo se instalan en entornos locales de desarrollo o CI/CD, mejorando la seguridad y optimizando el tamaño del deployment.
+- **Archivos afectados:** `requirements-dev.txt` (creado), `AGENTS.md` (actualizado).
+
+---
+
+## [21 de Septiembre 2026] - SDD Ciclo 5: Implementación de CI/CD
+- **Decisión:** Se implementó un pipeline de GitHub Actions (`ci-cd.yml`) para ejecutar tests automáticos (pytest en Python 3.13) en la rama `main` y automatizar despliegues al VPS de Donweb mediante `appleboy/ssh-action`. Además, se refactorizaron los scripts de deploy locales (`deploy.exp`, etc.) para leer credenciales desde un archivo `.env.deploy` que fue añadido al `.gitignore`.
+- **Razón:** Cumplir estrictamente con la Regla #4 de `AGENTS.md` (PROHIBIDO hardcodear credenciales) y asegurar que el código no llegue a producción sin pasar los tests automatizados previamente.
+
+---

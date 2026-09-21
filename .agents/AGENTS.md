@@ -114,10 +114,13 @@ Disgraf_Hub/
 ├── .env.example           ← Template de variables (SÍ commitear)
 ├── README.md              ← Visión general y roadmap (sincronizar con este archivo)
 ├── decisions_log.md       ← Bitácora de decisiones estratégicas
-├── requirements.txt       ← Dependencias Python
+├── requirements.txt       ← Dependencias Python de producción
+├── requirements-dev.txt   ← Dependencias Python de desarrollo y testing (pytest, httpx)
 ├── utils.py               ← Funciones utilitarias compartidas (slugify, etc.)
 
-├── main.py                ← Aplicación principal FastAPI (1908 líneas — pendiente refactor)
+├── main.py                ← Aplicación principal FastAPI (Refactorizado, inicializa routers)
+├── dependencies.py        ← Dependencias compartidas (sesiones, config, auth mock)
+├── routes/                ← Directorio de módulos/routers de FastAPI (ui, api, auth, etc.)
 ├── seo_service.py         ← Lógica de generación y publicación de artículos SEO
 ├── seo_agent.py           ← Script standalone para publicación (ATENCIÓN: revisar modelo)
 ├── test_gemini.py         ← Test básico de conectividad con Gemini API
@@ -266,8 +269,7 @@ Todas comparten este `AGENTS.md` como contexto unificado.
 ## 🧪 Testing
 
 ### Estado actual
-- Solo existe `test_gemini.py` (test de conectividad básico con Gemini API)
-- No hay suite de tests automatizados
+- Suite completa implementada (`test_auth.py`, `test_cotizador.py`, `test_api.py`, `test_seo_service.py`, `test_catalog.py`, `test_gemini.py`).
 
 ### Estrategia de Testing (a implementar)
 ```
@@ -409,10 +411,10 @@ Después de cualquier cambio arquitectónico o decisión estratégica, el agente
 | Marketing IA | ✅ Funcional | — |
 | Tienda V2 (catálogo) | 🔄 En desarrollo | — |
 | Blog headless | 🔄 Parcial | Rutas públicas desactivadas |
-| Tests automatizados | ❌ Pendiente | Solo test_gemini.py básico |
-| Refactor main.py | ❌ Pendiente | 1908 líneas — necesita módulos |
+| Tests automatizados | ✅ Completado | Suite completa con pytest |
+| Refactor main.py | ✅ Completado | Dividido en múltiples APIRouters en directorio routes/ |
 | Git/Control de versiones | ✅ Configurado | — |
-| CI/CD | ❌ Pendiente | — |
+| CI/CD | ✅ Configurado | Pipeline de Github Actions + despliegue seguro |
 
 ---
 

@@ -1,9 +1,23 @@
 #!/usr/bin/expect -f
 set timeout -1
-set ip "149.50.151.121"
-set user "root"
-set password "disgraF1.insumos"
-set port "5023"
+# Cargar variables de entorno desde .env.deploy
+if {[file exists ".env.deploy"]} {
+    set f [open ".env.deploy" r]
+    while {[gets $f line] >= 0} {
+        if {[regexp {^([^#=]+)=(.*)$} $line match key value]} {
+            set env($key) $value
+        }
+    }
+    close $f
+} else {
+    puts "Error: Archivo .env.deploy no encontrado. Por favor, crea uno usando .env.deploy.example como base."
+    exit 1
+}
+
+set ip $env(VPS_HOST)
+set user $env(VPS_USER)
+set password $env(VPS_PASSWORD)
+set port $env(VPS_PORT)
 
 spawn ssh -o StrictHostKeyChecking=no -p $port $user@$ip
 expect {

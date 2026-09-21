@@ -5,6 +5,7 @@ env/
 
 # Variables de entorno
 .env
+.env.deploy
 
 # Archivos de la base de datos (se ignora la db pero no la carpeta)
 data/*.db
@@ -30,3 +31,4 @@ logs/
 # Agentes / Antigravity locales
 .gemini/
 scratch/
+

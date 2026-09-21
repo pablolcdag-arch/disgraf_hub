@@ -1,21 +1,46 @@
 #!/usr/bin/expect -f
 set timeout -1
-set ip "149.50.151.121"
-set user "root"
-set password "disgraF1.insumos"
-set port "5023"
+# Cargar variables de entorno desde .env.deploy
+if {[file exists ".env.deploy"]} {
+    set f [open ".env.deploy" r]
+    while {[gets $f line] >= 0} {
+        if {[regexp {^([^#=]+)=(.*)$} $line match key value]} {
+            set env($key) $value
+        }
+    }
+    close $f
+} else {
+    puts "Error: Archivo .env.deploy no encontrado. Por favor, crea uno usando .env.deploy.example como base."
+    exit 1
+}
+
+set ip $env(VPS_HOST)
+set user $env(VPS_USER)
+set password $env(VPS_PASSWORD)
+set port $env(VPS_PORT)
 set local_dir "/Users/pablostiefel/Documents/Disgraf_Hub"
 set remote_dir "/opt/disgraf_hub"
 
 # 1. Upload Python modules
 spawn scp -o StrictHostKeyChecking=no -P $port \
     $local_dir/main.py \
+    $local_dir/dependencies.py \
     $local_dir/seo_service.py \
     $local_dir/seo_agent.py \
     $local_dir/utils.py \
     $local_dir/test_gemini.py \
     $local_dir/requirements.txt \
     $user@$ip:$remote_dir/
+expect {
+    -nocase "assword:" {
+        send "$password\r"
+        exp_continue
+    }
+    eof
+}
+
+# 1.5. Upload routes directory
+spawn scp -o StrictHostKeyChecking=no -P $port -r $local_dir/routes $user@$ip:$remote_dir/
 expect {
     -nocase "assword:" {
         send "$password\r"
