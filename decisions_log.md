@@ -73,7 +73,14 @@ Este documento rastrea las decisiones estratégicas y arquitectónicas clave tom
 - **Razón:** Al correr la verificación del SDD Ciclo 1, uvicorn emitió un `FutureWarning` indicando que `google.generativeai` ya no recibe actualizaciones ni bugfixes. El nuevo paquete es `google-genai` (sin `ative`). Esta migración requiere cambios en `main.py`, `seo_service.py` y `seo_agent.py`. **No hacer hasta tener un ciclo SDD dedicado** — riesgo de breaking change.
 
 ---
+
+## [21 de Septiembre 2026] - Eliminación Definitiva de WordPress (Arquitectura SSG para Blog SEO)
+- **Decisión:** Se abandona cualquier integración o idea de usar WordPress para el sitio satélite `oficiocarteleria.com.ar`. En su lugar, el sistema usará una arquitectura de Static Site Generation (SSG). FastAPI generará los archivos `.html` crudos y Nginx los servirá directamente desde una carpeta en el VPS.
+- **Razón:** El código antiguo en `seo_agent.py` y `seo_service.py` estaba alucinando integraciones con la API de WordPress, lo cual no era el plan real del usuario. Al cambiar a archivos estáticos locales, evitamos problemas de seguridad, bases de datos innecesarias y maximizamos la velocidad SEO. El registro del dominio no bloquea este desarrollo, ya que puede probarse en directorios locales.
+
+---
 *Regla para la IA: Cada vez que el usuario tome una decisión estratégica (Ej. elegir un framework, decidir una pasarela de pago, cambiar el enfoque), debes documentarla aquí añadiendo la fecha, la decisión y el razonamiento.*
+
 
 
 ## [21 de Septiembre 2026] - SDD Ciclo 3: Refactorización de main.py
@@ -96,3 +103,22 @@ Este documento rastrea las decisiones estratégicas y arquitectónicas clave tom
 - **Razón:** Cumplir estrictamente con la Regla #4 de `AGENTS.md` (PROHIBIDO hardcodear credenciales) y asegurar que el código no llegue a producción sin pasar los tests automatizados previamente.
 
 ---
+
+## [21 de Septiembre 2026] - SDD Ciclo 6: Migración de sesiones In-Memory a JWT
+- **Decisión:** Se reemplazó el diccionario `sessions = {}` en memoria por JSON Web Tokens (JWT) firmados (`PyJWT`), almacenados en cookies HTTP-only.
+- **Razón:** La implementación de CI/CD (Ciclo 5) provocaba que el servidor se reiniciara con cada despliegue, perdiendo el estado en memoria y deslogueando a los usuarios activos (vendedores en mostrador, administrador). JWT hace que la autenticación sea "stateless" (sin estado en memoria), manteniendo activas las sesiones a través de reinicios del servidor. Se conservó compatibilidad completa con el objeto `user` inyectado a los templates Jinja2.
+- **Archivos afectados:** `requirements.txt`, `.env.example`, `dependencies.py`, `routes/auth.py`, `tests/test_cotizador.py`, `tests/test_catalog.py`.
+
+---
+
+## [21 de Septiembre 2026] - SDD Ciclo 8: Vista individual de productos en Tienda V2 y Manejo de Error 404
+- **Decisión:** Implementación de la ruta `/v2/producto/{id}` renderizada del lado del servidor (SSR) mediante `v2_product.html`, retornando un código de estado `404` estricto en caso de que el producto no exista en lugar de un redireccionamiento `RedirectResponse`.
+- **Razón:** La tienda V2 carecía de vistas individuales para los productos. Se eligió mantener SSR (sin frameworks SPA) de acuerdo con las restricciones arquitectónicas del proyecto (ver AGENTS.md). Se forzó un 404 estricto para evitar un "Soft 404" (lo que penalizaría el posicionamiento en Google). La plantilla 404 guía al usuario nuevamente al catálogo sin impactar el SEO negativamente.
+- **Archivos afectados:** `routes/v2.py` (modificado), `templates/v2_product.html` (creado), `templates/v2_404.html` (creado).
+
+---
+
+## [21 de Septiembre 2026] - SDD Ciclo 10: Buscador Global Tienda V2
+- **Decisión:** Se implementó una barra de búsqueda global en la página de inicio que filtra sobre todo el catálogo y muestra resultados en una nueva vista dedicada (`v2_search.html`).
+- **Razón:** Facilitar la localización rápida de productos mediante código o nombre. El frontend mantiene estricta compatibilidad con las reglas del proyecto (Renderizado en servidor y vanilla JS para funciones interactivas del carrito) y hereda la navegabilidad lograda en el Ciclo 9 para acceder al detalle de productos.
+- **Archivos afectados:** `routes/v2.py` (modificado), `templates/v2_home.html` (modificado), `templates/v2_search.html` (creado).

@@ -46,6 +46,14 @@
         <p>Distribuidor Oficial <strong>Oracal, Poli-Tape y DPI</strong>. Trato personalizado por sus dueños, venta por metro o bobina cerrada, y <strong>urgencias por Moto/Uber en el día</strong>. El servicio que los importadores directos no te pueden dar.</p>
     </div>
 
+    <div class="global-search-container" style="max-width: 600px; margin: 0 auto 50px auto;">
+        <form action="/v2/buscar" method="GET" style="display: flex; gap: 10px; position: relative;">
+            <svg style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted); width: 20px; height: 20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" name="q" placeholder="Buscar por nombre o código..." required style="width: 100%; padding: 15px 15px 15px 45px; border: 1px solid var(--border); border-radius: 12px; font-family: inherit; font-size: 16px; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+            <button type="submit" class="btn-primary" style="padding: 0 25px; border-radius: 12px; font-weight: 600; font-size: 16px; white-space: nowrap; cursor: pointer; border: none; background: var(--primary); color: white; transition: 0.2s;">Buscar</button>
+        </form>
+    </div>
+
     <h2 class="section-title" id="catalogo">Catálogo de Productos</h2>
     
     {% if not catalog %}

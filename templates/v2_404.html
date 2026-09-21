@@ -1,0 +1,18 @@
+{% extends "v2_base.html" %}
+
+{% block title %}Página no encontrada | Disgraf{% endblock %}
+{% block meta_description %}El producto o la página que buscas no existe.{% endblock %}
+
+{% block content %}
+<div style="text-align: center; padding: 60px 20px; background: white; border-radius: var(--radius); border: 1px solid var(--border);">
+    <h1 style="font-size: 36px; color: var(--text-main); margin-bottom: 15px;">404</h1>
+    <h2 style="font-size: 24px; color: var(--text-muted); margin-bottom: 20px;">Producto no encontrado</h2>
+    <p style="font-size: 16px; color: var(--text-muted); margin-bottom: 30px;">
+        Lo sentimos, el producto que intentas buscar no existe, el enlace es incorrecto o ha sido descontinuado.
+    </p>
+    <a href="/v2" style="background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; font-size: 16px; text-decoration: none; display: inline-block; transition: 0.2s;">
+        Volver al Catálogo
+    </a>
+</div>
+{% endblock %}
+

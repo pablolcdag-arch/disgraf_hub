@@ -7,3 +7,4 @@ python-dotenv>=0.20.0
 requests>=2.26.0
 jinja2
 google-genai
+PyJWT>=2.8.0

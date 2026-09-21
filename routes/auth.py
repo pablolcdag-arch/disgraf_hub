@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Form, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
-import secrets
-from dependencies import get_current_user, USERS, sessions, templates
+import jwt
+from datetime import datetime, timedelta, timezone
+from dependencies import get_current_user, USERS, templates, JWT_SECRET_KEY, JWT_ALGORITHM
 
 router = APIRouter()
 
@@ -20,9 +21,13 @@ async def login(request: Request, username: str = Form(...), password: str = For
     if not user or user["password"] != password:
         return templates.TemplateResponse(request=request, name="login.html", context={"error": "Credenciales inválidas"})
     
-    # Create session
-    session_token = secrets.token_urlsafe(32)
-    sessions[session_token] = {"username": username, "role": user["role"]}
+    # Create JWT session
+    payload = {
+        "username": username,
+        "role": user["role"],
+        "exp": datetime.now(timezone.utc) + timedelta(days=7)
+    }
+    session_token = jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
     
     target_url = "/cotizador" if user["role"] == "seller" else "/dashboard"
     response = RedirectResponse(url=target_url, status_code=status.HTTP_302_FOUND)
@@ -31,9 +36,6 @@ async def login(request: Request, username: str = Form(...), password: str = For
 
 @router.get("/logout")
 async def logout(request: Request):
-    session_token = request.cookies.get("session_token")
-    if session_token in sessions:
-        del sessions[session_token]
     response = RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
     response.delete_cookie("session_token")
     return response

@@ -1,7 +1,7 @@
 {% extends "v2_base.html" %}
 
-{% block title %}Comprar {{ category.name }} por mayor y menor | Disgraf{% endblock %}
-{% block meta_description %}Distribuidor oficial de {{ category.name }}. Venta fraccionada y por bobina. Envíos en el día por Uber/Moto en CABA y GBA, o encomienda al interior.{% endblock %}
+{% block title %}Resultados para "{{ q }}" | Disgraf{% endblock %}
+{% block meta_description %}Resultados de búsqueda en el catálogo de Disgraf Insumos Gráficos.{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -19,7 +19,6 @@
 
     /* TABLE */
     .subcat-section { margin-bottom: 40px; background: white; border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
-    .subcat-header { background: #f8fafc; padding: 15px 20px; font-weight: 700; font-size: 18px; border-bottom: 1px solid var(--border); color: var(--text-main); }
     
     .table-responsive { width: 100%; overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; min-width: 600px; }
@@ -40,49 +39,59 @@
     .btn-add.added { background: #10b981; }
 
     .color-dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); vertical-align: middle; margin-right: 8px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }
+    
+    .empty-state { text-align: center; padding: 60px 20px; background: white; border-radius: var(--radius); border: 1px solid var(--border); }
+    .empty-state svg { width: 64px; height: 64px; color: var(--text-muted); margin-bottom: 20px; opacity: 0.5; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div id="products-view">
     <div class="breadcrumb">
-        <a href="/v2">Inicio</a> &gt; <span>{{ category.name }}</span>
+        <a href="/v2">Inicio</a> &gt; <span>Búsqueda</span>
     </div>
 
     <!-- The title is now H1 for SEO -->
-    <h1 class="section-title" id="current-cat-title">{{ category.name }}</h1>
+    <h1 class="section-title">Resultados de búsqueda para "{{ q }}"</h1>
     
-    <!-- Optional: a tiny paragraph to feed Google some keywords based on category -->
-    <p style="color: var(--text-muted); margin-bottom: 25px; font-size: 15px; max-width: 800px;">
-        Encontrá toda la línea de <strong>{{ category.name|lower }}</strong> para tu taller gráfico. 
-        Recordá que podés consultarnos por WhatsApp si necesitás que te fraccionemos por metro o armemos un envío urgente por moto.
-    </p>
-
+    {% if not results %}
+    <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <h2 style="margin-bottom: 15px; color: var(--text-main);">No encontramos resultados</h2>
+        <p style="color: var(--text-muted); margin-bottom: 25px; font-size: 16px;">
+            No encontramos productos que coincidan con "<strong>{{ q }}</strong>". Te invitamos a explorar nuestro catálogo completo o intentar con otros términos.
+        </p>
+        <a href="/v2" class="btn-primary" style="display: inline-block; padding: 12px 25px; border-radius: 8px; text-decoration: none; font-weight: 600; background: var(--primary); color: white;">Volver al Catálogo</a>
+    </div>
+    {% else %}
+    
     <div class="table-controls">
         <div class="search-box">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <input type="text" id="table-search" placeholder="Buscar por nombre o código...">
+            <input type="text" id="table-search" placeholder="Filtrar resultados...">
         </div>
     </div>
 
     <div id="tables-container">
-        {% for subcat in category.subcategories %}
-        <div class="subcat-section" data-subcat-name="{{ subcat.name|lower }}">
-            <h2 class="subcat-header">{{ subcat.name }}</h2>
+        <div class="subcat-section">
             <div class="table-responsive">
                 <table>
                     <thead>
                         <tr>
                             <th>Cód.</th>
                             <th>Descripción</th>
+                            <th>Categoría</th>
                             <th>Unidad</th>
                             <th>Precio (+ IVA)</th>
                             <th style="text-align:right;">Presupuesto</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for product in subcat.products %}
-                        <tr class="product-row" data-search-term="{{ product.id|lower }} {{ product.name|lower }}">
+                        {% for product in results %}
+                        <tr class="product-row" data-search-term="{{ product.id|lower }} {{ product.name|lower }} {{ product.category_name|lower }}">
                             <td class="td-code">{{ product.id }}</td>
                             <td>
                                 <div>
@@ -91,20 +100,17 @@
                                     {% endif %}
                                     <a href="/v2/producto/{{ product.id }}" style="color: inherit; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">{{ product.name }}</a>
                                 </div>
-                                {% if 'corte' in category.name|lower %}
-                                    {% if 'oracal' in subcat.name|lower or product.has_color_chart %}
-                                        <div style="margin-top: 6px;"><button class="btn-color-chart" onclick="window.openLightbox('chart')">🎨 Ver Catálogo</button></div>
-                                    {% else %}
-                                        <div style="margin-top: 6px;"><button class="btn-color-chart" onclick="window.openLightbox('product', '{{ product.id }}')">🎨 Ver Catálogo</button></div>
-                                    {% endif %}
+                                {% if 'corte' in product.category_name|lower %}
+                                    <div style="margin-top: 6px;"><button class="btn-color-chart" onclick="window.openLightbox('product', '{{ product.id }}')">🎨 Ver Catálogo</button></div>
                                 {% endif %}
                             </td>
+                            <td style="color: var(--text-muted); font-size: 13px;">{{ product.category_name }}</td>
                             <td class="td-unit">{{ product.unit|default('un') }}</td>
                             <td class="td-price" data-raw-price="{{ product.price }}">$0,00</td> <!-- Formatted by JS below -->
                             <td style="text-align:right;">
                                 <div class="add-controls">
                                     <input type="number" id="qty-{{ product.id }}" class="qty-input" value="1" min="1">
-                                    <!-- Use single quotes for JS args, escape apostrophes in name if any (handled via replace later or just basic template) -->
+                                    <!-- Use single quotes for JS args, escape apostrophes in name -->
                                     <button id="btn-add-{{ product.id }}" class="btn-add" onclick="addToCart('{{ product.id }}', '{{ product.name|replace("'", "\\'") }}', {{ product.price }}, '{{ product.unit|default('un') }}')">+ Añadir</button>
                                 </div>
                             </td>
@@ -114,12 +120,13 @@
                 </table>
             </div>
         </div>
-        {% endfor %}
     </div>
+    {% endif %}
 </div>
 {% endblock %}
 
 {% block extra_js %}
+{% if results %}
 <script>
     // Format prices on load
     document.addEventListener("DOMContentLoaded", () => {
@@ -148,28 +155,18 @@
     // Client-side search filtering within the rendered table
     document.getElementById('table-search').addEventListener('input', (e) => {
         const term = e.target.value.toLowerCase();
-        const sections = document.querySelectorAll('.subcat-section');
+        const rows = document.querySelectorAll('.product-row');
         
-        sections.forEach(section => {
-            let hasVisibleRows = false;
-            const rows = section.querySelectorAll('.product-row');
-            
-            rows.forEach(row => {
-                const searchData = row.getAttribute('data-search-term');
-                if (searchData.includes(term)) {
-                    row.style.display = '';
-                    hasVisibleRows = true;
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-            
-            if(hasVisibleRows) {
-                section.style.display = '';
+        rows.forEach(row => {
+            const searchData = row.getAttribute('data-search-term');
+            if (searchData.includes(term)) {
+                row.style.display = '';
             } else {
-                section.style.display = 'none';
+                row.style.display = 'none';
             }
         });
     });
 </script>
+{% endif %}
 {% endblock %}
+

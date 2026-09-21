@@ -1,5 +1,59 @@
 [
   {
+    "id": "6a25880f",
+    "date": "2026-09-21T14:33:00.298058",
+    "seller": "test_seller",
+    "client": "Test Client",
+    "client_id": null,
+    "total": 1000,
+    "products": [
+      {
+        "name": "Product 1",
+        "unit": "Mts",
+        "quantity": 10,
+        "subtotal": 1000,
+        "price": 100
+      }
+    ],
+    "tipoB": true
+  },
+  {
+    "id": "69af2254",
+    "date": "2026-09-21T09:27:48.703447",
+    "seller": "test_seller",
+    "client": "Test Client",
+    "client_id": null,
+    "total": 1000,
+    "products": [
+      {
+        "name": "Product 1",
+        "unit": "Mts",
+        "quantity": 10,
+        "subtotal": 1000,
+        "price": 100
+      }
+    ],
+    "tipoB": true
+  },
+  {
+    "id": "4c3764b2",
+    "date": "2026-09-21T02:20:00.030263",
+    "seller": "test_seller",
+    "client": "Test Client",
+    "client_id": null,
+    "total": 1000,
+    "products": [
+      {
+        "name": "Product 1",
+        "unit": "Mts",
+        "quantity": 10,
+        "subtotal": 1000,
+        "price": 100
+      }
+    ],
+    "tipoB": true
+  },
+  {
     "id": "44fbb3bb",
     "date": "2026-09-21T01:45:39.625979",
     "seller": "test_seller",

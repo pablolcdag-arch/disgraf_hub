@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from dependencies import templates, DATA_DIR
 from utils import slugify
@@ -6,6 +6,7 @@ import os
 import json
 import pandas as pd
 import re
+import random
 
 router = APIRouter()
 
@@ -130,6 +131,30 @@ async def storefront_v2(request: Request):
     catalog = get_v2_catalog_data()
     return templates.TemplateResponse(request=request, name="v2_home.html", context={"catalog": catalog})
 
+@router.get("/v2/buscar", response_class=HTMLResponse)
+async def storefront_v2_search(request: Request, q: str = Query("")):
+    catalog = get_v2_catalog_data()
+    results = []
+    
+    q_lower = q.lower().strip()
+    if q_lower:
+        for cat in catalog:
+            for sub in cat.get("subcategories", []):
+                for prod in sub.get("products", []):
+                    if q_lower in prod["name"].lower() or q_lower in prod["id"].lower():
+                        # Evitar duplicados si el producto aparece en múltiples subcategorías
+                        if not any(p["id"] == prod["id"] for p in results):
+                            # Añadimos la categoría original para tener referencia si se necesita
+                            prod_with_cat = dict(prod)
+                            prod_with_cat["category_name"] = cat["name"]
+                            results.append(prod_with_cat)
+                            
+    return templates.TemplateResponse(request=request, name="v2_search.html", context={
+        "catalog": catalog,
+        "q": q,
+        "results": results
+    })
+
 @router.get("/v2/categoria/{slug}", response_class=HTMLResponse)
 async def storefront_v2_category(request: Request, slug: str):
     catalog = get_v2_catalog_data()
@@ -141,6 +166,65 @@ async def storefront_v2_category(request: Request, slug: str):
         "catalog": catalog, 
         "category": category,
         "slug": slug
+    })
+
+@router.get("/v2/producto/{product_id}", response_class=HTMLResponse)
+async def storefront_v2_product(request: Request, product_id: str):
+    catalog = get_v2_catalog_data()
+    
+    target_product = None
+    target_category = None
+    
+    for cat in catalog:
+        for sub in cat.get("subcategories", []):
+            for prod in sub.get("products", []):
+                if prod["id"] == product_id:
+                    target_product = prod
+                    target_category = cat
+                    break
+            if target_product:
+                break
+        if target_product:
+            break
+            
+    if not target_product:
+        return templates.TemplateResponse(
+            request=request, 
+            name="v2_404.html", 
+            context={"catalog": catalog}, 
+            status_code=404
+        )
+        
+    related_products = []
+    if target_category:
+        try:
+            meta_path = os.path.join(DATA_DIR, 'categorias_meta.json')
+            if os.path.exists(meta_path):
+                with open(meta_path, 'r', encoding='utf-8') as f:
+                    meta_data = json.load(f)
+                
+                cat_slug = slugify(target_category["name"])
+                if cat_slug in meta_data and "relacionados" in meta_data[cat_slug]:
+                    related_slugs = meta_data[cat_slug]["relacionados"]
+                    potential_products = []
+                    
+                    for cat in catalog:
+                        # Make sure cat["name"] is valid before slugify
+                        if cat.get("name") and slugify(cat["name"]) in related_slugs:
+                            for sub in cat.get("subcategories", []):
+                                potential_products.extend(sub.get("products", []))
+                                
+                    if potential_products:
+                        sample_size = min(4, len(potential_products))
+                        related_products = random.sample(potential_products, sample_size)
+        except Exception:
+            pass
+            
+    return templates.TemplateResponse(request=request, name="v2_product.html", context={
+        "catalog": catalog,
+        "category": target_category,
+        "product": target_product,
+        "related_products": related_products
     })
 
 @router.get("/api/v2/products")

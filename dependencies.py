@@ -1,4 +1,6 @@
 import os
+import secrets
+import jwt
 from fastapi import Request
 from fastapi.templating import Jinja2Templates
 from google import genai
@@ -17,8 +19,9 @@ gemini_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}"
 
-# In-memory mock DB for sessions (cookie based for UI simplicity)
-sessions = {}
+# JWT Config
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", secrets.token_urlsafe(32))
+JWT_ALGORITHM = "HS256"
 
 # Users Mock DB
 USERS = {
@@ -28,7 +31,11 @@ USERS = {
 
 def get_current_user(request: Request):
     session_token = request.cookies.get("session_token")
-    if not session_token or session_token not in sessions:
+    if not session_token:
         return None
-    return sessions[session_token]
+    try:
+        payload = jwt.decode(session_token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        return payload
+    except jwt.PyJWTError:
+        return None
 

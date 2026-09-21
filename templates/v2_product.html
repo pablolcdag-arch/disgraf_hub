@@ -1,0 +1,271 @@
+{% extends "v2_base.html" %}
+
+{% block title %}{{ product.name }} | Disgraf{% endblock %}
+{% block meta_description %}Comprá {{ product.name }} en Disgraf. Precio: ${{ product.price }} por {{ product.unit|default('un') }}. Envíos en el día por Uber/Moto o encomienda al interior.{% endblock %}
+
+{% block extra_css %}
+<style>
+    .breadcrumb { margin-bottom: 20px; font-size: 14px; color: var(--text-muted); }
+    .breadcrumb a { color: var(--primary); text-decoration: none; font-weight: 500; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    .product-detail-container {
+        background: white;
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        padding: 40px 30px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        max-width: 900px;
+        margin: 0 auto 40px;
+    }
+
+    .product-header {
+        margin-bottom: 25px;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 20px;
+    }
+
+    .product-title {
+        font-size: 26px;
+        color: var(--text-main);
+        margin-bottom: 10px;
+        font-weight: 700;
+        line-height: 1.3;
+    }
+
+    .product-code {
+        font-family: monospace;
+        color: var(--text-muted);
+        font-size: 15px;
+        background: #f1f5f9;
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 4px;
+        border: 1px solid var(--border);
+    }
+
+    .product-info-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 30px;
+    }
+
+    @media (min-width: 768px) {
+        .product-info-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    .product-price-section {
+        padding: 20px;
+        background: #f8fafc;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .price-label {
+        font-size: 13px;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        font-weight: 600;
+        margin-bottom: 8px;
+        letter-spacing: 0.5px;
+    }
+
+    .product-price {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--primary-dark);
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+    }
+
+    .product-unit {
+        font-size: 16px;
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
+    .color-dot {
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 1px solid rgba(0,0,0,0.15);
+        vertical-align: middle;
+        margin-right: 12px;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .add-to-cart-box {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 25px;
+        flex-wrap: wrap;
+    }
+
+    .qty-input {
+        width: 80px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-family: inherit;
+        text-align: center;
+        font-weight: 600;
+        font-size: 16px;
+    }
+
+    .btn-add {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 16px;
+        cursor: pointer;
+        transition: 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-add:hover { background: var(--primary-dark); }
+    .btn-add.added { background: #10b981; }
+    
+    .btn-color-chart {
+        padding: 10px 16px;
+        border: 1px solid var(--border);
+        background: white;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: 0.2s;
+    }
+    
+    .btn-color-chart:hover {
+        background: #f8fafc;
+        border-color: #cbd5e1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="/v2">Inicio</a> &gt; 
+    {% if category %}
+        <a href="/v2/categoria/{{ category.slug }}">{{ category.name }}</a> &gt; 
+    {% endif %}
+    <span>{{ product.name }}</span>
+</div>
+
+<div class="product-detail-container">
+    <div class="product-header">
+        <h1 class="product-title">
+            {% if product.color_hex %}
+                <span class="color-dot" style="background-color: {{ product.color_hex }};" title="Color: {{ product.color_hex }}"></span>
+            {% endif %}
+            {{ product.name }}
+        </h1>
+        <div class="product-code">Cód: {{ product.id }}</div>
+    </div>
+
+    <div class="product-info-grid">
+        <div class="product-price-section">
+            <div class="price-label">Precio (+ IVA)</div>
+            <div class="product-price" data-raw-price="{{ product.price }}">
+                $0,00 
+                <span class="product-unit">x {{ product.unit|default('un') }}</span>
+            </div>
+            
+            <div class="add-to-cart-box">
+                <input type="number" id="qty-{{ product.id }}" class="qty-input" value="1" min="1">
+                <button id="btn-add-{{ product.id }}" class="btn-add" onclick="addToCart('{{ product.id }}', '{{ product.name|replace("'", "\\'") }}', {{ product.price }}, '{{ product.unit|default('un') }}')">
+                    <svg style="width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                    Añadir al Presupuesto
+                </button>
+            </div>
+        </div>
+        
+        <div class="product-extra-info">
+            {% set cat_name = category.name if category else '' %}
+            {% if 'corte' in cat_name|lower %}
+                <h3 style="font-size: 16px; margin-bottom: 12px; color: var(--text-main);">Catálogo de Colores</h3>
+                {% if 'oracal' in product.name|lower or product.has_color_chart %}
+                    <button class="btn-color-chart" onclick="window.openLightbox('chart')">
+                        🎨 Ver Catálogo Completo
+                    </button>
+                {% else %}
+                    <button class="btn-color-chart" onclick="window.openLightbox('product', '{{ product.id }}')">
+                        🎨 Ver Muestrario
+                    </button>
+                {% endif %}
+                <p style="margin-top: 15px; font-size: 14px; color: var(--text-muted); line-height: 1.5;">
+                    Los colores mostrados son referenciales y pueden variar según la calibración de tu monitor.
+                </p>
+            {% else %}
+                <h3 style="font-size: 16px; margin-bottom: 12px; color: var(--text-main);">Información de compra</h3>
+                <ul style="font-size: 14px; color: var(--text-muted); line-height: 1.6; padding-left: 20px;">
+                    <li>Los precios no incluyen IVA.</li>
+                    <li>Venta sujeta a disponibilidad de stock al momento de armar el pedido.</li>
+                    <li>Los pedidos se retiran por nuestro local en CABA o se envían a todo el país.</li>
+                </ul>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if related_products %}
+<div class="related-products-section" style="max-width: 900px; margin: 0 auto 40px;">
+    <h2 style="font-size: 22px; color: var(--text-main); margin-bottom: 20px;">También podrías necesitar</h2>
+    <div class="related-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px;">
+        {% for rel_prod in related_products %}
+        <a href="/v2/producto/{{ rel_prod.id }}" class="related-card" style="display: block; background: white; border: 1px solid var(--border); border-radius: 8px; padding: 15px; text-decoration: none; color: inherit; transition: box-shadow 0.2s, transform 0.2s;">
+            <div style="font-weight: 600; font-size: 14px; margin-bottom: 8px; color: var(--text-main); line-height: 1.4;">
+                {% if rel_prod.color_hex %}<span class="color-dot" style="background-color: {{ rel_prod.color_hex }}; width: 14px; height: 14px; margin-right: 6px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);"></span>{% endif %}{{ rel_prod.name }}
+            </div>
+            <div style="font-weight: 700; color: var(--primary-dark); font-size: 15px;">${{ "{:,.2f}".format(rel_prod.price).replace(',', 'X').replace('.', ',').replace('X', '.') }} x {{ rel_prod.unit|default('un') }}</div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+<style>
+    .related-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.05); transform: translateY(-2px); border-color: #cbd5e1; }
+</style>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        // Format price
+        const priceEl = document.querySelector('.product-price');
+        const rawPrice = parseFloat(priceEl.getAttribute('data-raw-price'));
+        const unit = priceEl.querySelector('.product-unit').outerHTML;
+        
+        if(!isNaN(rawPrice)) {
+            priceEl.innerHTML = formatPrice(rawPrice) + " " + unit;
+        }
+
+        // Initialize button state from cart
+        const item = cart.find(i => i.id === '{{ product.id }}');
+        if (item) {
+            const btn = document.getElementById('btn-add-{{ product.id }}');
+            const qtyInput = document.getElementById('qty-{{ product.id }}');
+            if (btn) {
+                btn.innerHTML = '<svg style="width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Actualizar';
+                btn.classList.add('added');
+            }
+            if (qtyInput) {
+                qtyInput.value = item.quantity;
+            }
+        }
+    });
+</script>
+{% endblock %}
+

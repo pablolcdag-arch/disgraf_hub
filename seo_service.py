@@ -1,14 +1,14 @@
 import os
-import requests
-from google import genai
 import re
+import datetime
+from google import genai
 from dotenv import load_dotenv
+from jinja2 import Environment, FileSystemLoader
+from utils import slugify
 
 load_dotenv()
 
-WP_URL = os.getenv("WP_URL")
-WP_USER = os.getenv("WP_USER")
-WP_APP_PASSWORD = os.getenv("WP_APP_PASSWORD")
+BLOG_OUTPUT_DIR = os.getenv("BLOG_OUTPUT_DIR", os.path.join(os.getcwd(), "data", "blog_output"))
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 gemini_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
@@ -38,26 +38,29 @@ No envuelvas la respuesta en ```html, solo devuelve el contenido puro HTML listo
     )
     return response.text.replace("```html", "").replace("```", "").strip()
 
-def post_to_wordpress(title, content):
-    if not WP_URL or not WP_USER or not WP_APP_PASSWORD:
-        raise Exception("Faltan credenciales de WordPress")
-
-    api_url = f"{WP_URL}/wp-json/wp/v2/posts"
-    credentials = (WP_USER, WP_APP_PASSWORD)
-
+def render_and_save_post(title, content):
+    slug = slugify(title)
+    date_str = datetime.datetime.now().strftime("%d %b, %Y")
+    
+    env = Environment(loader=FileSystemLoader("templates"))
+    template = env.get_template("v2_blog_post.html")
+    
     post_data = {
-        'title': title,
-        'content': content,
-        'status': 'publish'
+        "title": title,
+        "content": content,
+        "date": date_str,
+        "slug": slug
     }
-
-    response = requests.post(api_url, auth=credentials, json=post_data)
-
-    if response.status_code == 201:
-        data = response.json()
-        return data.get("link", "")
-    else:
-        raise Exception(f"Error {response.status_code}: {response.text}")
+    
+    html_output = template.render(post=post_data)
+    
+    os.makedirs(BLOG_OUTPUT_DIR, exist_ok=True)
+    file_path = os.path.join(BLOG_OUTPUT_DIR, f"{slug}.html")
+    
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(html_output)
+        
+    return file_path
 
 def run_seo_workflow(product_name):
     html_content = generate_blog_post(product_name)
@@ -67,5 +70,5 @@ def run_seo_workflow(product_name):
 
     content_clean = re.sub(r'<h1>.*?</h1>', '', html_content, flags=re.IGNORECASE).strip()
 
-    link = post_to_wordpress(title, content_clean)
-    return link
+    file_path = render_and_save_post(title, content_clean)
+    return file_path

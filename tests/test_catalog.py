@@ -27,21 +27,24 @@ def mock_data_dir(tmp_path, monkeypatch):
 
 @pytest.fixture
 def admin_client():
-    from dependencies import USERS, sessions
-    import secrets
+    from dependencies import USERS, JWT_SECRET_KEY, JWT_ALGORITHM
+    import jwt
+    from datetime import datetime, timedelta, timezone
     
     original_users = USERS.copy()
     USERS["test_admin"] = {"password": "pwd", "role": "admin"}
     
-    session_token = secrets.token_urlsafe(32)
-    sessions[session_token] = {"username": "test_admin", "role": "admin"}
+    payload = {
+        "username": "test_admin",
+        "role": "admin",
+        "exp": datetime.now(timezone.utc) + timedelta(days=7)
+    }
+    session_token = jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
     
     client.cookies.set("session_token", session_token)
     yield client
     
     client.cookies.delete("session_token")
-    if session_token in sessions:
-        del sessions[session_token]
     USERS.clear()
     USERS.update(original_users)
 

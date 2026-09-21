@@ -1,3 +1,4 @@
+import os
 import pytest
 import seo_service
 
@@ -21,29 +22,38 @@ def test_generate_blog_post(monkeypatch):
     assert "```html" not in html
     assert "```" not in html
 
-def test_post_to_wordpress(monkeypatch):
-    monkeypatch.setattr(seo_service, "WP_URL", "http://test.com")
-    monkeypatch.setattr(seo_service, "WP_USER", "user")
-    monkeypatch.setattr(seo_service, "WP_APP_PASSWORD", "pass")
+def test_render_and_save_post(monkeypatch, tmp_path):
+    monkeypatch.setattr(seo_service, "BLOG_OUTPUT_DIR", str(tmp_path))
     
-    class MockPostResponse:
-        status_code = 201
-        text = ""
-        def json(self):
-            return {"link": "http://test.com/post/1"}
+    class MockTemplate:
+        def render(self, post):
+            return f"<html>{post['title']} - {post['content']} - {post['date']} - {post['slug']}</html>"
             
-    def mock_post(*args, **kwargs):
-        assert kwargs["json"]["title"] == "Test Title"
-        assert kwargs["json"]["content"] == "<p>Content</p>"
-        return MockPostResponse()
-        
-    import requests
-    monkeypatch.setattr(requests, "post", mock_post)
+    class MockEnv:
+        def __init__(self, **kwargs):
+            pass
+        def get_template(self, name):
+            return MockTemplate()
+            
+    import jinja2
+    monkeypatch.setattr(jinja2, "Environment", MockEnv)
+    # También mockeamos seo_service.Environment para evitar problemas de import
+    monkeypatch.setattr(seo_service, "Environment", MockEnv)
     
-    link = seo_service.post_to_wordpress("Test Title", "<p>Content</p>")
-    assert link == "http://test.com/post/1"
+    file_path = seo_service.render_and_save_post("Test Title", "<p>Content</p>")
+    
+    assert file_path.endswith("test-title.html")
+    assert os.path.exists(file_path)
+    
+    with open(file_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    
+    assert "Test Title" in content
+    assert "<p>Content</p>" in content
+    assert "test-title" in content
 
-def test_run_seo_workflow(monkeypatch):
+
+def test_run_seo_workflow(monkeypatch, tmp_path):
     class MockResponse:
         text = "<h1>Guía de Producto</h1><p>Contenido limpio</p>"
         
@@ -55,24 +65,26 @@ def test_run_seo_workflow(monkeypatch):
         models = MockModels()
         
     monkeypatch.setattr(seo_service, "gemini_client", MockClient())
+    monkeypatch.setattr(seo_service, "BLOG_OUTPUT_DIR", str(tmp_path))
     
-    monkeypatch.setattr(seo_service, "WP_URL", "http://test.com")
-    monkeypatch.setattr(seo_service, "WP_USER", "user")
-    monkeypatch.setattr(seo_service, "WP_APP_PASSWORD", "pass")
-    
-    class MockPostResponse:
-        status_code = 201
-        def json(self):
-            return {"link": "http://test.com/post/2"}
+    class MockTemplate:
+        def render(self, post):
+            return f"<html>{post['title']} - {post['content']}</html>"
             
-    def mock_post(*args, **kwargs):
-        assert kwargs["json"]["title"] == "Guía de Producto"
-        assert kwargs["json"]["content"] == "<p>Contenido limpio</p>"
-        return MockPostResponse()
-        
-    import requests
-    monkeypatch.setattr(requests, "post", mock_post)
+    class MockEnv:
+        def __init__(self, **kwargs):
+            pass
+        def get_template(self, name):
+            return MockTemplate()
+            
+    monkeypatch.setattr(seo_service, "Environment", MockEnv)
     
-    link = seo_service.run_seo_workflow("Producto Test")
-    assert link == "http://test.com/post/2"
-
+    file_path = seo_service.run_seo_workflow("Producto Test")
+    
+    assert "guia-de-producto.html" in file_path
+    assert os.path.exists(file_path)
+    
+    with open(file_path, "r", encoding="utf-8") as f:
+        content = f.read()
+        assert "Guía de Producto" in content
+        assert "<p>Contenido limpio</p>" in content

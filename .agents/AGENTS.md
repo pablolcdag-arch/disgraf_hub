@@ -97,10 +97,12 @@ google-genai            # SDK oficial Google Gemini (migrado desde google-genera
 - **Canal:** Telegram Bot API
 - **Variable de entorno:** `TELEGRAM_TOKEN`
 
-### Integración WordPress (blog satélite)
-- **Sitio:** `oficiocarteleria.com.ar`
-- **API:** WordPress REST API v2 (`/wp-json/wp/v2/posts`)
-- **Auth:** Application Password (Basic Auth)
+### Integración Blog SEO (Sitio Satélite)
+- **Dominio Destino:** `oficiocarteleria.com.ar`
+- **Arquitectura:** Static Site Generation (SSG) puro. FastAPI genera archivos `.html` locales.
+- **Servidor:** Nginx (en el VPS de Donweb) sirve directamente el directorio donde FastAPI guarda los archivos HTML.
+- **Ventajas:** Cero dependencias (SIN WordPress, SIN base de datos extra), SEO de máxima velocidad, blindado contra hackeos.
+
 
 ---
 
@@ -169,10 +171,8 @@ GEMINI_API_KEY=         # Google Gemini API key
 # Telegram
 TELEGRAM_TOKEN=         # Bot token de Telegram
 
-# WordPress (sitio satélite)
-WP_URL=                 # URL base del sitio WP (ej: https://oficiocarteleria.com.ar)
-WP_USER=                # Usuario WP con rol Editor/Admin
-WP_APP_PASSWORD=        # Application Password generada desde WP
+# Blog Satélite (HTML Estático)
+BLOG_OUTPUT_DIR=        # Ruta absoluta en el VPS donde guardar los .html (ej: /var/www/oficiocarteleria)
 
 # Autenticación interna
 ADMIN_USERNAME=         # Usuario administrador
@@ -404,13 +404,13 @@ Después de cualquier cambio arquitectónico o decisión estratégica, el agente
 
 | Módulo | Estado | Deuda Técnica |
 |---|---|---|
-| Login/Auth | ✅ Funcional | Sesiones in-memory (se pierden al restart) |
+| Login/Auth | ✅ Funcional | Migrado a JWT (Stateless) |
 | Dashboard Admin | ✅ Funcional | — |
 | Cotizador (vendedores) | ✅ Funcional | — |
 | Gestión de Precios | ✅ Funcional | — |
 | Marketing IA | ✅ Funcional | — |
-| Tienda V2 (catálogo) | 🔄 En desarrollo | — |
-| Blog headless | 🔄 Parcial | Rutas públicas desactivadas |
+| Tienda V2 (catálogo) | ✅ Funcional | Live en hub.disgraf.com.ar/v2. Vista individual, manejo de errores 404 y buscador global completados. |
+| Blog SEO (Satélite) | 🔄 En desarrollo | Migración a SSG Estático (HTML directo) eliminando WP |
 | Tests automatizados | ✅ Completado | Suite completa con pytest |
 | Refactor main.py | ✅ Completado | Dividido en múltiples APIRouters en directorio routes/ |
 | Git/Control de versiones | ✅ Configurado | — |
