@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Gestor de Medios - Disgraf Hub{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    <!-- Sidebar / Menú -->
+    <aside class="glass sidebar" style="width: 250px; min-width: 250px;">
+        <div class="sidebar-header">
+            <h2>Disgraf OS</h2>
+        </div>
+        
+        <ul class="nav-links">
+            <li style="margin-bottom: 15px;"><a href="/v2" target="_blank" style="color: #38bdf8; font-weight: bold; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56,189,248,0.3);">🌐 Ver Sitio Público</a></li>
+            <li><a href="/dashboard">Panel de Control</a></li>
+            <li><a href="/cotizador">Cotizador Rápido</a></li>
+            <li><a href="/clientes">Ficha de Clientes</a></li>
+            {% if user.role == "admin" %}
+            <li><a href="/marketing">Marketing IA</a></li>
+            <li><a href="/media" class="active">Gestor de Medios</a></li>
+            <li><a href="/precios">Gestor de Catálogo</a></li>
+            {% endif %}
+        </ul>
+        
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-details">
+                    <div>{{ user.username | title }}</div>
+                    <div class="user-role">Administrador</div>
+                </div>
+                <a href="/logout" class="logout-btn">Salir</a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Media Content -->
+    <main class="main-content" style="display: flex; flex-direction: column; overflow: hidden; height: 100vh; padding: 20px;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div>
+                <h1 style="color: #fff; margin-bottom: 5px;">Gestor de Medios</h1>
+                <p style="color: var(--text-muted); font-size: 14px;">Galería de imágenes, logos y recursos para el Marketing IA.</p>
+            </div>
+            
+            <div>
+                <input type="file" id="fileUploadInput" style="display:none;" multiple accept="image/*" onchange="handleFiles(this.files)">
+                <button class="btn-primary" onclick="document.getElementById('fileUploadInput').click()" style="background: #6366f1;">
+                    + Subir Imágenes
+                </button>
+            </div>
+        </div>
+
+        <div class="glass" style="flex: 1; overflow-y: auto; padding: 20px; border-radius: 12px;" id="dropZone">
+            <div id="mediaGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px;">
+                <!-- Images will be rendered here -->
+            </div>
+            
+            <div id="emptyState" style="display: none; text-align: center; color: var(--text-muted); padding: 50px;">
+                <div style="font-size: 40px; margin-bottom: 15px;">📸</div>
+                <h3>No hay imágenes subidas</h3>
+                <p>Arrastra imágenes aquí o haz clic en "Subir Imágenes".</p>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script>
+const dropZone = document.getElementById('dropZone');
+const mediaGrid = document.getElementById('mediaGrid');
+const emptyState = document.getElementById('emptyState');
+
+// Load media
+async function loadMedia() {
+    try {
+        const res = await fetch('/api/media/list');
+        const files = await res.json();
+        
+        if (files.length === 0) {
+            mediaGrid.style.display = 'none';
+            emptyState.style.display = 'block';
+        } else {
+            mediaGrid.style.display = 'grid';
+            emptyState.style.display = 'none';
+            
+            mediaGrid.innerHTML = files.map(f => `
+                <div style="background: rgba(255,255,255,0.05); border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column;">
+                    <div style="height: 120px; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                        <img src="${f.url}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                    </div>
+                    <div style="padding: 10px; font-size: 11px; color: var(--text-muted); word-break: break-all; text-align: center;">
+                        ${f.filename}
+                    </div>
+                </div>
+            `).join('');
+        }
+    } catch(e) {
+        console.error(e);
+    }
+}
+
+// Upload handling
+async function handleFiles(files) {
+    if(!files || files.length === 0) return;
+    
+    for (const file of files) {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        try {
+            await fetch('/api/media/upload', {
+                method: 'POST',
+                body: formData
+            });
+        } catch(e) {
+            console.error('Error uploading', file.name);
+        }
+    }
+    loadMedia();
+}
+
+// Drag & Drop
+dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.style.background = 'rgba(255,255,255,0.05)';
+});
+
+dropZone.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    dropZone.style.background = 'rgba(255,255,255,0.02)';
+});
+
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.style.background = 'rgba(255,255,255,0.02)';
+    handleFiles(e.dataTransfer.files);
+});
+
+// Init
+loadMedia();
+</script>
+{% endblock %}

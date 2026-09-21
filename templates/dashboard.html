@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Disgraf Hub{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    <!-- Sidebar -->
+    <aside class="glass sidebar">
+        <div class="sidebar-header">
+            <h2>Disgraf OS</h2>
+        </div>
+        
+        <ul class="nav-links">
+            <li style="margin-bottom: 15px;"><a href="/v2" target="_blank" style="color: #38bdf8; font-weight: bold; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56,189,248,0.3);">🌐 Ver Sitio Público</a></li>
+            <li><a href="/precios" class="active">Gestor de Catálogo</a></li>
+            {% if user.role == "admin" %}
+            <li><a href="#" onclick="syncWeb()">Sincronizar Web</a></li>
+            <li><a href="/marketing">Marketing IA</a></li>
+            <li><a href="/media">Gestor de Medios</a></li>
+            {% endif %}
+            <li><a href="/cotizador">Cotizador Rápido</a></li>
+            <li><a href="/clientes">Ficha de Clientes</a></li>
+        </ul>
+        
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-details">
+                    <div>{{ user.username | title }}</div>
+                    <div class="user-role">
+                        {% if user.role == "admin" %}Administrador{% else %}Ventas{% endif %}
+                    </div>
+                </div>
+                <a href="/logout" class="logout-btn">Salir</a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="page-header">
+            <h1>Panel de Control</h1>
+            <p>Bienvenido al hub central. Selecciona un módulo para comenzar.</p>
+        </div>
+        
+        <div class="cards-grid">
+            {% if user.role == "admin" %}
+            <div class="glass action-card">
+                <h3>🔄 Fusión de Precios</h3>
+                <p>Cruza los datos de SaaS Argentina con las listas de proveedores para obtener el catálogo final.</p>
+                <a href="/precios" style="text-decoration: none;"><button class="btn-primary">Subir Archivos</button></a>
+            </div>
+            
+            <div class="glass action-card">
+                <h3>🌐 Sincronización Web</h3>
+                <p>Impacta los cambios de precios en WordPress y actualiza el PDF público.</p>
+                <button class="btn-primary" onclick="syncWeb()" id="syncBtn">Ejecutar Sincronización</button>
+            </div>
+            
+            <div class="glass action-card">
+                <h3>📢 Marketing IA</h3>
+                <p>Genera publicaciones de blog SEO y ofertas para productos específicos usando inteligencia artificial.</p>
+                <a href="/marketing" style="text-decoration: none;"><button class="btn-primary" style="background-color: #ec4899;">Generar Contenido</button></a>
+            </div>
+            {% endif %}
+            
+            <div class="glass action-card">
+                <h3>📋 Cotizador Rápido</h3>
+                <p>Busca precios finales de productos para armar presupuestos en el mostrador.</p>
+                <a href="/cotizador" style="text-decoration: none;"><button class="btn-primary" style="background-color: #10b981;">Abrir Cotizador</button></a>
+            </div>
+        </div>
+</main>
+</div>
+
+<script>
+async function syncWeb() {
+    const btn = document.getElementById('syncBtn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = "Sincronizando...";
+    }
+    showToast("⚙️ Sincronizando catálogo con WordPress, por favor espera...");
+    
+    try {
+        const response = await fetch('/api/run-legacy-sync', { method: 'POST' });
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            showToast("✅ Catálogo exportado y sincronizado con disgraf.com.ar");
+        } else {
+            showToast("❌ Error: " + (data.error || 'Fallo desconocido'));
+            console.error(data);
+        }
+    } catch (e) {
+        showToast("❌ Error de red al intentar sincronizar");
+        console.error(e);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = "Ejecutar Sincronización";
+        }
+    }
+}
+</script>
+{% endblock %}

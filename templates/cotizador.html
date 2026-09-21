@@ -1,0 +1,773 @@
+{% extends "base.html" %}
+
+{% block title %}Cotizador Rápido - Disgraf Hub{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    <aside class="glass sidebar">
+        <div class="sidebar-header">
+            <a href="/dashboard" style="text-decoration: none; color: inherit;"><h2>Disgraf OS</h2></a>
+        </div>
+        <ul class="nav-links">
+            <li style="margin-bottom: 15px;"><a href="/v2" target="_blank" style="color: #38bdf8; font-weight: bold; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56,189,248,0.3);">🌐 Ver Sitio Público</a></li>
+            {% if user.role == "admin" %}
+            <li><a href="/precios">Gestor de Catálogo</a></li>
+            <li><a href="/dashboard">Sincronizar Web</a></li>
+            <li><a href="/dashboard">Marketing IA</a></li>
+            {% endif %}
+            <li><a href="/cotizador" class="active">Cotizador Rápido</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-details">
+                    <div>{{ user.username | title }}</div>
+                    <div class="user-role">{% if user.role == "admin" %}Administrador{% else %}Ventas{% endif %}</div>
+                </div>
+                <a href="/logout" class="logout-btn">Salir</a>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content" style="display: flex; flex-direction: column; overflow: hidden; height: 100vh;">
+        <div class="page-header" style="margin-bottom: 20px;">
+            <h1>Cotizador Rápido</h1>
+            <p>Arma presupuestos al instante y compártelos por WhatsApp o PDF.</p>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="glass action-card" style="padding: 15px; margin-bottom: 20px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px; position: relative; z-index: 10;">
+            <div style="display: flex; gap: 15px; align-items: center; flex: 1; min-width: 300px;">
+                <label style="font-weight: bold; color: var(--text-muted); font-size: 14px;">Cliente:</label>
+                <div style="position: relative; width: 100%; max-width: 300px;">
+                    <input type="text" id="clientName" class="form-control" placeholder="Nombre o 'Consumidor Final'" style="padding: 10px; width: 100%;">
+                    <div id="clientAutocomplete" style="display:none; position:absolute; top:100%; left:0; right:0; background:var(--card-bg); border:1px solid rgba(255,255,255,0.1); border-radius:4px; max-height:200px; overflow-y:auto; z-index:1001; box-shadow:0 4px 6px rgba(0,0,0,0.3);">
+                    </div>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end;">
+                <button onclick="openHistory()" class="btn-primary" style="width: auto; padding: 10px 15px; font-size: 13px; background: #6366f1;">
+                    🕒 Historial
+                </button>
+                <button onclick="clearCart()" class="btn-primary" style="width: auto; padding: 10px 15px; font-size: 13px; background: #ef4444;">
+                    🗑️ Limpiar
+                </button>
+                <button id="btnCopyWa" class="btn-primary" style="width: auto; padding: 10px 20px; font-size: 13px; background: #22c55e;">
+                    💬 WhatsApp
+                </button>
+                <button id="btnDownloadPDF" class="btn-primary" style="width: auto; padding: 10px 20px; font-size: 13px; background: #e11d48;">
+                    📄 PDF
+                </button>
+            </div>
+        </div>
+
+        <!-- 2 Pane Layout -->
+        <div style="display: flex; gap: 20px; flex: 1; min-height: 0; max-height: calc(100vh - 240px);">
+            <!-- Left Pane: Search Products -->
+            <div class="glass" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+                <div style="padding: 15px; border-bottom: 1px solid var(--border-color);">
+                    <h3 style="font-size: 16px; margin-bottom: 10px;">Base de Productos (SaaS)</h3>
+                    <input type="text" id="searchSaaS" class="form-control" placeholder="Buscar por nombre o código..." style="padding: 8px 12px;">
+                </div>
+                <div id="saasList" style="flex: 1; overflow-y: auto; padding: 10px;">
+                    <div style="text-align: center; color: var(--text-muted); padding: 20px;">Cargando base de datos...</div>
+                </div>
+            </div>
+
+            <!-- Right Pane: Quote Cart -->
+            <div class="glass" style="flex: 1.2; display: flex; flex-direction: column; overflow: hidden; background: rgba(0,0,0,0.2);">
+                <div style="padding: 15px; border-bottom: 1px solid var(--border-color); background: rgba(255,255,255,0.02); display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="font-size: 16px; margin: 0;">Presupuesto Actual</h3>
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; color: var(--text-muted);">
+                        <input type="checkbox" id="chkTipoB" onchange="toggleTipoB(this.checked)" style="accent-color: #38bdf8; width: 16px; height: 16px;">
+                        Comprobante Tipo B (Final)
+                    </label>
+                </div>
+                
+                <div id="cartList" style="flex: 1; overflow-y: auto; padding: 10px;">
+                    <!-- Cart Items populated via JS -->
+                    <div id="emptyCart" style="text-align: center; color: var(--text-muted); padding: 40px;">
+                        Selecciona productos de la izquierda para agregarlos al presupuesto.
+                    </div>
+                </div>
+                
+                <div style="padding: 15px 20px; border-top: 1px solid var(--border-color); background: rgba(0,0,0,0.3);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <span style="font-size: 14px; color: var(--text-muted);">Descuento Global (%)</span>
+                        <input type="number" id="globalDiscount" class="form-control" style="width: 80px; text-align: center; background: rgba(0,0,0,0.3);" value="0" min="0" max="100" onchange="updateGlobalDiscount(this.value)">
+                    </div>
+                    
+                    <div id="discountBreakdown" style="display: none; flex-direction: column; gap: 5px; margin-bottom: 15px; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 10px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-muted);">
+                            <span>Subtotal Original:</span>
+                            <span id="lblOriginalTotal">$ 0,00</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 13px; color: #10b981;">
+                            <span>Descuento Total:</span>
+                            <span id="lblDiscountAmount">- $ 0,00</span>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span id="cartTotalLabel" style="font-size: 16px; color: var(--text-muted);">Total Estimado (+ IVA)</span>
+                        <span id="cartTotal" style="font-size: 24px; font-weight: bold; color: #38bdf8;">$ 0,00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- History Modal -->
+<div id="historyModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div class="glass" style="background: var(--card-bg); padding: 25px; border-radius: 12px; width: 600px; max-width: 90%; max-height: 80vh; display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="margin: 0;">🕒 Historial (Últimos 10 días)</h3>
+            <button onclick="closeHistory()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 20px;">✕</button>
+        </div>
+        <input type="text" id="historySearch" placeholder="🔍 Buscar por ID, Cliente o Monto..." style="width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.05); color: var(--text-light); font-size: 14px; outline: none;">
+        <div id="historyList" style="flex: 1; overflow-y: auto;">
+            <div style="text-align: center; color: var(--text-muted); padding: 20px;">Cargando...</div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" style="visibility: hidden; min-width: 250px; background-color: #10b981; color: #fff; text-align: center; border-radius: 6px; padding: 16px; position: fixed; z-index: 1000; left: 50%; bottom: 30px; transform: translateX(-50%); font-size: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+  Acción exitosa
+</div>
+
+<style>
+.product-item {
+    padding: 12px;
+    margin-bottom: 8px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 6px;
+    font-size: 13px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid transparent;
+    transition: background 0.2s;
+}
+.product-item:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+.cart-item {
+    padding: 15px;
+    margin-bottom: 10px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.cart-item-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.cart-item-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.qty-input {
+    width: 60px;
+    padding: 6px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border-color);
+    color: white;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.remove-btn {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 4px 8px;
+    font-size: 12px;
+}
+.remove-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+}
+</style>
+
+<script>
+window.userRole = "{{ user.role }}";
+let state = {
+    saasProducts: [],
+    cart: [], // Array of { product: {}, quantity: 1, discount: 0 }
+    tipoB: false,
+    globalDiscount: 0
+};
+
+const dom = {
+    search: document.getElementById('searchSaaS'),
+    saasList: document.getElementById('saasList'),
+    cartList: document.getElementById('cartList'),
+    emptyCart: document.getElementById('emptyCart'),
+    cartTotal: document.getElementById('cartTotal'),
+    clientName: document.getElementById('clientName'),
+    btnCopyWa: document.getElementById('btnCopyWa'),
+    btnDownloadPDF: document.getElementById('btnDownloadPDF'),
+    toast: document.getElementById('toast')
+};
+
+function showToast(msg, isError=false) {
+    dom.toast.textContent = msg;
+    dom.toast.style.backgroundColor = isError ? '#ef4444' : '#10b981';
+    dom.toast.style.visibility = 'visible';
+    setTimeout(() => { dom.toast.style.visibility = 'hidden'; }, 3000);
+}
+
+function parsePrice(priceStr) {
+    if (!priceStr) return 0;
+    try {
+        let clean = String(priceStr).replace('$', '').trim();
+        const lastCommaIndex = clean.lastIndexOf(',');
+        const lastDotIndex = clean.lastIndexOf('.');
+        
+        if (lastCommaIndex > lastDotIndex) {
+            // Coma es el decimal: ej. 1.234,56 o 1234,56
+            clean = clean.replace(/\./g, '').replace(',', '.');
+        } else if (lastDotIndex > lastCommaIndex) {
+            // Punto es el decimal: ej. 1,234.56 o 1234.56
+            clean = clean.replace(/,/g, '');
+        }
+        
+        let num = parseFloat(clean);
+        return isNaN(num) ? 0 : num;
+    } catch(e) { return 0; }
+}
+
+function formatPrice(num) {
+    return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(num);
+}
+
+// Convert to Title Case to fix ugly CSV descriptions
+function toTitleCase(str) {
+    if (!str) return "";
+    return str.toLowerCase().split(' ').map(word => {
+        if(word.length <= 1) return word.toUpperCase();
+        return word.charAt(0).toUpperCase() + word.slice(1);
+    }).join(' ');
+}
+
+window.clearCart = () => {
+    if(state.cart.length === 0 && !dom.clientName.value) return;
+    if(confirm("¿Estás seguro de limpiar la pantalla actual?")) {
+        state.cart = [];
+        dom.clientName.value = '';
+        state.tipoB = false;
+        document.getElementById('chkTipoB').checked = false;
+        state.globalDiscount = 0;
+        document.getElementById('globalDiscount').value = '0';
+        renderCart();
+    }
+};
+
+window.openHistory = async () => {
+    const modal = document.getElementById('historyModal');
+    const list = document.getElementById('historyList');
+    modal.style.display = 'flex';
+    list.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px;">Cargando historial...</div>`;
+    
+    try {
+        const res = await fetch("/api/history-quotes");
+        const data = await res.json();
+        if(data.error) throw new Error(data.error);
+        
+        if(!data || data.length === 0) {
+            list.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px;">No hay presupuestos en los últimos 10 días.</div>`;
+            return;
+        }
+        
+        
+        // Store data globally to load it later
+        window._historyData = data;
+        renderHistoryList(data);
+        
+    } catch(err) {
+        list.innerHTML = `<div style="text-align: center; color: #ef4444; padding: 20px;">Error cargando historial: ${err.message}</div>`;
+    }
+};
+
+function renderHistoryList(data) {
+    const list = document.getElementById('historyList');
+    if(!data || data.length === 0) {
+        list.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px;">No se encontraron presupuestos.</div>`;
+        return;
+    }
+    list.innerHTML = data.map(q => {
+        const dateStr = new Date(q.date).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' });
+        const deleteBtn = window.userRole === 'admin' 
+            ? `<button class="btn btn-primary" style="background:transparent; color:#ef4444; padding:0 5px; font-size:14px; min-width:auto;" onclick="deleteQuote('${q.id}', event)" title="Borrar Presupuesto">🗑️</button>` 
+            : '';
+        return `
+        <div class="cart-item" style="cursor: pointer;" onclick="loadHistoryItem('${q.id}')">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                <div>
+                    <strong style="color: #38bdf8;">${q.client}</strong> 
+                    <span style="font-size: 10px; color: var(--text-muted); margin-left: 5px;">ID: ${q.id}</span>
+                </div>
+                <div>
+                    <span style="color: var(--text-muted); font-size: 12px; margin-right: 5px;">${dateStr}</span>
+                    ${deleteBtn}
+                </div>
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">Vendedor: ${q.seller}</div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 12px;">${q.products.length} productos</span>
+                <strong>${formatPrice(q.total)}</strong>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+document.getElementById('historySearch').addEventListener('input', (e) => {
+    if(!window._historyData) return;
+    const term = e.target.value.toLowerCase();
+    const filtered = window._historyData.filter(q => {
+        return q.client.toLowerCase().includes(term) || 
+               q.id.toLowerCase().includes(term) || 
+               q.total.toString().includes(term);
+    });
+    renderHistoryList(filtered);
+});
+
+window.deleteQuote = async (id, event) => {
+    event.stopPropagation();
+    if(!confirm("¿Estás seguro de que deseas eliminar este presupuesto del historial?")) return;
+    
+    try {
+        const res = await fetch(`/api/history-quotes/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if(data.error) throw new Error(data.error);
+        
+        // Reload history
+        window.openHistory();
+        showToast("Presupuesto eliminado", "success");
+    } catch(err) {
+        showToast("Error eliminando: " + err.message, "error");
+    }
+};
+
+window.closeHistory = () => {
+    document.getElementById('historyModal').style.display = 'none';
+};
+
+window.loadHistoryItem = (id) => {
+    if(!window._historyData) return;
+    const quote = window._historyData.find(q => q.id === id);
+    if(!quote) return;
+    
+    if(state.cart.length > 0) {
+        if(!confirm("Tienes un presupuesto en curso. ¿Deseas reemplazarlo con este del historial?")) return;
+    }
+    
+    dom.clientName.value = quote.client === "Consumidor Final" ? "" : quote.client;
+    
+    // Load quote options
+    state.tipoB = quote.tipoB || false;
+    document.getElementById('chkTipoB').checked = state.tipoB;
+    
+    state.globalDiscount = quote.globalDiscount || 0;
+    document.getElementById('globalDiscount').value = state.globalDiscount;
+    
+    // Convert history products back to cart state
+    state.cart = quote.products.map(p => {
+        return {
+            product: {
+                id: Math.random().toString(36).substr(2, 9), // Fake ID just for cart matching if needed
+                name: p.name,
+                unit: p.unit,
+                price: p.price
+            },
+            quantity: p.quantity,
+            discount: p.discount || 0
+        };
+    });
+    
+    renderCart();
+    closeHistory();
+    showToast("Presupuesto cargado del historial");
+};
+
+async function loadProducts() {
+    try {
+        const res = await fetch("/api/load-catalog");
+        const data = await res.json();
+        if(data.error) throw new Error(data.error);
+        
+        state.saasProducts = (data.saas_products || []).map(p => {
+            p.name = toTitleCase(p.name);
+            return p;
+        });
+        renderSaasList();
+    } catch(err) {
+        dom.saasList.innerHTML = `<div style="color: #ef4444; padding: 20px;">Error cargando productos: ${err.message}</div>`;
+    }
+}
+
+function renderSaasList() {
+    const terms = dom.search.value.toLowerCase().split(' ').filter(Boolean);
+    
+    if (terms.length === 0) {
+        document.getElementById('saasList').innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 40px; line-height: 1.5;">
+            🔍 Escribe el nombre o código de un producto en el buscador de arriba para comenzar.
+        </div>`;
+        return;
+    }
+    
+    const filtered = state.saasProducts.filter(p => {
+        const nameLower = p.name.toLowerCase();
+        const idLower = p.id.toLowerCase();
+        return terms.every(term => nameLower.includes(term) || idLower.includes(term));
+    }).slice(0, 50); // Limit to 50 results to keep UI snappy
+    
+    if (filtered.length === 0) {
+        document.getElementById('saasList').innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px;">No se encontraron productos.</div>`;
+        return;
+    }
+    
+    dom.saasList.innerHTML = filtered.map(p => {
+        const price = formatPrice(parsePrice(p.price));
+        const unit = p.unit && p.unit !== 'nan' ? p.unit : '';
+        return `
+        <div class="product-item">
+            <div style="flex: 1; padding-right: 15px;">
+                <div style="color: var(--text-muted); font-size: 11px;">#${p.id}</div>
+                <div style="font-weight: 500; margin-bottom: 4px;">${p.name}</div>
+                <div style="color: #38bdf8;">${price} <span style="color: var(--text-muted); font-size: 11px;">${unit}</span></div>
+            </div>
+            <button onclick="addToCart('${p.id}')" class="btn-primary" style="width: auto; padding: 6px 12px; font-size: 12px;">Añadir</button>
+        </div>
+        `;
+    }).join('');
+}
+
+window.addToCart = (id) => {
+    const product = state.saasProducts.find(p => p.id === id);
+    if (!product) return;
+    
+    const existing = state.cart.find(item => item.product.id === id);
+    if (existing) {
+        existing.quantity += 1;
+    } else {
+        state.cart.push({ product: product, quantity: 1, discount: 0 });
+    }
+    renderCart();
+    showToast("Producto añadido");
+};
+
+window.removeFromCart = (id) => {
+    state.cart = state.cart.filter(item => item.product.id !== id);
+    renderCart();
+};
+
+window.updateQty = (id, el) => {
+    let val = parseFloat(el.value);
+    if (isNaN(val) || val < 0.1) val = 1;
+    
+    const item = state.cart.find(i => i.product.id === id);
+    if (item) {
+        item.quantity = val;
+    }
+    renderCart();
+};
+
+window.updateDiscount = (id, el) => {
+    let val = parseFloat(el.value);
+    if (isNaN(val) || val < 0) val = 0;
+    if (val > 100) val = 100;
+    
+    const item = state.cart.find(i => i.product.id === id);
+    if (item) {
+        item.discount = val;
+    }
+    renderCart();
+};
+
+window.toggleTipoB = (isChecked) => {
+    state.tipoB = isChecked;
+    renderCart();
+};
+
+window.updateGlobalDiscount = (val) => {
+    let num = parseFloat(val);
+    if (isNaN(num) || num < 0) num = 0;
+    if (num > 100) num = 100;
+    state.globalDiscount = num;
+    renderCart();
+};
+
+function renderCart() {
+    if (state.cart.length === 0) {
+        document.getElementById('cartList').innerHTML = `<div id="emptyCart" style="text-align: center; color: var(--text-muted); padding: 40px;">Selecciona productos de la izquierda para agregarlos al presupuesto.</div>`;
+        document.getElementById('cartTotal').textContent = "$ 0,00";
+        document.getElementById('discountBreakdown').style.display = 'none';
+        return;
+    }
+    
+    let subtotalOriginal = 0;
+    let total = 0;
+    
+    document.getElementById('cartList').innerHTML = state.cart.map(item => {
+        const p = item.product;
+        const basePrice = parsePrice(p.price);
+        
+        let originalUnitPrice = basePrice;
+        if (state.tipoB) {
+            originalUnitPrice *= 1.105;
+        }
+        
+        let unitPrice = originalUnitPrice * (1 - (item.discount / 100));
+        
+        const subtotalSinDesc = originalUnitPrice * item.quantity;
+        const subtotalItem = unitPrice * item.quantity;
+        
+        subtotalOriginal += subtotalSinDesc;
+        total += subtotalItem;
+        
+        const unit = p.unit && p.unit !== 'nan' ? p.unit : 'unidades';
+        
+        let strikethroughHtml = '';
+        if (item.discount > 0) {
+            strikethroughHtml = `<div style="font-size: 11px; color: #ef4444; text-decoration: line-through; margin-bottom: 2px;">${formatPrice(originalUnitPrice)} c/u</div>`;
+        }
+        
+        return `
+        <div class="cart-item">
+            <div class="cart-item-header">
+                <div style="flex: 1; padding-right: 15px; word-break: break-word;">${p.name}</div>
+                <button onclick="removeFromCart('${p.id}')" class="remove-btn">✕</button>
+            </div>
+            <div class="cart-item-controls">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <input type="number" step="0.1" min="0.1" value="${item.quantity}" class="qty-input" onchange="updateQty('${p.id}', this)">
+                    <span style="color: var(--text-muted); font-size: 12px;">x ${unit}</span>
+                    
+                    <div style="display: flex; align-items: center; gap: 4px; margin-left: 10px;">
+                        <input type="number" min="0" max="100" value="${item.discount}" class="qty-input" style="width: 50px;" onchange="updateDiscount('${p.id}', this)">
+                        <span style="color: var(--text-muted); font-size: 11px;">% Desc</span>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    ${strikethroughHtml}
+                    <div style="font-size: 11px; color: var(--text-muted);">${formatPrice(unitPrice)} c/u</div>
+                    <div style="font-weight: bold; color: #38bdf8;">${formatPrice(subtotalItem)}</div>
+                </div>
+            </div>
+        </div>
+        `;
+    }).join('');
+    
+    // Aplicar descuento global
+    const finalTotal = total * (1 - (state.globalDiscount / 100));
+    
+    // Comprobar si hay ahorros que mostrar (redondeo para evitar falsos positivos flotantes)
+    if (Math.round(subtotalOriginal) > Math.round(finalTotal)) {
+        document.getElementById('discountBreakdown').style.display = 'flex';
+        document.getElementById('lblOriginalTotal').textContent = formatPrice(subtotalOriginal);
+        document.getElementById('lblDiscountAmount').textContent = "- " + formatPrice(subtotalOriginal - finalTotal);
+    } else {
+        document.getElementById('discountBreakdown').style.display = 'none';
+    }
+    
+    document.getElementById('cartTotal').textContent = formatPrice(finalTotal);
+    document.getElementById('cartTotalLabel').textContent = state.tipoB ? 'Total Estimado (Final, IVA 10.5% inc.)' : 'Total Estimado (+ IVA 21%)';
+}
+
+function getQuotePayload() {
+    let total = 0;
+    const products = state.cart.map(item => {
+        const basePrice = parsePrice(item.product.price);
+        
+        let originalUnitPrice = basePrice;
+        if (state.tipoB) {
+            originalUnitPrice *= 1.105;
+        }
+        
+        let unitPrice = originalUnitPrice * (1 - (item.discount / 100));
+        
+        const subtotal = unitPrice * item.quantity;
+        total += subtotal;
+        
+        return {
+            name: item.product.name,
+            unit: item.product.unit && item.product.unit !== 'nan' ? item.product.unit : 'unid.',
+            price: originalUnitPrice, // Enviar el precio original sin descuento para mostrarlo en el PDF
+            quantity: item.quantity,
+            subtotal: subtotal,
+            discount: item.discount // Enviar el descuento
+        };
+    });
+    
+    const finalTotal = total * (1 - (state.globalDiscount / 100));
+    
+    return {
+        client_name: dom.clientName.value.trim(),
+        client_id: window.selectedClientId || null,
+        products: products,
+        total: finalTotal,
+        tipoB: state.tipoB,
+        globalDiscount: state.globalDiscount
+    };
+}
+
+// Client Autocomplete Logic
+window.selectedClientId = null;
+let clientSearchTimeout = null;
+const clientInput = document.getElementById('clientName');
+const autocompleteDiv = document.getElementById('clientAutocomplete');
+
+clientInput.addEventListener('input', (e) => {
+    window.selectedClientId = null; // reset if typing
+    const query = e.target.value.trim();
+    if(query.length < 2) {
+        autocompleteDiv.style.display = 'none';
+        return;
+    }
+    
+    clearTimeout(clientSearchTimeout);
+    clientSearchTimeout = setTimeout(async () => {
+        try {
+            const res = await fetch(`/api/clientes/buscar?q=${encodeURIComponent(query)}`);
+            const data = await res.json();
+            
+            if(data && data.length > 0) {
+                autocompleteDiv.innerHTML = data.map(c => `
+                    <div class="autocomplete-item" style="padding: 10px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05);" onclick="selectClient('${c.id}', '${c.nombre.replace(/'/g, "\\'")}')">
+                        <div style="font-weight:bold;">${c.nombre}</div>
+                        <div style="font-size:11px; color:var(--text-muted);">CUIT: ${c.cuit || 'N/A'} - IVA: ${c.condicion_iva || ''}</div>
+                    </div>
+                `).join('');
+                autocompleteDiv.style.display = 'block';
+            } else {
+                autocompleteDiv.style.display = 'none';
+            }
+        } catch(e) {
+            console.error(e);
+        }
+    }, 300);
+});
+
+window.selectClient = (id, name) => {
+    window.selectedClientId = id;
+    clientInput.value = name;
+    autocompleteDiv.style.display = 'none';
+};
+
+document.addEventListener('click', (e) => {
+    if(!clientInput.contains(e.target) && !autocompleteDiv.contains(e.target)) {
+        autocompleteDiv.style.display = 'none';
+    }
+});
+
+dom.btnCopyWa.addEventListener('click', async () => {
+    if (state.cart.length === 0) {
+        showToast("El presupuesto está vacío", true);
+        return;
+    }
+    
+    const payload = getQuotePayload();
+    let text = `Hola! 👋 Te paso el presupuesto solicitado:\n\n`;
+    
+    payload.products.forEach(p => {
+        let descText = p.discount > 0 ? ` (Desc. ${p.discount}%)` : '';
+        let ivaText = payload.tipoB ? ` (IVA 10.5% inc.)` : ` + iva`;
+        text += `• ${p.name} - ${formatPrice(p.price)} x ${p.quantity} ${p.unit} = ${formatPrice(p.subtotal)}${descText}${ivaText}\n`;
+    });
+    
+    if (payload.globalDiscount > 0) {
+        text += `\n✨ Descuento especial aplicado: ${payload.globalDiscount}%`;
+    }
+    
+    if (payload.tipoB) {
+        text += `\n💰 Total (Final): ${formatPrice(payload.total)}`;
+    } else {
+        text += `\n💰 Total Estimado (+ IVA 21%): ${formatPrice(payload.total)}`;
+        const ivaAmount = payload.total * 0.21;
+        const totalWithIva = payload.total * 1.21;
+        text += `\n🔴 iva: ${formatPrice(ivaAmount)}`;
+        text += `\n🔴 total: ${formatPrice(totalWithIva)}`;
+    }
+    
+    try {
+        await navigator.clipboard.writeText(text);
+        showToast("¡Mensaje copiado al portapapeles!");
+        
+        // Log to Telegram in background
+        fetch("/api/log-quote", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+    } catch (err) {
+        showToast("No se pudo copiar el texto. Intenta de nuevo.", true);
+    }
+});
+
+dom.btnDownloadPDF.addEventListener('click', async () => {
+    if (state.cart.length === 0) {
+        showToast("El presupuesto está vacío", true);
+        return;
+    }
+    
+    const originalText = dom.btnDownloadPDF.innerHTML;
+    dom.btnDownloadPDF.textContent = "⏳ Generando...";
+    dom.btnDownloadPDF.style.opacity = 0.5;
+    
+    try {
+        const payload = getQuotePayload();
+        
+        const res = await fetch("/api/generate-quote-pdf", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        
+        if (!res.ok) throw new Error("Error del servidor al generar el PDF");
+        
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        const cName = payload.client_name ? payload.client_name.replace(/[^a-z0-9]/gi, '_') : 'Consumidor_Final';
+        a.download = `Presupuesto_${cName}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        
+        showToast("¡PDF descargado con éxito!");
+        
+        // Log to Telegram in background
+        fetch("/api/log-quote", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        
+    } catch(err) {
+        showToast("Error al generar el PDF: " + err.message, true);
+    } finally {
+        dom.btnDownloadPDF.innerHTML = "📄 Descargar PDF";
+        dom.btnDownloadPDF.style.opacity = 1;
+    }
+});
+
+// Init
+dom.search.addEventListener('input', renderSaasList);
+loadProducts();
+
+</script>
+{% endblock %}

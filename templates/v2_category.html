@@ -1,0 +1,175 @@
+{% extends "v2_base.html" %}
+
+{% block title %}Comprar {{ category.name }} por mayor y menor | Disgraf{% endblock %}
+{% block meta_description %}Distribuidor oficial de {{ category.name }}. Venta fraccionada y por bobina. Envíos en el día por Uber/Moto en CABA y GBA, o encomienda al interior.{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* BREADCRUMB */
+    .breadcrumb { margin-bottom: 20px; font-size: 14px; color: var(--text-muted); }
+    .breadcrumb a { color: var(--primary); text-decoration: none; font-weight: 500; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* CONTROLS */
+    .table-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; }
+    .search-box { position: relative; width: 100%; max-width: 350px; }
+    .search-box input { width: 100%; padding: 12px 15px 12px 40px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 15px; transition: 0.2s; }
+    .search-box input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+    .search-box svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); width: 18px; height: 18px; }
+
+    /* TABLE */
+    .subcat-section { margin-bottom: 40px; background: white; border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+    .subcat-header { background: #f8fafc; padding: 15px 20px; font-weight: 700; font-size: 18px; border-bottom: 1px solid var(--border); color: var(--text-main); }
+    
+    .table-responsive { width: 100%; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 600px; }
+    th, td { padding: 12px 20px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { font-weight: 600; color: var(--text-muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; background: white; }
+    tbody tr { transition: 0.1s; background: white; }
+    tbody tr:hover { background: #f8fafc; }
+    
+    .td-code { font-family: monospace; color: var(--text-muted); font-size: 13px; }
+    .td-price { font-weight: 700; color: var(--primary-dark); font-size: 16px; white-space: nowrap; }
+    .td-unit { color: var(--text-muted); font-size: 14px; }
+    
+    /* ADD TO CART CONTROLS */
+    .add-controls { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+    .qty-input { width: 60px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; text-align: center; font-weight: 600; font-size: 14px; }
+    .btn-add { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; white-space: nowrap; }
+    .btn-add:hover { background: var(--primary-dark); }
+    .btn-add.added { background: #10b981; }
+
+    .color-dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); vertical-align: middle; margin-right: 8px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="products-view">
+    <div class="breadcrumb">
+        <a href="/v2">Inicio</a> &gt; <span>{{ category.name }}</span>
+    </div>
+
+    <!-- The title is now H1 for SEO -->
+    <h1 class="section-title" id="current-cat-title">{{ category.name }}</h1>
+    
+    <!-- Optional: a tiny paragraph to feed Google some keywords based on category -->
+    <p style="color: var(--text-muted); margin-bottom: 25px; font-size: 15px; max-width: 800px;">
+        Encontrá toda la línea de <strong>{{ category.name|lower }}</strong> para tu taller gráfico. 
+        Recordá que podés consultarnos por WhatsApp si necesitás que te fraccionemos por metro o armemos un envío urgente por moto.
+    </p>
+
+    <div class="table-controls">
+        <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="table-search" placeholder="Buscar por nombre o código...">
+        </div>
+    </div>
+
+    <div id="tables-container">
+        {% for subcat in category.subcategories %}
+        <div class="subcat-section" data-subcat-name="{{ subcat.name|lower }}">
+            <h2 class="subcat-header">{{ subcat.name }}</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Cód.</th>
+                            <th>Descripción</th>
+                            <th>Unidad</th>
+                            <th>Precio (+ IVA)</th>
+                            <th style="text-align:right;">Presupuesto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in subcat.products %}
+                        <tr class="product-row" data-search-term="{{ product.id|lower }} {{ product.name|lower }}">
+                            <td class="td-code">{{ product.id }}</td>
+                            <td>
+                                <div>
+                                    {% if product.color_hex %}
+                                        <span class="color-dot" style="background-color: {{ product.color_hex }};" title="Color: {{ product.color_hex }}"></span>
+                                    {% endif %}
+                                    {{ product.name }}
+                                </div>
+                                {% if 'corte' in category.name|lower %}
+                                    {% if 'oracal' in subcat.name|lower or product.has_color_chart %}
+                                        <div style="margin-top: 6px;"><button class="btn-color-chart" onclick="window.openLightbox('chart')">🎨 Ver Catálogo</button></div>
+                                    {% else %}
+                                        <div style="margin-top: 6px;"><button class="btn-color-chart" onclick="window.openLightbox('product', '{{ product.id }}')">🎨 Ver Catálogo</button></div>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td class="td-unit">{{ product.unit|default('un') }}</td>
+                            <td class="td-price" data-raw-price="{{ product.price }}">$0,00</td> <!-- Formatted by JS below -->
+                            <td style="text-align:right;">
+                                <div class="add-controls">
+                                    <input type="number" id="qty-{{ product.id }}" class="qty-input" value="1" min="1">
+                                    <!-- Use single quotes for JS args, escape apostrophes in name if any (handled via replace later or just basic template) -->
+                                    <button id="btn-add-{{ product.id }}" class="btn-add" onclick="addToCart('{{ product.id }}', '{{ product.name|replace("'", "\\'") }}', {{ product.price }}, '{{ product.unit|default('un') }}')">+ Añadir</button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Format prices on load
+    document.addEventListener("DOMContentLoaded", () => {
+        const priceCells = document.querySelectorAll('.td-price');
+        priceCells.forEach(cell => {
+            const rawPrice = parseFloat(cell.getAttribute('data-raw-price'));
+            if(!isNaN(rawPrice)) {
+                cell.innerText = formatPrice(rawPrice);
+            }
+        });
+
+        // Initialize button states based on cart
+        cart.forEach(item => {
+            const btn = document.getElementById(`btn-add-${item.id}`);
+            const qtyInput = document.getElementById(`qty-${item.id}`);
+            if(btn) {
+                btn.innerText = 'Actualizar';
+                btn.classList.add('added');
+            }
+            if(qtyInput) {
+                qtyInput.value = item.quantity;
+            }
+        });
+    });
+
+    // Client-side search filtering within the rendered table
+    document.getElementById('table-search').addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        const sections = document.querySelectorAll('.subcat-section');
+        
+        sections.forEach(section => {
+            let hasVisibleRows = false;
+            const rows = section.querySelectorAll('.product-row');
+            
+            rows.forEach(row => {
+                const searchData = row.getAttribute('data-search-term');
+                if (searchData.includes(term)) {
+                    row.style.display = '';
+                    hasVisibleRows = true;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            if(hasVisibleRows) {
+                section.style.display = '';
+            } else {
+                section.style.display = 'none';
+            }
+        });
+    });
+</script>
+{% endblock %}

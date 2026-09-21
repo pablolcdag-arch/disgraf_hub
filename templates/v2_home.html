@@ -1,0 +1,186 @@
+{% extends "v2_base.html" %}
+
+{% block content %}
+<style>
+    /* HERO BANNER V2 */
+    .hero-banner {
+        background: linear-gradient(rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.75)),
+                    url('/static/img/disgraf_hero_banner.jpg') center/cover no-repeat;
+        padding: 80px 20px; 
+        border-radius: 24px; 
+        margin-bottom: 50px; 
+        color: white; 
+        text-align: center; 
+        box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        border: 1px solid rgba(255,255,255,0.05);
+        position: relative;
+        overflow: hidden;
+    }
+    .hero-banner::before {
+        content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+        background: url('data:image/svg+xml;utf8,<svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><circle cx="2" cy="2" r="1" fill="rgba(255,255,255,0.05)"/></svg>') repeat;
+        pointer-events: none;
+    }
+    .hero-banner h1 { font-size: 46px; font-weight: 900; margin-bottom: 20px; letter-spacing: -1.5px; position: relative; z-index: 1; }
+    .hero-banner p { font-size: 19px; opacity: 0.85; margin-bottom: 0; max-width: 650px; margin-left: auto; margin-right: auto; line-height: 1.6; position: relative; z-index: 1; font-weight: 300; }
+    
+    /* CATEGORY GRID */
+    .category-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+    
+    .cat-card {
+        background: var(--surface); border-radius: var(--radius); padding: 25px;
+        border: 1px solid var(--border); cursor: pointer; transition: 0.2s;
+        display: flex; align-items: center; gap: 15px; text-decoration: none; color: inherit;
+    }
+    .cat-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); border-color: var(--primary); }
+    .cat-icon { font-size: 32px; background: #eff6ff; width: 60px; height: 60px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;}
+    .cat-info h2 { font-size: 18px; font-weight: 700; margin-bottom: 5px; }
+    .cat-info p { font-size: 13px; color: var(--text-muted); }
+
+    .seo-text { font-size: 14px; color: var(--text-muted); margin-top: 40px; text-align: center; }
+</style>
+
+<div id="home-view">
+    <div class="hero-banner">
+        <h1>El Aliado Estratégico de tu Gráfica</h1>
+        <p>Distribuidor Oficial <strong>Oracal, Poli-Tape y DPI</strong>. Trato personalizado por sus dueños, venta por metro o bobina cerrada, y <strong>urgencias por Moto/Uber en el día</strong>. El servicio que los importadores directos no te pueden dar.</p>
+    </div>
+
+    <h2 class="section-title" id="catalogo">Catálogo de Productos</h2>
+    
+    {% if not catalog %}
+        <p>No hay categorías cargadas. Sincroniza desde el Hub.</p>
+    {% else %}
+        <div class="category-grid" style="margin-bottom: 60px;">
+            {% for cat in catalog %}
+                {% set ns = namespace(total_prods=0) %}
+                {% for sub in cat.subcategories %}
+                    {% set ns.total_prods = ns.total_prods + sub.products|length %}
+                {% endfor %}
+                <a href="/v2/categoria/{{ cat.slug }}" class="cat-card">
+                    <div class="cat-icon">
+                        {% if 'dtf' in cat.name|lower %}
+                            <img src="/static/img/categories/Dtf%20textil.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;" alt="{{ cat.name }}">
+                        {% elif 'laminado' in cat.name|lower %}
+                            <img src="/static/img/categories/laminado.jpg" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;" alt="{{ cat.name }}">
+                        {% elif 'polarizado' in cat.name|lower or 'film' in cat.name|lower or 'wrap' in cat.name|lower %}
+                            <img src="/static/img/categories/polarizado.jpg" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;" alt="{{ cat.name }}">
+                        {% elif 'adere' in cat.name|lower %}
+                            <img src="/static/img/categories/adere.jpeg" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;" alt="{{ cat.name }}">
+                        {% elif 'termo' in cat.name|lower %}
+                            <img src="/static/img/categories/termotransferible.jpg" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;" alt="{{ cat.name }}">
+                        {% elif 'corte' in cat.name|lower and 'oracal' in cat.name|lower %}
+                            <img src="/static/img/carta_oracal_nueva.jpg" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;" alt="{{ cat.name }}">
+                        {% elif 'impres' in cat.name|lower and 'dpi' in cat.name|lower %}
+                            <img src="/static/img/cat_impresion.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;" alt="{{ cat.name }}">
+                        {% elif 'corte' in cat.name|lower %}✂️
+                        {% elif 'impres' in cat.name|lower %}🖨️
+                        {% elif 'lona' in cat.name|lower %}🎪
+                        {% elif 'papel' in cat.name|lower or 'transfer' in cat.name|lower %}📜
+                        {% elif 'textil' in cat.name|lower %}👕
+                        {% elif 'herramienta' in cat.name|lower or 'espatula' in cat.name|lower %}🛠️
+                        {% elif 'iman' in cat.name|lower %}🧲
+                        {% elif 'polyfan' in cat.name|lower %}🧊
+                        {% elif 'fluorescente' in cat.name|lower %}✨
+                        {% elif 'reflectivo' in cat.name|lower %}🚦
+                        {% else %}📦{% endif %}
+                    </div>
+                    <div class="cat-info">
+                        <h2>{{ cat.name }}</h2>
+                        <p>{{ cat.subcategories|length }} Subcategorías | {{ ns.total_prods }} Productos</p>
+                    </div>
+                </a>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Envíos (Visible in home now) -->
+    <div id="envios" style="max-width: 900px; margin: 0 auto; margin-bottom: 60px;">
+        <h2 class="section-title">Envíos Rápidos a todo el país</h2>
+        
+        <div style="background: white; padding: 35px; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.03);">
+            <h3 style="font-size: 22px; color: var(--primary); margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">💡 Atención Gráficas: ¿Cómo optimizar tu envío?</h3>
+            <p style="font-size: 16px; color: var(--text-main); line-height: 1.6; margin-bottom: 15px;">
+                En Vía Cargo existe un costo base y una <strong>franja de peso mínimo (generalmente hasta 10kg o 15kg)</strong>. Esto significa que <strong>cuesta prácticamente lo mismo enviar 2 metros de vinilo esmerilado que enviar un par de rollos completos</strong>.
+            </p>
+            <p style="font-size: 16px; color: var(--text-main); line-height: 1.6; background: #f1f5f9; padding: 15px; border-radius: 8px; border-left: 4px solid var(--primary);">
+                <strong>Recomendación Disgraf:</strong> Te sugerimos agrupar tus compras. Sumá herramientas, tintas, lona front o ese rollo de transfer que siempre te hace falta para amortizar el costo del flete.
+            </p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 40px;">
+            <div style="background: white; padding: 25px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+                <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 15px; color: var(--text-main);">📍 Envíos Express (CABA/GBA)</h3>
+                <ul style="list-style-type: none; padding: 0; margin: 0; color: var(--text-main); font-size: 15px; line-height: 1.8;">
+                    <li style="margin-bottom: 10px;">🏍️ <strong>Moto / Uber / Cabify:</strong> ¿Estás a las corridas? Comprá y mandá a tu chofer de confianza a retirar por el local de inmediato. </li>
+                    <li>🚐 <strong>Fletes Propios:</strong> Para volúmenes mayores (bobinas de Oracal, lonas front, PVC espumado), coordinamos envío por flete.</li>
+                </ul>
+            </div>
+            <div style="background: white; padding: 25px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+                <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 15px; color: var(--text-main);">🚚 Interior del país</h3>
+                <p style="color: var(--text-main); font-size: 15px; margin-bottom: 15px; line-height: 1.6;">
+                    Despachamos por Vía Cargo u otros expresos. Referencia de pesos:
+                </p>
+                <ul style="list-style-type: none; padding: 0; margin: 0; color: var(--text-muted); font-size: 14px; line-height: 1.6;">
+                    <li>• Bobina Oracal 651 (63cm): ~9 kg</li>
+                    <li>• Bobina Oracal 651 (126cm): ~18 kg</li>
+                    <li>• Lona Front (50m x 1.37m): ~30 kg</li>
+                </ul>
+                <div style="margin-top: 20px; text-align: center;">
+                    <a href="https://viacargo.com.ar/cotizar-envio/" target="_blank" style="display: inline-block; background: #0ea5e9; color: white; text-decoration: none; padding: 10px 20px; font-size: 14px; font-weight: 700; border-radius: 30px;">Cotizar en Vía Cargo 🚛</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reseñas -->
+    <div style="margin-bottom: 60px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h2 class="section-title" style="margin-bottom: 10px;">Gráficas de todo el país confían en Disgraf</h2>
+            <p style="color: var(--text-muted);">Más de 100 talleres prefieren nuestro trato directo y venta fraccionada.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
+            <!-- Review 1 -->
+            <div style="background: white; padding: 25px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+                <div style="display: flex; gap: 5px; color: #fbbf24; font-size: 20px; margin-bottom: 15px;">★★★★★</div>
+                <p style="font-style: italic; color: var(--text-main); margin-bottom: 15px; line-height: 1.5;">"Excelente atención y asesoramiento. A diferencia de los importadores, ellos me fraccionan el material y me salvan cuando necesito metros específicos de vinilo esmerilado o de corte. Muy recomendables."</p>
+                <p style="font-weight: 700; color: var(--text-main);">- Juan Pérez</p>
+            </div>
+            <!-- Review 2 -->
+            <div style="background: white; padding: 25px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+                <div style="display: flex; gap: 5px; color: #fbbf24; font-size: 20px; margin-bottom: 15px;">★★★★★</div>
+                <p style="font-style: italic; color: var(--text-main); margin-bottom: 15px; line-height: 1.5;">"Envíos rapidísimos. Les mando el Uber Moto a retirar las herramientas o los metros de vinilo vehicular y me lo despachan en el acto. Esa velocidad es impagable en este rubro."</p>
+                <p style="font-weight: 700; color: var(--text-main);">- Gráfica Martín</p>
+            </div>
+            <!-- Review 3 -->
+            <div style="background: white; padding: 25px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+                <div style="display: flex; gap: 5px; color: #fbbf24; font-size: 20px; margin-bottom: 15px;">★★★★★</div>
+                <p style="font-style: italic; color: var(--text-main); margin-bottom: 15px; line-height: 1.5;">"Hace años trabajo con Disgraf. Tienen un catálogo de Poli Tape y DPI súper completo y las lonas front son de primera."</p>
+                <p style="font-weight: 700; color: var(--text-main);">- Taller Creativo 3D</p>
+            </div>
+        </div>
+        <div style="text-align: center;">
+            <a href="https://maps.google.com/" target="_blank" style="color: var(--primary); font-weight: 700; text-decoration: underline;">Ver más opiniones reales en Google Maps</a>
+        </div>
+    </div>
+
+    <!-- Instagram Widget Section -->
+    <div style="margin-bottom: 60px; text-align: center;">
+        <h2 class="section-title">Nuestra Comunidad en Instagram</h2>
+        <p style="color: var(--text-muted); margin-bottom: 30px;">Seguinos en <a href="https://instagram.com/disgraf" target="_blank" style="color: var(--primary); font-weight: bold; text-decoration: none;">@disgraf</a> para ver trabajos de clientes, tips de aplicación y novedades de stock.</p>
+        
+        <!-- Placeholder for Instagram Widget (SnapWidget / Elfsight) -->
+        <div style="background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 40px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+            <div style="font-size: 40px; color: #e1306c; margin-bottom: 15px;">📷</div>
+            <h3 style="margin-bottom: 10px;">¡Conectate con nosotros!</h3>
+            <p style="color: var(--text-muted); margin-bottom: 20px;">Acá podemos incrustar tu feed automático de Instagram usando un widget gratuito.</p>
+            <a href="https://instagram.com/disgraf" target="_blank" class="btn-primary" style="background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); color: white; padding: 10px 25px; border-radius: 30px; text-decoration: none; font-weight: bold; display: inline-block;">Ver Instagram de Disgraf</a>
+        </div>
+    </div>
+
+    <!-- Hidden SEO text to rank for competitor brands or alternatives -->
+    <div class="seo-text">
+        Buscamos brindarte la mejor calidad del mercado. Por eso comercializamos marcas líderes como <strong>Oracal, Orafol, Orajet DPI, Graphictac, Marabu, Poli-Tape</strong>. Si estabas buscando alternativas como <em>Avery, Arclad, LG, Mc Cal o 3M</em>, contactanos: ¡tenemos equivalencias superiores en nuestras marcas oficiales con el mejor asesoramiento para tu taller gráfico! Especialistas en vinilo esmerilado, vinilo microperforado, termotransferibles textiles, polarizados, portabanners, polifan, car wrapping, vinilos decorativos, PVC espumado y mucho más.
+    </div>
+</div>
+{% endblock %}

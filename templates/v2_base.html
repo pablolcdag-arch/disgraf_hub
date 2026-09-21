@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <title>{% block title %}Disgraf | Distribuidor Oficial de Insumos Gráficos{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}Distribuidor oficial de Oracal, Poli-Tape, DPI y herramientas. Trato personalizado, fraccionamiento por metro y envíos express por moto o Uber.{% endblock %}">
+    
+    <!-- Schema.org JSON-LD -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      "name": "Disgraf Insumos Gráficos",
+      "image": "https://hub.disgraf.com.ar/static/img/logo.png",
+      "@id": "https://hub.disgraf.com.ar/v2",
+      "url": "https://hub.disgraf.com.ar/v2",
+      "telephone": "+5491120443581",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Dr. Juan Felipe Aranguren 49",
+        "addressLocality": "Buenos Aires",
+        "addressCountry": "AR"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": -34.6097861,
+        "longitude": -58.4340694
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "reviewCount": "120"
+      },
+      "priceRange": "$$",
+      "description": "Distribuidor oficial de insumos gráficos. Oracal, Poli-Tape, Arclad, Avery, DPI. Trato personalizado y envíos express."
+    }
+    </script>
+
+    <!-- Google Analytics (GA4) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-6GZKKYNHY0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-6GZKKYNHY0');
+    </script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --surface: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --primary: #2563eb; 
+            --primary-dark: #1d4ed8;
+            --whatsapp: #25D366;
+            --border: #e2e8f0;
+            --radius: 12px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-color); color: var(--text-main); line-height: 1.5; padding-bottom: 80px; }
+
+        /* HEADER */
+        header {
+            position: sticky; top: 0; z-index: 1000;
+            background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border); padding: 15px 5%;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo { font-size: 24px; font-weight: 900; color: var(--primary); text-decoration: none; letter-spacing: -1px; display: flex; align-items: center; }
+        .logo img { max-height: 55px; }
+        .nav-links { display: flex; align-items: center; gap: 20px; }
+        .nav-links a { color: var(--text-main); text-decoration: none; font-weight: 500; font-size: 15px; }
+        
+        .ig-icon { width: 24px; height: 24px; vertical-align: middle; }
+
+        /* HEADER CART BUTTON */
+        .header-cart-btn {
+            background: #f8fafc; color: var(--text-main); border-radius: 30px; border: 1px solid var(--border);
+            padding: 8px 16px; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px;
+            cursor: pointer; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); margin-left: 10px;
+        }
+        .header-cart-btn:hover { 
+            background: white; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+            transform: translateY(-2px); 
+            border-color: var(--primary);
+        }
+        .cart-badge { background: var(--primary); color: white; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; }
+
+        /* MAIN CONTENT AREA */
+        .container { max-width: 1200px; margin: 40px auto; padding: 0 5%; min-height: 50vh; }
+        .section-title { font-size: 28px; font-weight: 900; margin-bottom: 30px; letter-spacing: -0.5px; border-bottom: 2px solid var(--primary); display: inline-block; padding-bottom: 5px; }
+
+        /* CART MODAL */
+        .cart-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: none; }
+        .cart-modal { 
+            position: fixed; top: 0; right: -400px; width: 100%; max-width: 400px; height: 100%;
+            background: white; z-index: 10001; transition: 0.3s ease; display: flex; flex-direction: column;
+            box-shadow: -5px 0 25px rgba(0,0,0,0.1);
+        }
+        .cart-modal.open { right: 0; }
+        .cart-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .cart-header h3 { font-size: 20px; font-weight: 700; color: var(--text-main); }
+        .cart-header-actions { display: flex; align-items: center; gap: 10px; }
+        .empty-cart-btn { background: none; border: 1px solid var(--border); color: #ef4444; padding: 5px 10px; border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 600; }
+        .empty-cart-btn:hover { background: #fee2e2; }
+        .close-cart { background: none; border: none; font-size: 24px; color: var(--text-muted); cursor: pointer; }
+        .cart-body { flex-grow: 1; overflow-y: auto; padding: 20px; }
+        
+        .cart-item { margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .cart-item-info { flex-grow: 1; }
+        .cart-item-info h4 { font-size: 14px; margin-bottom: 5px; }
+        .cart-item-info p { font-size: 12px; color: var(--text-muted); }
+        .cart-qty-controls { display: flex; align-items: center; gap: 10px; margin-right: 15px; }
+        .cart-qty-btn { background: #f1f5f9; border: 1px solid var(--border); width: 24px; height: 24px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .cart-item-remove { color: red; background: none; border: none; font-size: 12px; font-weight: bold; cursor: pointer; padding: 5px; }
+        
+        .cart-footer { padding: 20px; border-top: 1px solid var(--border); background: #f8fafc; }
+
+        .cart-total { display: flex; justify-content: space-between; font-size: 18px; font-weight: 800; margin-bottom: 15px; }
+        .btn-checkout { background: var(--whatsapp); color: white; width: 100%; padding: 15px; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; text-align: center; text-decoration: none; display: block; }
+        
+        /* FOOTER SEO */
+        footer { background: #0f172a; color: white; padding: 60px 5% 30px 5%; margin-top: 60px; }
+        .footer-grid { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 0.8fr 1.2fr 2.5fr; gap: 40px; margin-bottom: 40px; align-items: start; }
+        @media (max-width: 1024px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 768px) { .footer-grid { grid-template-columns: 1fr; } }
+        .footer-col h4 { font-size: 18px; font-weight: 700; margin-bottom: 20px; color: #cbd5e1; }
+        .footer-col p, .footer-col a { color: #94a3b8; font-size: 14px; text-decoration: none; margin-bottom: 10px; display: block; line-height: 1.6; }
+        .footer-col a:hover { color: white; }
+        .footer-bottom { text-align: center; padding-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); color: #64748b; font-size: 13px; }
+
+        /* MOBILE RESPONSIVENESS */
+        @media (max-width: 768px) {
+            header { flex-direction: column; gap: 15px; padding: 15px; }
+            .nav-links { flex-wrap: wrap; justify-content: center; gap: 15px; width: 100%; }
+            .header-cart-btn { width: 100%; justify-content: center; padding: 12px; font-size: 16px; margin-left: 0; }
+            .floating-wsp { bottom: 20px; width: 50px; height: 50px; }
+        }
+        
+        #cart-notes { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; margin-bottom: 15px; resize: vertical; font-size: 14px; }
+        .btn-color-chart { background-color: #f1f5f9; border: 1px solid #cbd5e1; color: var(--primary); padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; margin-right: 8px; transition: all 0.2s; }
+        .btn-color-chart:hover { background-color: #e2e8f0; }
+
+        /* LIGHTBOX MODAL */
+        .lightbox-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 20000; display: none; align-items: center; justify-content: center; }
+        .lightbox-content { position: relative; max-width: 90%; max-height: 90%; background: white; padding: 20px; border-radius: 12px; }
+        .lightbox-img { max-width: 100%; max-height: 80vh; object-fit: contain; display: block; border-radius: 8px; }
+        .lightbox-close { position: absolute; top: -15px; right: -15px; background: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; cursor: pointer; border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        
+        /* FLOATING WSP */
+        .floating-wsp { position: fixed; bottom: 25px; right: 25px; background: linear-gradient(135deg, #25D366, #128C7E); color: white; border-radius: 50%; width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 25px rgba(37,211,102,0.4); z-index: 1000; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); animation: pulse-wsp 2s infinite; }
+        .floating-wsp:hover { transform: scale(1.1) translateY(-5px); animation: none; box-shadow: 0 12px 30px rgba(37,211,102,0.6); }
+        @keyframes pulse-wsp { 0% { box-shadow: 0 0 0 0 rgba(37,211,102,0.5); } 70% { box-shadow: 0 0 0 15px rgba(37,211,102,0); } 100% { box-shadow: 0 0 0 0 rgba(37,211,102,0); } }
+        {% block extra_css %}{% endblock %}
+    </style>
+</head>
+<body>
+
+    <header>
+        <a href="/v2" class="logo">
+            <img src="/static/img/logo.png" alt="DISGRAF Insumos Gráficos - Oracal, Poli-Tape, Arclad">
+        </a>
+        <nav class="nav-links">
+            <a href="/v2">Inicio</a>
+            <a href="/v2#catalogo">Catálogo</a>
+            <a href="/v2#envios">Envíos</a>
+            <a href="#contacto">Contacto</a>
+            <a href="https://instagram.com/disgraf" target="_blank" aria-label="Instagram">
+                <svg class="ig-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+            </a>
+            <button class="header-cart-btn" onclick="toggleCart()">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                <span class="cart-badge" id="cart-count">0</span>
+            </button>
+        </nav>
+    </header>
+
+    <div class="container" style="margin-top: 40px;">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- CART MODAL -->
+    <div class="cart-overlay" id="cart-overlay" onclick="toggleCart()"></div>
+    <div class="cart-modal" id="cart-modal">
+        <div class="cart-header">
+            <h3>Presupuesto</h3>
+            <div class="cart-header-actions">
+                <button class="empty-cart-btn" onclick="emptyCart()" title="Vaciar todo">🗑️ Vaciar</button>
+                <button class="close-cart" onclick="toggleCart()">×</button>
+            </div>
+        </div>
+        <div class="cart-body" id="cart-body"></div>
+        <div class="cart-footer">
+            <textarea id="cart-notes" placeholder="Aclarar colores u otras notas aquí (opcional)...&#10;También podes hacerlo por WhatsApp" rows="3"></textarea>
+            <div class="cart-total">
+                <span>Total Estimado (+IVA):</span>
+                <span id="cart-total-price">$0,00</span>
+            </div>
+            <a href="#" id="btn-checkout" class="btn-checkout" target="_blank" onclick="sendWhatsApp(event)">Enviar presupuesto por WhatsApp</a>
+        </div>
+    </div>
+
+    <!-- LIGHTBOX MODAL -->
+    <div class="lightbox-overlay" id="lightbox-overlay" onclick="closeLightbox()">
+        <div class="lightbox-content" onclick="event.stopPropagation()">
+            <button class="lightbox-close" onclick="closeLightbox()">×</button>
+            <img id="lightbox-img" class="lightbox-img" src="https://oracal.com/wp-content/uploads/2021/04/651-Color-Chart.jpg" alt="Carta de Colores" onerror="this.src='https://placehold.co/800x600/f1f5f9/64748b?text=Imagen+No+Disponible'">
+        </div>
+    </div>
+
+    <!-- FLOATING WHATSAPP BUTTON -->
+    <a href="https://wa.me/5491120443581" target="_blank" class="floating-wsp" aria-label="Contactar por WhatsApp">
+        <svg viewBox="0 0 32 32" fill="white" width="30" height="30">
+            <path d="M16.036 2.051c-7.755 0-14.043 6.288-14.043 14.043 0 2.474.646 4.887 1.875 7.009L1.921 29.89l6.938-1.819c2.05.14 4.318.995 7.177.995 7.755 0 14.043-6.288 14.043-14.043S23.791 2.051 16.036 2.051zm7.42 20.088c-.309.871-1.498 1.636-2.607 1.776-.902.115-2.062.247-6.027-1.396-4.783-1.983-7.859-6.837-8.093-7.147-.234-.309-1.93-2.571-1.93-4.908 0-2.337 1.222-3.486 1.657-3.951.434-.466.936-.583 1.246-.583.309 0 .618 0 .882.016.28.016.654-.109.988.699.421 1.012 1.185 2.894 1.294 3.111.109.218.187.482.047.762-.14.28-.218.451-.421.684-.202.234-.421.514-.607.7-.202.187-.421.389-.187.794.234.405 1.043 1.726 2.242 2.792 1.547 1.374 2.831 1.789 3.236 1.991.405.202.638.156.871-.109.234-.264 1.012-1.182 1.294-1.587.28-.405.545-.342.919-.187.374.156 2.368 1.119 2.773 1.321.405.202.67.296.762.466.094.171.094.995-.218 1.866z"/>
+        </svg>
+    </a>
+
+    <!-- SEO FOOTER -->
+    <footer id="contacto">
+        <div class="footer-grid">
+            <div class="footer-col">
+                <a href="/v2" class="logo" style="color:white; margin-bottom: 15px; display:block;">DISGRAF</a>
+                <p>Distribuidor Oficial de Oracal, Poli-Tape, DPI y herramientas. Trato personalizado, fraccionamiento de materiales y rapidez de entrega para tu taller. ¡Retirá hoy mismo por nuestro local!</p>
+            </div>
+            <div class="footer-col">
+                <h4>Enlaces Rápidos</h4>
+                <a href="https://instagram.com/disgraf" target="_blank">Síguenos en Instagram</a>
+                <a href="/v2#catalogo">Volver al Catálogo</a>
+            </div>
+            <div class="footer-col">
+                <h4>Contacto y Entregas</h4>
+                <p>📍 Dr. Juan Felipe Aranguren 49, CABA</p>
+                <p>📱 WhatsApp: +54 9 11 2044-3581</p>
+                <p>🚚 Retiro en local, Uber/Moto y envíos a todo el país.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Dónde Estamos</h4>
+                <div style="border-radius: 12px; overflow: hidden; height: 320px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3283.77755389549!2d-58.43406942446924!3d-34.609786072952176!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x95bcca6852133731%3A0xdd468ef0d98a1d54!2sDISGRAF%20Insumos%20Graficos!5e0!3m2!1ses-419!2sar!4v1787628499037!5m2!1ses-419!2sar" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; 2026 Disgraf Insumos Gráficos. Distribuidor Oficial.
+        </div>
+    </footer>
+
+    <!-- CART SCRIPT & LIGHTBOX LOGIC -->
+    <script>
+        let cart = JSON.parse(localStorage.getItem('disgraf_cart')) || [];
+
+        const formatPrice = (price) => {
+            return new Intl.NumberFormat('es-AR', {style: 'currency', currency: 'ARS'}).format(price);
+        };
+
+        window.openLightbox = (type, productId) => {
+            const img = document.getElementById('lightbox-img');
+            if (type === 'chart') {
+                img.src = '/static/img/carta_oracal_nueva.jpg';
+            } else {
+                img.src = `https://placehold.co/800x600/f1f5f9/64748b?text=Imagen+del+Producto+${productId}`;
+            }
+            document.getElementById('lightbox-overlay').style.display = 'flex';
+        };
+
+        window.closeLightbox = () => {
+            document.getElementById('lightbox-overlay').style.display = 'none';
+        };
+
+        const addToCart = (id, name, price, unit) => {
+            const qtyInput = document.getElementById(`qty-${id}`);
+            let quantity = 1;
+            if (qtyInput) {
+                quantity = parseInt(qtyInput.value) || 1;
+            }
+
+            const existingItem = cart.find(item => item.id === id);
+            if(existingItem) {
+                existingItem.quantity = quantity;
+            } else {
+                cart.push({ id, name, price, unit, quantity });
+            }
+            
+            localStorage.setItem('disgraf_cart', JSON.stringify(cart));
+            updateCartUI();
+            
+            const btn = document.getElementById(`btn-add-${id}`);
+            if(btn) {
+                btn.innerText = '✓ Añadido';
+                btn.classList.add('added');
+                setTimeout(() => {
+                    btn.innerText = 'Actualizar';
+                    btn.classList.remove('added');
+                }, 1500);
+            }
+        };
+
+        const updateCartQty = (id, change) => {
+            const item = cart.find(i => i.id === id);
+            if (item) {
+                item.quantity += change;
+                if (item.quantity <= 0) {
+                    removeFromCart(id);
+                } else {
+                    localStorage.setItem('disgraf_cart', JSON.stringify(cart));
+                    updateCartUI();
+                }
+            }
+        };
+
+        const removeFromCart = (id) => {
+            cart = cart.filter(item => item.id !== id);
+            localStorage.setItem('disgraf_cart', JSON.stringify(cart));
+            updateCartUI();
+            
+            const btn = document.getElementById(`btn-add-${id}`);
+            if(btn) {
+                btn.innerText = '+ Añadir';
+                btn.classList.remove('added');
+            }
+        };
+
+        const toggleCart = () => {
+            const modal = document.getElementById('cart-modal');
+            const overlay = document.getElementById('cart-overlay');
+            if(modal.classList.contains('open')){
+                modal.classList.remove('open');
+                overlay.style.display = 'none';
+            } else {
+                modal.classList.add('open');
+                overlay.style.display = 'block';
+            }
+        };
+
+        const emptyCart = () => {
+            if(cart.length === 0) return;
+            if(confirm("¿Estás seguro de que querés vaciar todo el presupuesto?")) {
+                cart = [];
+                localStorage.setItem('disgraf_cart', JSON.stringify(cart));
+                updateCartUI();
+            }
+        };
+
+        const updateCartUI = () => {
+            const countBadge = document.getElementById('cart-count');
+            const cartBody = document.getElementById('cart-body');
+            const cartTotalPrice = document.getElementById('cart-total-price');
+
+            const totalQty = cart.reduce((acc, item) => acc + item.quantity, 0);
+            countBadge.innerText = totalQty;
+            
+            let html = '';
+            let total = 0;
+
+            cart.forEach(item => {
+                const itemTotal = item.price * item.quantity;
+                total += itemTotal;
+                
+                let chartBtn = '';
+                const nameUpper = item.name.toUpperCase();
+                if (nameUpper.includes('CORTE') || nameUpper.includes('ORACAL') || nameUpper.includes('GRAPHICTAC')) {
+                    if (nameUpper.includes('ORACAL 651')) {
+                        chartBtn = `<button class="btn-color-chart" style="margin-top: 5px; font-size: 11px; padding: 4px 8px;" onclick="window.openLightbox('chart')">🎨 Ver Carta de Colores</button>`;
+                    } else {
+                        chartBtn = `<button class="btn-color-chart" style="margin-top: 5px; font-size: 11px; padding: 4px 8px;" onclick="window.openLightbox('product', '${item.id}')">🎨 Ver Carta de Colores</button>`;
+                    }
+                }
+                
+                html += `
+                    <div class="cart-item">
+                        <div class="cart-item-info">
+                            <h4>${item.name}</h4>
+                            <p>Cód: ${item.id} | ${formatPrice(item.price)} c/u</p>
+                            ${chartBtn}
+                        </div>
+                        <div class="cart-qty-controls">
+                            <button class="cart-qty-btn" onclick="updateCartQty('${item.id}', -1)">-</button>
+                            <span>${item.quantity}</span>
+                            <button class="cart-qty-btn" onclick="updateCartQty('${item.id}', 1)">+</button>
+                        </div>
+                        <button class="cart-item-remove" onclick="removeFromCart('${item.id}')">Eliminar</button>
+                    </div>
+                `;
+            });
+
+            cartBody.innerHTML = html;
+            cartTotalPrice.innerText = formatPrice(total);
+            
+            const cartFooter = document.querySelector('.cart-footer');
+            
+            let cartChartBtn = document.getElementById('cart-chart-btn');
+            if (cartChartBtn) cartChartBtn.remove();
+        };
+
+        const sendWhatsApp = (e) => {
+            e.preventDefault();
+            if(cart.length === 0) return;
+            
+            let messageText = 'Hola Disgraf! Quisiera consultar stock y presupuesto de los siguientes artículos:\n\n';
+            let total = 0;
+            cart.forEach(item => {
+                const itemTotal = item.price * item.quantity;
+                total += itemTotal;
+                messageText += `- [${item.id}] ${item.name} | Cant: ${item.quantity} ${item.unit} x ${formatPrice(item.price)} = ${formatPrice(itemTotal)}\n`;
+            });
+            
+            messageText += `\n*Total Estimado (s/IVA):* ${formatPrice(total)}`;
+            
+            const notes = document.getElementById('cart-notes').value.trim();
+            if(notes) {
+                messageText += `\n\n*Aclaraciones / Colores:*\n${notes}`;
+            }
+            
+            window.open(`https://wa.me/5491120443581?text=${encodeURIComponent(messageText)}`, '_blank');
+        };
+
+        // Initialize cart UI on load
+        document.addEventListener("DOMContentLoaded", () => {
+            updateCartUI();
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,807 @@
+{% extends "base.html" %}
+
+{% block title %}Gestor de Catálogo - Disgraf Hub{% endblock %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+<div class="dashboard-layout">
+    <aside class="glass sidebar">
+        <div class="sidebar-header">
+            <a href="/dashboard" style="text-decoration: none; color: inherit;"><h2>Disgraf OS</h2></a>
+        </div>
+        <ul class="nav-links">
+            <li style="margin-bottom: 15px;"><a href="/v2" target="_blank" style="color: #38bdf8; font-weight: bold; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56,189,248,0.3);">🌐 Ver Sitio Público</a></li>
+            <li><a href="/precios" class="active">Gestor de Catálogo</a></li>
+            {% if user.role == "admin" %}
+            <li><a href="/dashboard">Sincronizar Web</a></li>
+            <li><a href="/dashboard">Marketing IA</a></li>
+            {% endif %}
+            <li><a href="/cotizador">Cotizador Rápido</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-details">
+                    <div>{{ user.username | title }}</div>
+                    <div class="user-role">{% if user.role == "admin" %}Administrador{% else %}Ventas{% endif %}</div>
+                </div>
+                <a href="/logout" class="logout-btn">Salir</a>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content" style="display: flex; flex-direction: column; overflow: hidden; height: 100vh;">
+        <div class="page-header" style="margin-bottom: 20px;">
+            <h1>Gestor de Catálogo</h1>
+            <p>Arma tu lista de precios interactiva. Los cambios se guardarán automáticamente en tu base.</p>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="glass action-card" style="padding: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <label class="btn-primary" style="margin: 0; padding: 10px 20px; width: auto; font-size: 13px; background: var(--card-bg); border: 1px solid var(--border-color);">
+                    1. Cargar Archivo de SaaS (.csv)
+                    <input type="file" id="saasFile" accept=".csv" style="display: none;">
+                </label>
+                <button onclick="restoreBackup()" title="Deshacer última subida de SaaS" style="background:none; border:1px solid var(--border-color); color:var(--text-main); border-radius:4px; padding:8px 12px; cursor:pointer; font-size:12px;">
+                    ↩️ Deshacer
+                </button>
+                <span id="uploadStatus" style="font-size: 13px; color: var(--text-muted);">Esperando archivo...</span>
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <button id="btnSave" class="btn-primary" style="width: auto; padding: 10px 20px; font-size: 13px; opacity: 0.5; cursor: not-allowed;">
+                    💾 2. Guardar Catálogo Final
+                </button>
+                <button id="btnDownloadPDF" class="btn-primary" style="width: auto; padding: 10px 20px; font-size: 13px; background: #e11d48; opacity: 0.5; cursor: not-allowed;" onclick="downloadPDF()">
+                    📄 3. Descargar PDF
+                </button>
+                <button id="btnSyncWP" class="btn-primary" style="width: auto; padding: 10px 20px; font-size: 13px; background: #0284c7; opacity: 0.5; cursor: not-allowed;" onclick="syncWP()">
+                    ☁️ 4. Sincronizar Web (Borrador)
+                </button>
+            </div>
+        </div>
+
+        <!-- 2 Pane Layout -->
+        <div style="display: flex; gap: 20px; flex: 1; min-height: 0;">
+            <!-- Left Pane: SaaS Products -->
+            <div class="glass" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+                <div style="padding: 15px; border-bottom: 1px solid var(--border-color);">
+                    <h3 style="font-size: 16px; margin-bottom: 10px;">Productos en SaaS</h3>
+                    <input type="text" id="searchSaaS" class="form-control" placeholder="Buscar producto..." style="padding: 8px 12px; margin-bottom: 10px;">
+                    
+                    <div style="display: flex; gap: 10px;">
+                        <select id="bulkCategorySelect" class="form-control" style="flex: 1; padding: 8px;">
+                            <option value="">Selecciona categoría destino...</option>
+                        </select>
+                        <button onclick="addSelected()" class="btn-primary" style="padding: 8px 15px; width: auto;">➕ Agregar Seleccionados</button>
+                    </div>
+                </div>
+                <div id="saasList" style="flex: 1; overflow-y: auto; padding: 10px;">
+                    <!-- Items populated via JS -->
+                </div>
+            </div>
+
+            <!-- Right Pane: Selected Catalog -->
+            <div class="glass" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+                <div style="padding: 15px; border-bottom: 1px solid var(--border-color);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <h3 style="font-size: 16px; margin: 0;">Catálogo Seleccionado</h3>
+                            <button onclick="toggleAllCategories()" style="background: none; border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main); cursor: pointer; padding: 2px 8px; font-size: 11px;">↕️ Colapsar Todos</button>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button onclick="removeSelected()" style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #ef4444; border-radius: 4px; cursor: pointer; padding: 5px 10px; font-weight: bold;">❌ Borrar Seleccionados</button>
+                            <button id="btnAddCategory" style="background: none; border: 1px solid var(--primary-color); border-radius: 4px; color: var(--primary-color); cursor: pointer; padding: 5px 10px; font-weight: bold;">+ Nueva Categoría</button>
+                        </div>
+                    </div>
+                    <input type="text" id="searchCatalog" class="form-control" placeholder="Buscar en mi catálogo seleccionado..." style="padding: 8px 12px;">
+                </div>
+                <div id="catalogList" style="flex: 1; overflow-y: auto; padding: 10px;">
+                    <!-- Categories populated via JS -->
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Modal Configuración de Categoría -->
+<div id="categoryModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="glass" style="background: var(--card-bg); padding: 25px; border-radius: 8px; width: 400px; max-width: 90%;">
+        <h3 id="modalCatTitle" style="margin-top: 0;">Configuración</h3>
+        
+        <div style="margin-top: 20px;">
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 15px;">
+                <input type="checkbox" id="modalShowCta" style="width: 18px; height: 18px;">
+                <strong>Mostrar Banner de "Pedir Carta de Colores"</strong>
+            </label>
+            
+            <label style="display: block; font-weight: bold; margin-bottom: 5px;">Texto SEO para WordPress:</label>
+            <textarea id="modalSeoText" rows="4" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; font-family: inherit; font-size: 14px; background: var(--bg-color); color: var(--text-main); resize: vertical;" placeholder="Escribe aquí el texto enriquecido para posicionar en Google..."></textarea>
+            <p style="font-size: 12px; color: var(--text-muted); margin-top: 5px;">
+                Este texto aparecerá arriba de la tabla de precios para ayudar a que la categoría aparezca en Google.
+            </p>
+        </div>
+        
+        <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+            <button onclick="closeCategorySettings()" style="padding: 8px 15px; border: 1px solid var(--border-color); background: none; color: var(--text-main); border-radius: 4px; cursor: pointer;">Cancelar</button>
+            <button onclick="saveCategorySettings()" class="btn-primary" style="width: auto; padding: 8px 15px;">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" style="visibility: hidden; min-width: 250px; background-color: #10b981; color: #fff; text-align: center; border-radius: 6px; padding: 16px; position: fixed; z-index: 1000; left: 50%; bottom: 30px; transform: translateX(-50%); font-size: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+  Acción exitosa
+</div>
+
+<style>
+.product-item {
+    padding: 10px;
+    margin-bottom: 5px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 6px;
+    font-size: 13px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid transparent;
+}
+.product-item:hover {
+    background: rgba(255,255,255,0.1);
+}
+.chk-box {
+    margin-right: 10px;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+.add-btn, .remove-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+}
+.add-btn { color: #10b981; }
+.remove-btn { color: #ef4444; }
+
+.category-block {
+    margin-bottom: 15px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+}
+.category-header {
+    padding: 10px 15px;
+    background: rgba(255,255,255,0.05);
+    font-weight: 600;
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.category-items {
+    padding: 10px;
+    min-height: 20px;
+}
+</style>
+
+<script>
+let state = {
+    saasProducts: [],
+    catalog: {}, // { "Category Name": ["id1", "id2"] }
+    categoryMeta: {} // { "Categoría": { show_cta: true } }
+};
+
+const dom = {
+    file: document.getElementById('saasFile'),
+    status: document.getElementById('uploadStatus'),
+    search: document.getElementById('searchSaaS'),
+    searchCat: document.getElementById('searchCatalog'),
+    saasList: document.getElementById('saasList'),
+    catalogList: document.getElementById('catalogList'),
+    btnSave: document.getElementById('btnSave'),
+    btnAddCat: document.getElementById('btnAddCategory'),
+    bulkCatSelect: document.getElementById('bulkCategorySelect'),
+    toast: document.getElementById('toast'),
+    catModal: document.getElementById('categoryModal'),
+    modalTitle: document.getElementById('modalCatTitle'),
+    modalCta: document.getElementById('modalShowCta'),
+    modalSeo: document.getElementById('modalSeoText')
+};
+
+function showToast(msg) {
+    dom.toast.textContent = msg;
+    dom.toast.style.visibility = 'visible';
+    setTimeout(() => { dom.toast.style.visibility = 'hidden'; }, 3000);
+}
+
+function openCategorySettings(cat) {
+    dom.modalTitle.textContent = "Configuración: " + cat;
+    dom.modalCta.checked = state.categoryMeta[cat]?.show_cta || false;
+    dom.catModal.style.display = 'flex';
+    dom.catModal.dataset.currentCat = cat;
+}
+
+function closeCategorySettings() {
+    dom.catModal.style.display = 'none';
+}
+
+function saveCategorySettings() {
+    const cat = dom.catModal.dataset.currentCat;
+    if(!state.categoryMeta[cat]) state.categoryMeta[cat] = {};
+    state.categoryMeta[cat].show_cta = dom.modalCta.checked;
+    closeCategorySettings();
+    showToast("Configuración guardada");
+}
+
+// Check if product is anywhere in the catalog
+function isProductInCatalog(id) {
+    for (const cat in state.catalog) {
+        if (state.catalog[cat].includes(id)) return true;
+    }
+    return false;
+}
+
+window.toggleCategory = (cat) => {
+    const el = document.querySelector(`.category-items[data-cat="${cat}"]`);
+    const icon = document.querySelector(`.cat-toggle-icon[data-cat="${cat}"]`);
+    if(el) {
+        if(el.style.display === 'none') {
+            el.style.display = 'block';
+            if(icon) icon.textContent = '▼';
+        } else {
+            el.style.display = 'none';
+            if(icon) icon.textContent = '▶';
+        }
+    }
+};
+
+window.toggleAllCategories = () => {
+    const items = document.querySelectorAll('.category-items');
+    const icons = document.querySelectorAll('.cat-toggle-icon');
+    if(items.length === 0) return;
+    const hide = items[0].style.display !== 'none';
+    
+    items.forEach(el => el.style.display = hide ? 'none' : 'block');
+    icons.forEach(el => el.textContent = hide ? '▶' : '▼');
+};
+
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const res = await fetch("/api/load-catalog");
+        if(res.ok) {
+            const data = await res.json();
+            if(data.saas_products && data.saas_products.length > 0) {
+                state.saasProducts = data.saas_products;
+                
+                state.catalog = {};
+                data.selected_catalog.forEach(item => {
+                    if(!state.catalog[item.catalog_category]) {
+                        state.catalog[item.catalog_category] = [];
+                    }
+                    state.catalog[item.catalog_category].push(item.id);
+                });
+                
+                state.categoryMeta = data.category_meta || {};
+                
+                dom.status.textContent = "✅ Base cargada desde memoria (" + state.saasProducts.length + " productos)";
+                dom.btnSave.style.opacity = 1;
+                dom.btnSave.style.cursor = "pointer";
+                
+                const btnPDF = document.getElementById('btnDownloadPDF');
+                btnPDF.style.opacity = 1;
+                btnPDF.style.cursor = "pointer";
+                
+                const btnWP = document.getElementById('btnSyncWP');
+                btnWP.style.opacity = 1;
+                btnWP.style.cursor = "pointer";
+                
+                renderApp();
+            }
+        }
+    } catch(err) {
+        console.error("Error loading catalog from memory", err);
+    }
+});
+
+dom.file.addEventListener('change', async (e) => {
+    if(!e.target.files[0]) return;
+    
+    dom.status.textContent = "Cargando...";
+    const formData = new FormData();
+    formData.append("saas_file", e.target.files[0]);
+
+    try {
+        const res = await fetch("/api/upload-saas", { method: "POST", body: formData });
+        const data = await res.json();
+        
+        if(data.error) throw new Error(data.error);
+        
+        state.saasProducts = data.saas_products;
+        
+        // NO sobreescribimos state.catalog aquí. 
+        // Solo actualizamos los productos SaaS (precios y nombres nuevos) 
+        // para que el usuario no pierda los movimientos que no haya guardado aún.
+        
+        renderApp();
+        alert("¡Archivo CSV subido y precios actualizados con éxito!");
+        
+        dom.status.textContent = "✅ Base actualizada con el nuevo archivo (" + state.saasProducts.length + " productos)";
+        dom.btnSave.style.opacity = 1;
+        dom.btnSave.style.cursor = "pointer";
+        
+        const btnPDF = document.getElementById('btnDownloadPDF');
+        btnPDF.style.opacity = 1;
+        btnPDF.style.cursor = "pointer";
+        
+        const btnWP = document.getElementById('btnSyncWP');
+        btnWP.style.opacity = 1;
+        btnWP.style.cursor = "pointer";
+        
+        renderApp();
+    } catch(err) {
+        dom.status.textContent = "❌ Error: " + err.message;
+    }
+});
+
+dom.search.addEventListener('input', renderSaasList);
+dom.searchCat.addEventListener('input', renderCatalogList);
+
+function renderApp() {
+    updateCategoryDropdown();
+    renderSaasList();
+    renderCatalogList();
+}
+
+function updateCategoryDropdown() {
+    const categories = Object.keys(state.catalog);
+    let html = '<option value="">Selecciona categoría destino...</option>';
+    categories.forEach(cat => {
+        html += `<option value="${cat}">${cat}</option>`;
+    });
+    dom.bulkCatSelect.innerHTML = html;
+}
+
+function renderSaasList() {
+    const terms = dom.search.value.toLowerCase().split(' ').filter(Boolean);
+    const filtered = state.saasProducts.filter(p => {
+        if (terms.length === 0) return true;
+        const nameLower = p.name.toLowerCase();
+        const idLower = p.id.toLowerCase();
+        return terms.every(t => nameLower.includes(t) || idLower.includes(t));
+    }).slice(0, 150);
+    
+    dom.saasList.innerHTML = filtered.map(p => `
+        <label class="product-item" style="cursor: pointer;">
+            <div style="display: flex; align-items: center; flex: 1;">
+                <input type="checkbox" class="chk-box saas-chk" value="${p.id}">
+                <div>
+                    <div style="color: var(--text-muted); font-size: 11px;">#${p.id} - ${p.category}</div>
+                    <div>${p.name}</div>
+                </div>
+            </div>
+            <button class="add-btn" type="button" onclick="event.preventDefault(); addToCatalog('${p.id}')">➕</button>
+        </label>
+    `).join('');
+}
+
+function renderCatalogList() {
+    const terms = dom.searchCat.value.toLowerCase().split(' ').filter(Boolean);
+    let html = '';
+    
+    for(const cat in state.catalog) {
+        const filteredIds = state.catalog[cat].filter(id => {
+            if (terms.length === 0) return true;
+            if (id.startsWith('@@SUB@@')) return true;
+            const p = state.saasProducts.find(x => x.id === id);
+            if (!p) return terms.every(t => id.includes(t));
+            const nameLower = p.name.toLowerCase();
+            const idLower = p.id.toLowerCase();
+            return terms.every(t => nameLower.includes(t) || idLower.includes(t));
+        });
+        
+        if (terms.length > 0 && filteredIds.length === 0) continue;
+        
+        html += `<div class="category-block" data-cat-name="${cat}">
+            <div class="category-header">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div class="drag-handle cat-handle" style="cursor: grab;">≡</div>
+                    <span style="font-weight: bold; color: var(--text-main); font-size: 16px;">${cat}</span>
+                    <button onclick="renameCategory('${cat}')" title="Renombrar Categoría" style="background:none;border:none;cursor:pointer;font-size:14px;opacity:0.6;">✏️</button>
+                    <span class="badge" style="background: var(--bg-color); color: var(--text-muted); border: 1px solid var(--border-color);">${state.catalog[cat].length} items</span>
+                </div>
+                <div>
+                    <button class="btn-secondary" onclick="promptAddSubcategory('${cat}')" style="font-size: 11px; padding: 4px 8px; margin-right: 5px;">+ Subcategoría</button>
+                    <button class="btn-secondary" onclick="openCategorySettings('${cat}')">⚙️ Ajustes</button>
+                    <button class="btn-danger" style="margin-left: 5px;" onclick="deleteCategory('${cat}')">🗑️</button>
+                </div>
+            </div>
+            <div class="category-items" data-cat="${cat}" style="min-height: 40px; display: block;">`;
+        
+        filteredIds.forEach(id => {
+            if (id.startsWith('@@SUB@@')) {
+                const subText = id.replace('@@SUB@@', '');
+                html += `
+                <label class="product-item" data-id="${id}" style="cursor: grab; background-color: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 4px; padding: 10px; margin-bottom: 5px; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; flex: 1;">
+                        <span style="color: #666; margin-right: 10px; cursor: grab;">☰</span>
+                        <div style="flex-grow: 1; text-align: center; font-weight: bold; color: #334155;">--- ${subText} ---</div>
+                    </div>
+                    <button class="remove-btn" type="button" onclick="event.preventDefault(); removeSubcategory('${cat}', '${id}')" style="padding: 4px 8px;">✕</button>
+                </label>
+                `;
+                return;
+            }
+
+            const p = state.saasProducts.find(x => x.id === id) || {name: "Producto No Encontrado en SaaS"};
+            html += `
+            <label class="product-item" data-id="${id}" style="cursor: grab;">
+                <div style="display: flex; align-items: center; flex: 1;">
+                    <span style="color: #666; margin-right: 10px; cursor: grab;">☰</span>
+                    <input type="checkbox" class="chk-box cat-chk" data-cat="${cat}" value="${id}">
+                    <div style="flex: 1; min-width: 0; margin-right: 15px;">
+                        <div style="color: var(--text-muted); font-size: 11px;">#${id}</div>
+                        <div style="word-break: break-word; line-height: 1.3; margin-top: 2px;">${p.name}</div>
+                    </div>
+                </div>
+                <button class="remove-btn" type="button" onclick="event.preventDefault(); removeFromCatalog('${cat}', '${id}')">❌</button>
+            </label>
+            `;
+        });
+        
+        html += `</div></div>`;
+    }
+    dom.catalogList.innerHTML = html;
+
+    // Initialize Sortable for Categories
+    if(window.Sortable) {
+        new Sortable(dom.catalogList, {
+            animation: 200,
+            handle: '.cat-handle',
+            ghostClass: 'sortable-ghost',
+            scroll: true,
+            scrollSensitivity: 80,
+            scrollSpeed: 20,
+            onEnd: function (evt) {
+                // Reorder categories in state
+                const newOrder = Array.from(dom.catalogList.children).map(el => el.getAttribute('data-cat-name'));
+                const newState = {};
+                newOrder.forEach(cat => {
+                    if(cat) newState[cat] = state.catalog[cat];
+                });
+                state.catalog = newState;
+                updateCategoryDropdown();
+            }
+        });
+
+        // Initialize Sortable for items inside categories
+        const catContainers = dom.catalogList.querySelectorAll('.category-items');
+        catContainers.forEach(container => {
+            new Sortable(container, {
+                group: 'shared', // set both lists to same group to allow dragging between them
+                animation: 150,
+                scroll: true,
+                scrollSensitivity: 80,
+                scrollSpeed: 20,
+                onEnd: function (evt) {
+                    // Update state for all categories since items might have moved between them
+                    catContainers.forEach(c => {
+                        const catName = c.getAttribute('data-cat');
+                        const itemIds = Array.from(c.children).map(el => el.getAttribute('data-id')).filter(Boolean);
+                        state.catalog[catName] = itemIds;
+                    });
+                }
+            });
+        });
+    }
+}
+
+window.addToCatalog = (id) => {
+    const targetCat = dom.bulkCatSelect.value;
+    if(!targetCat) {
+        alert("⚠️ Por favor, selecciona una 'categoría destino' en el menú desplegable arriba a la izquierda antes de agregar productos.");
+        return;
+    }
+    
+    if (isProductInCatalog(id)) {
+        alert("⚠️ Este producto ya está en el catálogo en alguna categoría.");
+        return;
+    }
+    
+    state.catalog[targetCat].push(id);
+    renderCatalogList();
+    showToast("✅ Producto agregado");
+};
+
+window.addSelected = () => {
+    const targetCat = dom.bulkCatSelect.value;
+    if(!targetCat) {
+        alert("⚠️ Selecciona una categoría destino arriba.");
+        return;
+    }
+    
+    const checkboxes = document.querySelectorAll('.saas-chk:checked');
+    let added = 0;
+    let duplicates = 0;
+    
+    checkboxes.forEach(chk => {
+        const id = chk.value;
+        if (isProductInCatalog(id)) {
+            duplicates++;
+        } else {
+            state.catalog[targetCat].push(id);
+            added++;
+        }
+        chk.checked = false; // reset
+    });
+    
+    if(added > 0) {
+        renderCatalogList();
+        let msg = `✅ ${added} productos agregados.`;
+        if (duplicates > 0) msg += ` (${duplicates} ignorados por estar duplicados)`;
+        showToast(msg);
+    } else if (duplicates > 0) {
+        alert("⚠️ Todos los productos seleccionados ya estaban en el catálogo.");
+    }
+};
+
+window.removeFromCatalog = (cat, id) => {
+    state.catalog[cat] = state.catalog[cat].filter(x => x !== id);
+    renderCatalogList();
+};
+
+window.removeSelected = () => {
+    const checkboxes = document.querySelectorAll('.cat-chk:checked');
+    if(checkboxes.length === 0) return;
+    
+    if(confirm(`¿Eliminar ${checkboxes.length} productos del catálogo?`)) {
+        checkboxes.forEach(chk => {
+            const cat = chk.getAttribute('data-cat');
+            const id = chk.value;
+            state.catalog[cat] = state.catalog[cat].filter(x => x !== id);
+        });
+        renderCatalogList();
+    }
+};
+
+window.deleteCategory = (cat) => {
+    if(confirm("¿Eliminar categoría '" + cat + "' y todos sus productos?")) {
+        delete state.catalog[cat];
+        updateCategoryDropdown();
+        renderCatalogList();
+    }
+};
+
+window.renameCategory = (oldCat) => {
+    const newCat = prompt("Nuevo nombre para la categoría:", oldCat);
+    if (!newCat || newCat === oldCat) return;
+    if (state.catalog[newCat]) {
+        alert("Ya existe una categoría con ese nombre.");
+        return;
+    }
+    
+    // Create new object to preserve category order
+    const newState = {};
+    for (const key in state.catalog) {
+        if (key === oldCat) {
+            newState[newCat] = state.catalog[oldCat];
+        } else {
+            newState[key] = state.catalog[key];
+        }
+    }
+    state.catalog = newState;
+    updateCategoryDropdown();
+    renderCatalogList();
+};
+
+dom.btnAddCat.addEventListener('click', () => {
+    const name = prompt("Nombre de la nueva categoría:");
+    if(name && !state.catalog[name]) {
+        state.catalog[name] = [];
+        updateCategoryDropdown();
+        renderCatalogList();
+    }
+});
+
+dom.btnSave.addEventListener('click', async () => {
+    if(Object.keys(state.catalog).length === 0) return;
+    
+    dom.btnSave.textContent = "⏳ Guardando...";
+    try {
+        const res = await fetch("/api/save-catalog", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ catalog: state.catalog })
+        });
+        const data = await res.json();
+        if(data.error) throw new Error(data.error);
+        
+        alert("¡Catálogo guardado con éxito! El archivo productos_seleccionados.csv se ha actualizado.");
+    } catch(err) {
+        alert("Error al guardar: " + err.message);
+    } finally {
+        dom.btnSave.textContent = "💾 2. Guardar Catálogo Final";
+    }
+});
+
+window.downloadPDF = async () => {
+    if(Object.keys(state.catalog).length === 0) {
+        alert("El catálogo está vacío. Agrega productos primero.");
+        return;
+    }
+    
+    const btn = document.getElementById('btnDownloadPDF');
+    const originalText = btn.innerHTML;
+    btn.textContent = "⏳ Generando PDF...";
+    btn.style.opacity = 0.5;
+    
+    try {
+        const payload = {
+            catalog: state.catalog,
+            saasProducts: state.saasProducts,
+            categoryMeta: state.categoryMeta
+        };
+        
+        const res = await fetch("/api/generate-pdf", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        
+        if(!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.error || "Error al generar PDF");
+        }
+        
+        // Handle file download
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "Catalogo_Disgraf.pdf";
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+        
+        showToast("✅ PDF Generado con éxito");
+    } catch(err) {
+        alert("Error al generar PDF: " + err.message);
+    } finally {
+        btn.innerHTML = originalText;
+        btn.style.opacity = 1;
+    }
+};
+
+window.restoreBackup = async () => {
+    if(!confirm("¿Seguro que quieres deshacer la última subida y restaurar los precios anteriores?")) return;
+    
+    try {
+        const res = await fetch("/api/restore-backup", { method: "POST" });
+        const data = await res.json();
+        
+        if(data.error) throw new Error(data.error);
+        
+        alert("✅ " + data.message + " La página se recargará ahora.");
+        window.location.reload();
+    } catch(err) {
+        alert("❌ Error: " + err.message);
+    }
+};
+
+window.syncWP = async () => {
+    if(Object.keys(state.catalog).length === 0) {
+        alert("El catálogo está vacío. Agrega productos primero.");
+        return;
+    }
+    
+    const btn = document.getElementById('btnSyncWP');
+    const originalText = btn.innerHTML;
+    btn.textContent = "⏳ Sincronizando con WP...";
+    btn.style.opacity = 0.5;
+    
+    try {
+        const payload = {
+            catalog: state.catalog,
+            saasProducts: state.saasProducts,
+            categoryMeta: state.categoryMeta
+        };
+        
+        const res = await fetch("/api/sync-wordpress", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        
+        const data = await res.json();
+        
+        if(data.error) throw new Error(data.error);
+        
+        let msg = `✅ Sincronización completa.\n\nSe procesaron ${data.results.length} categorías:\n`;
+        let created = 0; let updated = 0;
+        data.results.forEach(r => {
+            if(r.action === 'created') created++;
+            if(r.action === 'updated') updated++;
+        });
+        msg += `- ${created} páginas nuevas (Borrador)\n`;
+        msg += `- ${updated} páginas actualizadas (Borrador)\n\n`;
+        msg += "Revisa tu panel de WordPress para ver los borradores.";
+        
+        alert(msg);
+    } catch(err) {
+        alert("Error al sincronizar con WordPress: " + err.message);
+    } finally {
+        btn.innerHTML = originalText;
+        btn.style.opacity = 1;
+    }
+};
+
+let currentEditingCategory = null;
+
+window.promptAddSubcategory = (catName) => {
+    const subName = prompt("Escribe el nombre de la subcategoría (agrupará los productos debajo de ella):");
+    if (subName && subName.trim()) {
+        const subId = "@@SUB@@" + subName.trim();
+        state.catalog[catName].push(subId);
+        renderApp();
+    }
+};
+
+window.removeSubcategory = (catName, subId) => {
+    if(confirm("¿Seguro que deseas eliminar esta subcategoría?")) {
+        state.catalog[catName] = state.catalog[catName].filter(id => id !== subId);
+        renderApp();
+    }
+};
+
+window.openCategorySettings = (catName) => {
+    currentEditingCategory = catName;
+    document.getElementById('modalCatTitle').textContent = `Ajustes: ${catName}`;
+    
+    // Load current config
+    const meta = state.categoryMeta[catName] || {};
+    document.getElementById('modalShowCta').checked = meta.show_cta || false;
+    document.getElementById('modalSeoText').value = meta.seo_text || "";
+    
+    // Show Modal
+    const modal = document.getElementById('categoryModal');
+    modal.style.display = 'flex';
+};
+
+window.closeCategorySettings = () => {
+    document.getElementById('categoryModal').style.display = 'none';
+    currentEditingCategory = null;
+};
+
+window.saveCategorySettings = async () => {
+    if(!currentEditingCategory) return;
+    
+    if(!state.categoryMeta[currentEditingCategory]) {
+        state.categoryMeta[currentEditingCategory] = {};
+    }
+    
+    state.categoryMeta[currentEditingCategory].show_cta = document.getElementById('modalShowCta').checked;
+    state.categoryMeta[currentEditingCategory].seo_text = document.getElementById('modalSeoText').value;
+    
+    closeCategorySettings();
+    
+    // Auto-save to backend so user doesn't have to remember to click "Guardar Catálogo"
+    try {
+        const payload = {
+            catalog: state.catalog,
+            categoryMeta: state.categoryMeta
+        };
+        await fetch("/api/save-catalog", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        showToast("✅ Configuración guardada permanentemente.");
+    } catch(err) {
+        showToast("❌ Error al guardar la configuración.");
+    }
+};
+
+</script>
+{% endblock %}

@@ -1,0 +1,440 @@
+{% extends "base.html" %}
+
+{% block title %}Marketing IA - Disgraf Hub{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    <!-- Sidebar / Menú -->
+    <aside class="glass sidebar" style="width: 250px; min-width: 250px;">
+        <div class="sidebar-header">
+            <h2>Disgraf OS</h2>
+        </div>
+        
+        <ul class="nav-links">
+            <li style="margin-bottom: 15px;"><a href="/v2" target="_blank" style="color: #38bdf8; font-weight: bold; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56,189,248,0.3);">🌐 Ver Sitio Público</a></li>
+            <li><a href="/dashboard">Panel de Control</a></li>
+            <li><a href="/cotizador">Cotizador Rápido</a></li>
+            <li><a href="/clientes">Ficha de Clientes</a></li>
+            {% if user.role == "admin" %}
+            <li><a href="/marketing" class="active">Marketing IA</a></li>
+            <li><a href="/media">Gestor de Medios</a></li>
+            <li><a href="/precios">Gestor de Catálogo</a></li>
+            {% endif %}
+        </ul>
+        
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-details">
+                    <div>{{ user.username | title }}</div>
+                    <div class="user-role">Administrador</div>
+                </div>
+                <a href="/logout" class="logout-btn">Salir</a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content" style="padding: 20px; overflow-y: auto; height: 100vh;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <div>
+                <h1 style="color: #fff; margin-bottom: 5px;">Motor de Marketing IA 🚀</h1>
+                <p style="color: var(--text-muted); font-size: 14px;">Gestión de Sitios Satélites y Automatización SEO</p>
+            </div>
+            <button class="btn-primary" onclick="saveConfig()" style="background: #10b981;">Guardar Configuración</button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <!-- Satélites -->
+            <div class="glass action-card" style="padding: 20px;">
+                <h3>🌐 Dominios Satélites (PBN)</h3>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">Dominios externos donde la IA publicará contenido.</p>
+                
+                <div id="satellitesList" style="margin-bottom: 15px;">
+                    <!-- Satellite inputs will render here -->
+                </div>
+                <button onclick="addInput('satellitesList')" class="btn-primary" style="padding: 5px 10px; font-size: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">+ Agregar Dominio</button>
+                
+                <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 20px 0;">
+                
+                <h3>⏱️ Frecuencia de Publicación</h3>
+                <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+                    <input type="number" id="freqInput" class="form-control" value="2" min="1" max="14" style="width: 60px; padding: 5px; text-align: center;">
+                    <span style="color: var(--text-muted); font-size: 14px;">artículos por semana (en cada dominio)</span>
+                </div>
+            </div>
+
+            <!-- Fuentes -->
+            <div class="glass action-card" style="padding: 20px;">
+                <h3>📚 Fuentes de Inspiración</h3>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">URLs de marcas y canales de YouTube para extraer conocimiento.</p>
+                
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                    <h4 style="font-size: 14px; color: #38bdf8; margin:0;">Sitios Web de Fabricantes</h4>
+                    <label style="font-size: 12px; color: #94a3b8; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                        <input type="radio" name="selected_source" value="" checked>
+                        <span>🔀 Usar Fuente Aleatoria (Automático)</span>
+                    </label>
+                </div>
+                <div id="websitesList" style="margin-bottom: 15px;">
+                    <!-- Website inputs will render here -->
+                </div>
+                <button onclick="addInput('websitesList')" class="btn-primary" style="padding: 5px 10px; font-size: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">+ Agregar Web</button>
+                
+                <h4 style="margin: 20px 0 10px 0; font-size: 14px; color: #ef4444;">Canales de YouTube</h4>
+                <div id="youtubeList" style="margin-bottom: 15px;">
+                    <!-- Youtube inputs will render here -->
+                </div>
+                <button onclick="addInput('youtubeList')" class="btn-primary" style="padding: 5px 10px; font-size: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">+ Agregar Canal</button>
+            </div>
+            
+            <!-- Cola de Trabajo -->
+            <!-- Cola de Trabajo (Headless CMS) -->
+            <div class="glass action-card" style="grid-column: 1 / -1; padding: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3>🤖 Gestor de Contenidos Autónomo (CMS)</h3>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <input type="text" id="customTopicInput" placeholder="Tema opcional (Ej: Vinilo alto tránsito)" class="form-control" style="padding: 5px 10px; border-radius: 4px; background: rgba(255,255,255,0.9); color: #0f172a; border: none; font-size: 13px; width: 250px;">
+                        <select id="channelSelect" class="form-control" style="padding: 5px; border-radius: 4px; background: rgba(255,255,255,0.9); color: #0f172a; border: none; font-size: 13px;">
+                            <option value="oficio_carteleria">Blog: Oficio Cartelería (Insumos Gráficos)</option>
+                            <option value="car_wrapping">Blog: Car Wrapping (Ploteo Vehicular)</option>
+                            <option value="instagram_disgraf">Instagram: Disgraf Oficial</option>
+                        </select>
+                        <button class="btn-primary" id="btn-force-exec" onclick="forceGenerate()" style="padding: 6px 15px; font-size: 13px; background: #ec4899; display: flex; align-items: center; gap: 8px;">
+                            <span id="gen-spinner" style="display:none;">⏳</span> Forzar Generación
+                        </button>
+                    </div>
+                </div>
+                
+                <h4 style="color: #38bdf8; margin-top: 20px; margin-bottom: 15px;">📋 Bandeja de Borradores</h4>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; background: rgba(255,255,255,0.05); border-radius: 8px; overflow: hidden;">
+                        <thead>
+                            <tr style="background: rgba(0,0,0,0.3);">
+                                <th style="padding: 12px; border-bottom: 1px solid var(--border-color); color: #cbd5e1;">Fecha</th>
+                                <th style="padding: 12px; border-bottom: 1px solid var(--border-color); color: #cbd5e1;">Canal</th>
+                                <th style="padding: 12px; border-bottom: 1px solid var(--border-color); color: #cbd5e1;">Título</th>
+                                <th style="padding: 12px; border-bottom: 1px solid var(--border-color); color: #cbd5e1;">Estado</th>
+                                <th style="padding: 12px; border-bottom: 1px solid var(--border-color); color: #cbd5e1;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="drafts-table-body">
+                            <!-- Draft rows injected here via JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 20px;">
+                    <p style="font-size: 12px; color: var(--text-muted); font-family: monospace;">
+                        > MOTOR DE CONOCIMIENTO: Configurado con fuentes de Orafol, Avery, Arlon.<br>
+                        > MÉTODO: Scrapeo autónomo + Traducción Alemana/Inglesa + Redacción experta (Gemini 1.5 Pro).<br>
+                        > DESTINO: Guardado como 'Borrador' en Headless CMS. Solo se publica mediante API externa tras aprobación manual.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+    <!-- Toast Notification -->
+    <div id="toast" style="visibility: hidden; min-width: 250px; background-color: #10b981; color: #fff; text-align: center; border-radius: 6px; padding: 16px; position: fixed; z-index: 1000; left: 50%; bottom: 30px; transform: translateX(-50%); font-size: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);"></div>
+
+    <!-- Hidden file input for image uploads -->
+    <input type="file" id="imageUploadInput" accept="image/*" style="display:none;" onchange="handleImageUpload(event)">
+    
+    <!-- Edit Draft Modal -->
+    <div id="editModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center;">
+        <div style="background: var(--bg-color); width: 80%; max-width: 900px; max-height: 90vh; border-radius: 12px; border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+            <div style="padding: 15px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02);">
+                <h3 style="margin: 0; color: #fff;">✏️ Editar Artículo</h3>
+                <button onclick="closeEditModal()" style="background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer;">&times;</button>
+            </div>
+            <div style="padding: 20px; overflow-y: auto; flex: 1;">
+                <input type="hidden" id="editPostId">
+                <label style="display: block; margin-bottom: 5px; color: #cbd5e1; font-size: 14px;">Título</label>
+                <input type="text" id="editTitle" class="form-control" style="width: 100%; padding: 10px; margin-bottom: 15px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: #fff; border-radius: 6px;">
+                
+                <label style="display: block; margin-bottom: 5px; color: #cbd5e1; font-size: 14px;">Contenido HTML</label>
+                <textarea id="editContent" class="form-control" style="width: 100%; height: 350px; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: #fff; border-radius: 6px; font-family: monospace; font-size: 13px; line-height: 1.5; resize: vertical;"></textarea>
+            </div>
+            <div style="padding: 15px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px; background: rgba(255,255,255,0.02);">
+                <button onclick="closeEditModal()" style="padding: 8px 16px; background: transparent; border: 1px solid var(--border-color); color: #cbd5e1; border-radius: 6px; cursor: pointer;">Cancelar</button>
+                <button id="btnSaveEdit" onclick="saveDraftEdit()" style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        let currentUploadPostId = null;
+        let allDrafts = []; // Guardar los borradores localmente para editarlos
+
+        function openEditModal(postId) {
+            const draft = allDrafts.find(d => d.id === postId);
+            if (!draft) return;
+            
+            document.getElementById('editPostId').value = draft.id;
+            document.getElementById('editTitle').value = draft.title;
+            document.getElementById('editContent').value = draft.content || '';
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        async function saveDraftEdit() {
+            const id = document.getElementById('editPostId').value;
+            const title = document.getElementById('editTitle').value;
+            const content = document.getElementById('editContent').value;
+            const btn = document.getElementById('btnSaveEdit');
+            
+            btn.disabled = true;
+            btn.textContent = "Guardando...";
+            
+            try {
+                const res = await fetch(`/api/marketing/drafts/${id}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ title, content })
+                });
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    showToast("✅ Artículo actualizado");
+                    closeEditModal();
+                    loadDrafts();
+                } else {
+                    showToast("❌ Error al guardar: " + data.error, true);
+                }
+            } catch(e) {
+                showToast("Error de conexión", true);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Guardar Cambios";
+            }
+        }
+
+        function triggerImageUpload(postId) {
+            currentUploadPostId = postId;
+            document.getElementById('imageUploadInput').click();
+        }
+
+        async function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file || !currentUploadPostId) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                showToast("Subiendo imagen...", false);
+                const res = await fetch(`/api/marketing/drafts/${currentUploadPostId}/image`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    showToast("✅ Imagen subida correctamente");
+                } else {
+                    showToast("❌ Error al subir: " + data.error, true);
+                }
+            } catch (err) {
+                showToast("Error de conexión al subir la imagen", true);
+            } finally {
+                // Reset input
+                event.target.value = '';
+                currentUploadPostId = null;
+            }
+        }
+
+    function showToast(msg, isError = false) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.style.backgroundColor = isError ? '#ef4444' : '#10b981';
+        toast.style.visibility = 'visible';
+        setTimeout(() => { toast.style.visibility = 'hidden'; }, 3000);
+    }
+
+function createInputRow(val = '', isSource = false) {
+    const radioHtml = isSource ? `<input type="radio" name="selected_source" style="margin-top: 14px; transform: scale(1.3); cursor: pointer;" title="Fijar como fuente manual">` : '';
+    return `
+        <div style="display: flex; gap: 10px; margin-bottom: 10px; width: 100%;" class="input-row">
+            ${radioHtml}
+            <input type="text" class="form-control list-input" value="${val}" style="flex: 1; padding: 10px; border: 1px solid #94a3b8; border-radius: 6px; color: #0f172a; background: #ffffff;" placeholder="Pegar enlace aquí (ej: https://youtube.com/...)">
+            <button onclick="this.parentElement.remove()" style="padding: 5px 15px; background: #ef4444; color: white; font-weight: bold; border-radius: 6px; border: none; cursor: pointer; width: auto !important;">Borrar</button>
+        </div>
+    `;
+}
+
+function addInput(containerId, val = '') {
+    const isSource = containerId === 'websitesList' || containerId === 'youtubeList';
+    document.getElementById(containerId).insertAdjacentHTML('beforeend', createInputRow(val, isSource));
+}
+
+async function loadConfig() {
+    try {
+        const res = await fetch('/api/marketing/config');
+        const data = await res.json();
+        
+        document.getElementById('freqInput').value = data.frequency || 2;
+        
+        const satContainer = document.getElementById('satellitesList');
+        satContainer.innerHTML = '';
+        if (data.satellites && data.satellites.length > 0) {
+            data.satellites.forEach(val => addInput('satellitesList', val));
+        } else {
+            addInput('satellitesList', '');
+        }
+        
+        const webContainer = document.getElementById('websitesList');
+        webContainer.innerHTML = '';
+        if (data.sources && data.sources.websites && data.sources.websites.length > 0) {
+            data.sources.websites.forEach(val => addInput('websitesList', val));
+        } else {
+            addInput('websitesList', '');
+        }
+        
+        const ytContainer = document.getElementById('youtubeList');
+        ytContainer.innerHTML = '';
+        if (data.sources && data.sources.youtube && data.sources.youtube.length > 0) {
+            data.sources.youtube.forEach(val => addInput('youtubeList', val));
+        } else {
+            addInput('youtubeList', '');
+        }
+        
+    } catch(err) {
+        console.error("Error al cargar configuración", err);
+    }
+}
+
+async function saveConfig() {
+    const getValues = (containerId) => {
+        const inputs = document.getElementById(containerId).querySelectorAll('.list-input');
+        return Array.from(inputs).map(inp => inp.value.trim()).filter(val => val !== '');
+    };
+    
+    const payload = {
+        satellites: getValues('satellitesList'),
+        frequency: parseInt(document.getElementById('freqInput').value) || 2,
+        sources: {
+            websites: getValues('websitesList'),
+            youtube: getValues('youtubeList')
+        }
+    };
+    
+    try {
+        const res = await fetch('/api/marketing/config', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        
+        if(res.ok) {
+            showToast("Configuración Guardada");
+        } else {
+            showToast("Error al guardar", true);
+        }
+    } catch(err) {
+        console.error(err);
+        showToast("Error de conexión", true);
+    }
+}
+
+async function forceGenerate() {
+    const btn = document.getElementById('btn-force-exec');
+    const spinner = document.getElementById('gen-spinner');
+    const channel = document.getElementById('channelSelect').value;
+    const customTopic = document.getElementById('customTopicInput').value;
+    
+    let specific_source = "";
+    const selectedRadio = document.querySelector('input[name="selected_source"]:checked');
+    if (selectedRadio && selectedRadio.value !== "") {
+        specific_source = selectedRadio.parentElement.querySelector('.list-input').value;
+    }
+    
+    btn.disabled = true;
+    spinner.style.display = 'inline-block';
+    
+    try {
+        const res = await fetch('/api/marketing/generate-article', { 
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ channel: channel, specific_source: specific_source, custom_topic: customTopic })
+        });
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+            showToast("✅ Artículo generado y guardado en Borradores");
+            loadDrafts();
+        } else {
+            showToast("❌ Error al generar: " + data.error, true);
+        }
+    } catch(e) {
+        showToast("Error de conexión", true);
+    } finally {
+        btn.disabled = false;
+        spinner.style.display = 'none';
+    }
+}
+
+async function loadDrafts() {
+    try {
+        const res = await fetch('/api/marketing/drafts');
+        allDrafts = await res.json();
+        const tbody = document.getElementById('drafts-table-body');
+        tbody.innerHTML = '';
+        
+        allDrafts.forEach(draft => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="padding: 12px; border-bottom: 1px solid var(--border-color);">${draft.date}</td>
+                <td style="padding: 12px; border-bottom: 1px solid var(--border-color); color: #ec4899; font-weight: bold;">${draft.channel || 'oficio_carteleria'}</td>
+                <td style="padding: 12px; border-bottom: 1px solid var(--border-color); font-weight: 500;">${draft.title}</td>
+                <td style="padding: 12px; border-bottom: 1px solid var(--border-color);">
+                    <span style="background: ${draft.status === 'published' ? '#10b981' : '#f59e0b'}; color: white; padding: 3px 8px; border-radius: 12px; font-size: 11px;">
+                        ${draft.status === 'published' ? 'Aprobado' : 'Borrador'}
+                    </span>
+                </td>
+                <td style="padding: 12px; border-bottom: 1px solid var(--border-color);">
+                    <button onclick="previewDraft('${draft.id}')" style="padding: 5px 10px; background: #38bdf8; color: white; border: none; border-radius: 4px; cursor: pointer;">👀 Ver</button>
+                    <button onclick="openEditModal('${draft.id}')" style="padding: 5px 10px; background: #eab308; color: white; border: none; border-radius: 4px; cursor: pointer; margin-left: 5px;" title="Editar texto">✏️ Editar</button>
+                    <button onclick="triggerImageUpload('${draft.id}')" style="padding: 5px 10px; background: #6366f1; color: white; border: none; border-radius: 4px; cursor: pointer; margin-left: 5px;" title="Subir imagen de portada">🖼️ Foto</button>
+                    ${draft.status !== 'published' ? `<button onclick="approveDraft('${draft.id}')" style="padding: 5px 10px; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer; margin-left: 5px;">✅ Aprobar</button>` : ''}
+                    <button onclick="deleteDraft('${draft.id}')" style="padding: 5px 10px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; margin-left: 5px;">🗑️ Borrar</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch(e) {
+        console.error("Error loading drafts", e);
+    }
+}
+
+async function approveDraft(id) {
+    if(!confirm("¿Aprobar este artículo para que sea publicado por el satélite?")) return;
+    try {
+        await fetch(`/api/marketing/drafts/${id}/approve`, {method: 'POST'});
+        showToast("✅ Artículo Aprobado para Publicación");
+        loadDrafts();
+    } catch(e) {}
+}
+
+async function deleteDraft(id) {
+    if(!confirm("¿Estás seguro de que deseas borrar este artículo permanentemente?")) return;
+    try {
+        await fetch(`/api/marketing/drafts/${id}`, {method: 'DELETE'});
+        showToast("🗑️ Artículo eliminado");
+        loadDrafts();
+    } catch(e) {}
+}
+
+function previewDraft(id) {
+    // In a real app we'd fetch the draft or find it in the array and show a modal.
+    // For now, let's open it in a new window or just alert.
+    window.open(`/api/marketing/drafts/${id}/preview`, '_blank');
+}
+
+// Inicializar
+loadConfig();
+loadDrafts();
+</script>
+{% endblock %}
