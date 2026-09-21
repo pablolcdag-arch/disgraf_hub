@@ -1,0 +1,24 @@
+{
+  "satellites": [
+    "oficiocarteleria.com.ar"
+  ],
+  "frequency": 2,
+  "sources": {
+    "websites": [
+      "https://www.orafol.com/es",
+      "https://graphictac.com/",
+      "https://www.marabu-northamerica.com/products/product-overview/liquid-coatings/clearshield.html",
+      "https://crivo.com.ar/",
+      "https://www.helioday.com.ar/",
+      "https://insumospolgraf.com.ar/",
+      "https://www.eleaserimarket.com.ar/",
+      "https://www.prosrl.com.ar/#!/-bienvenidos-welcome/",
+      "https://giolite.com/"
+    ],
+    "youtube": [
+      "Expressions Vinyl",
+      "ARTESIVE",
+      "SiserNorthAmerica"
+    ]
+  }
+}

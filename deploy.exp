@@ -1,0 +1,48 @@
+#!/usr/bin/expect -f
+set timeout -1
+set ip "149.50.151.121"
+set user "root"
+set password "disgraF1.insumos"
+set port "5023"
+set local_dir "/Users/pablostiefel/Documents/Disgraf_Hub"
+set remote_dir "/opt/disgraf_hub"
+
+# 1. Upload Python modules
+spawn scp -o StrictHostKeyChecking=no -P $port \
+    $local_dir/main.py \
+    $local_dir/seo_service.py \
+    $local_dir/seo_agent.py \
+    $local_dir/utils.py \
+    $local_dir/test_gemini.py \
+    $local_dir/requirements.txt \
+    $user@$ip:$remote_dir/
+expect {
+    -nocase "assword:" {
+        send "$password\r"
+        exp_continue
+    }
+    eof
+}
+
+# 2. Upload templates directory
+spawn scp -o StrictHostKeyChecking=no -P $port -r $local_dir/templates $user@$ip:$remote_dir/
+expect {
+    -nocase "assword:" {
+        send "$password\r"
+        exp_continue
+    }
+    eof
+}
+
+# 3. Restart service
+spawn ssh -o StrictHostKeyChecking=no -p $port $user@$ip
+expect {
+    -nocase "assword:" {
+        send "$password\r"
+        expect "#"
+        send "systemctl restart disgraf-hub\r"
+        expect "#"
+        send "exit\r"
+    }
+}
+expect eof

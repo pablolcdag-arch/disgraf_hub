@@ -1,0 +1,32 @@
+# Entornos Virtuales
+venv/
+env/
+.venv/
+
+# Variables de entorno
+.env
+
+# Archivos de la base de datos (se ignora la db pero no la carpeta)
+data/*.db
+data/*.sqlite3
+
+# Python / Compilados
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Logs
+*.log
+logs/
+
+# Mac OS
+.DS_Store
+
+# IDEs
+.vscode/
+.idea/
+
+# Agentes / Antigravity locales
+.gemini/
+scratch/

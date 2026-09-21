@@ -1,0 +1,22 @@
+#!/usr/bin/expect -f
+set timeout -1
+set ip "149.50.151.121"
+set user "root"
+set password "disgraF1.insumos"
+set port "5023"
+
+spawn ssh -o StrictHostKeyChecking=no -p $port $user@$ip
+expect {
+    -nocase "assword:" {
+        send "$password\r"
+        expect "#"
+        send "cd /opt/disgraf_hub && source venv/bin/activate && pip install requests beautifulsoup4 python-dotenv\r"
+        expect "#"
+        send "grep -q 'GEMINI_API_KEY' .env || echo 'GEMINI_API_KEY=tu_clave_aqui' >> .env\r"
+        expect "#"
+        send "systemctl restart disgraf-hub\r"
+        expect "#"
+        send "exit\r"
+    }
+}
+expect eof

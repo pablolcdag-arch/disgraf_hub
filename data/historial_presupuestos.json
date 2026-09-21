@@ -1,0 +1,92 @@
+[
+  {
+    "id": "fcc08f00",
+    "date": "2026-08-19T11:08:22.643393",
+    "seller": "ventas",
+    "client": "Consumidor Final",
+    "total": 73308.66199999998,
+    "products": [
+      {
+        "name": "Oracal 651-70 Black -126cm",
+        "unit": "metro",
+        "price": 15079.61,
+        "quantity": 1.2,
+        "subtotal": 18095.532
+      },
+      {
+        "name": "Vinilo Corte Verde 02 Brillante  122cm",
+        "unit": "metro",
+        "price": 5258.37,
+        "quantity": 10,
+        "subtotal": 52583.7
+      },
+      {
+        "name": "Vinilo Corte Verde 03 Brillante  61cm",
+        "unit": "metro",
+        "price": 2629.43,
+        "quantity": 1,
+        "subtotal": 2629.43
+      }
+    ]
+  },
+  {
+    "id": "25e9b5e5",
+    "date": "2026-08-19T11:06:47.822251",
+    "seller": "ventas",
+    "client": "Consumidor Final",
+    "total": 19475799,
+    "products": [
+      {
+        "name": "Vinilo Corte Negro 01 Brillante  122cm",
+        "unit": "metro",
+        "price": 525837,
+        "quantity": 2,
+        "subtotal": 1051674
+      },
+      {
+        "name": "Oracal 651-21m Matte Yellow - 126cm",
+        "unit": "metro",
+        "price": 1734075,
+        "quantity": 10,
+        "subtotal": 17340750
+      },
+      {
+        "name": "Posi Papel Mito 328 122cm X 50mt",
+        "unit": "unidad",
+        "price": 1083375,
+        "quantity": 1,
+        "subtotal": 1083375
+      }
+    ]
+  },
+  {
+    "id": "c95a92f2",
+    "date": "2026-08-19T11:05:31.678460",
+    "seller": "ventas",
+    "client": "Consumidor Final",
+    "total": 292261.74,
+    "products": [
+      {
+        "name": "Vinilo Corte Negro 01 Brillante  122cm",
+        "unit": "metro",
+        "price": 5258.37,
+        "quantity": 2,
+        "subtotal": 10516.74
+      },
+      {
+        "name": "Oracal 651-21m Matte Yellow - 126cm",
+        "unit": "metro",
+        "price": 17340.75,
+        "quantity": 10,
+        "subtotal": 173407.5
+      },
+      {
+        "name": "Posi Papel Mito 328 122cm X 50mt",
+        "unit": "unidad",
+        "price": 108337.5,
+        "quantity": 1,
+        "subtotal": 108337.5
+      }
+    ]
+  }
+]
