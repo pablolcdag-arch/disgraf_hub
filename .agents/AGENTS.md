@@ -300,32 +300,32 @@ pytest tests/test_seo_service.py -v
 
 ---
 
-## 🚀 Deploy
+## 🚀 Deploy (CI/CD)
 
-### Proceso de deploy a VPS
+### 1. Despliegue Automático (GitHub Actions)
+El proceso de integración y despliegue continuo (CI/CD) está completamente automatizado a través de GitHub Actions.
+
+**Flujo (`.github/workflows/ci-cd.yml`):**
+1. Al hacer `push` a la rama `main`, se levanta un entorno virtual (Python 3.13).
+2. Se corren todos los tests automáticos (`pytest`).
+3. **Sólo si los tests pasan**, se copian los archivos al VPS de Donweb (vía SSH/SCP usando secretos configurados en el repo).
+4. Se reinicia automáticamente el servicio `disgraf-hub` de Uvicorn.
+
+### 2. Scripts de Deploy Locales (Fallback)
+Si por algún motivo GitHub Actions no está disponible, se pueden usar los scripts manuales.
+**⚠️ REGLA DE SEGURIDAD:** Los scripts de expect (`deploy.exp`, `check_logs.exp`, `deploy_fix.exp`) **no deben tener credenciales hardcodeadas**.
+Extraen las credenciales locales desde el archivo `.env.deploy` (el cual está excluido en `.gitignore`). Existe un `.env.deploy.example` de referencia.
+
 ```bash
-# Desde Mac local, en el directorio del proyecto:
+# Despliegue local (requiere .env.deploy)
 ./deploy.exp
-```
 
-**Qué hace `deploy.exp`:**
-1. Conecta por SSH al VPS Donweb
-2. Hace pull de los archivos actualizados
-3. Reinicia el servicio systemd de uvicorn
-4. Verifica que Nginx responda
-
-### Verificar logs post-deploy
-```bash
+# Verificar logs remotamente
 ./check_logs.exp
 ```
 
-### Rollback de emergencia
-```bash
-./deploy_fix.exp
-```
-
-### ⚠️ Regla de deploy
-Nunca hacer deploy sin haber verificado localmente que la app inicia sin errores.
+### ⚠️ Regla de deploy general
+Nunca empujar a `main` ni ejecutar `deploy.exp` sin haber verificado localmente que la app inicia y los tests pasan localmente sin errores.
 
 ---
 
