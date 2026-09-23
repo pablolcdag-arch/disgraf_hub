@@ -10,12 +10,14 @@
         </div>
         <ul class="nav-links">
             <li style="margin-bottom: 15px;"><a href="/v2" target="_blank" style="color: #38bdf8; font-weight: bold; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56,189,248,0.3);">🌐 Ver Sitio Público</a></li>
-            {% if user.role == "admin" %}
-            <li><a href="/precios">Gestor de Catálogo</a></li>
-            <li><a href="/dashboard">Sincronizar Web</a></li>
-            <li><a href="/dashboard">Marketing IA</a></li>
-            {% endif %}
+            <li><a href="/dashboard">Panel de Control</a></li>
             <li><a href="/cotizador" class="active">Cotizador Rápido</a></li>
+            <li><a href="/clientes">Ficha de Clientes</a></li>
+            {% if user.role == "admin" %}
+            <li><a href="/marketing">Marketing IA</a></li>
+            <li><a href="/media">Gestor de Medios</a></li>
+            <li><a href="/precios">Gestor de Catálogo</a></li>
+            {% endif %}
         </ul>
         <div class="sidebar-footer">
             <div class="user-info">
@@ -78,11 +80,11 @@
             <div class="glass" style="flex: 1.2; display: flex; flex-direction: column; overflow: hidden; background: rgba(0,0,0,0.2);">
                 <div style="padding: 15px; border-bottom: 1px solid var(--border-color); background: rgba(255,255,255,0.02); display: flex; justify-content: space-between; align-items: center;">
                     <h3 style="font-size: 16px; margin: 0;">Presupuesto Actual</h3>
-                    <select id="tipoComprobante" onchange="toggleTipoB(this.value === 'Factura B (Final / Interna)')" class="form-control" style="width: 250px; padding: 5px; background: rgba(0,0,0,0.3); color: white; border: 1px solid var(--border-color); border-radius: 4px;">
-                        <option value="Presupuesto">Presupuesto</option>
-                        <option value="Factura Electrónica A">Factura Electrónica A</option>
-                        <option value="Factura Electrónica B">Factura Electrónica B</option>
+                    <select id="tipoComprobante" onchange="toggleTipoB(this.value === 'Factura B (Final / Interna)' || this.value === 'Presupuesto B')" class="form-control" style="width: 250px; padding: 5px; background: rgba(0,0,0,0.3); color: white; border: 1px solid var(--border-color); border-radius: 4px;">
+                        <option value="Factura Electrónica A/B">Factura Electrónica A/B</option>
                         <option value="Factura B (Final / Interna)">Factura B (Final / Interna)</option>
+                        <option value="Presupuesto A" selected>Presupuesto A</option>
+                        <option value="Presupuesto B">Presupuesto B</option>
                     </select>
                 </div>
                 
@@ -269,7 +271,7 @@ window.clearCart = () => {
         state.cart = [];
         dom.clientName.value = '';
         state.tipoB = false;
-        if(document.getElementById('tipoComprobante')) document.getElementById('tipoComprobante').value = 'Presupuesto';
+        if(document.getElementById('tipoComprobante')) document.getElementById('tipoComprobante').value = 'Presupuesto A';
         state.globalDiscount = 0;
         document.getElementById('globalDiscount').value = '0';
         renderCart();
@@ -380,7 +382,7 @@ window.loadHistoryItem = (id) => {
     // Load quote options
     state.tipoB = quote.tipoB || false;
     if(document.getElementById('tipoComprobante')) {
-        document.getElementById('tipoComprobante').value = state.tipoB ? 'Factura B (Final / Interna)' : 'Presupuesto';
+        document.getElementById('tipoComprobante').value = state.tipoB ? 'Factura B (Final / Interna)' : 'Presupuesto A';
     }
     
     state.globalDiscount = quote.globalDiscount || 0;
@@ -617,14 +619,13 @@ function getQuotePayload() {
     });
     
     const finalTotal = total * (1 - (state.globalDiscount / 100));
-    const tipoComprobante = document.getElementById('tipoComprobante') ? document.getElementById('tipoComprobante').value : 'Presupuesto';
+    const tipoComprobante = document.getElementById('tipoComprobante') ? document.getElementById('tipoComprobante').value : 'Presupuesto A';
     
     return {
         client_name: dom.clientName.value.trim(),
         client_id: window.selectedClientId || null,
         products: products,
         total: finalTotal,
-        tipoB: state.tipoB,
         tipo_comprobante: tipoComprobante,
         globalDiscount: state.globalDiscount
     };
@@ -688,9 +689,11 @@ dom.btnCopyWa.addEventListener('click', async () => {
     const payload = getQuotePayload();
     let text = `Hola! 👋 Te paso el presupuesto solicitado:\n\n`;
     
+    const isTipoB = payload.tipo_comprobante === 'Factura B (Final / Interna)' || payload.tipo_comprobante === 'Presupuesto B';
+
     payload.products.forEach(p => {
         let descText = p.discount > 0 ? ` (Desc. ${p.discount}%)` : '';
-        let ivaText = payload.tipoB ? ` (IVA 10.5% inc.)` : ` + iva`;
+        let ivaText = isTipoB ? ` (IVA 10.5% inc.)` : ` + iva`;
         text += `• ${p.name} - ${formatPrice(p.price)} x ${p.quantity} ${p.unit} = ${formatPrice(p.subtotal)}${descText}${ivaText}\n`;
     });
     
@@ -698,7 +701,7 @@ dom.btnCopyWa.addEventListener('click', async () => {
         text += `\n✨ Descuento especial aplicado: ${payload.globalDiscount}%`;
     }
     
-    if (payload.tipoB) {
+    if (isTipoB) {
         text += `\n💰 Total (Final): ${formatPrice(payload.total)}`;
     } else {
         text += `\n💰 Total Estimado (+ IVA 21%): ${formatPrice(payload.total)}`;
@@ -739,19 +742,21 @@ dom.btnDownloadPDF.addEventListener('click', async () => {
         // Guardar comprobante
         let subtotalVenta = 0;
         let itemsVenta = [];
+        const showsIva = payload.tipo_comprobante === 'Presupuesto A' || payload.tipo_comprobante === 'Factura Electrónica A/B';
+        
         payload.products.forEach(p => {
             itemsVenta.push({
                 producto_id: p.id || 'N/A',
                 descripcion: p.name,
                 cantidad: p.quantity,
                 precio_unitario: p.price,
-                alicuota_iva: payload.tipo_comprobante.includes('Factura Electrónica') ? 21.0 : 0.0,
+                alicuota_iva: showsIva ? 21.0 : 0.0,
                 subtotal: p.subtotal
             });
             subtotalVenta += p.subtotal;
         });
-        const totalIva = payload.tipo_comprobante.includes('Factura Electrónica') ? payload.total * 0.21 : 0.0;
-        const totalFinalVenta = payload.tipo_comprobante.includes('Factura Electrónica') ? payload.total * 1.21 : payload.total;
+        const totalIva = showsIva ? payload.total * 0.21 : 0.0;
+        const totalFinalVenta = showsIva ? payload.total * 1.21 : payload.total;
 
         const ventaPayload = {
             cliente_id: payload.client_id || payload.client_name || 'Consumidor Final',

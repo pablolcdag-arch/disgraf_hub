@@ -64,7 +64,8 @@ async def api_log_quote(request: Request):
         "client_id": data.get("client_id"),
         "total": total,
         "products": products,
-        "tipoB": data.get("tipoB", False)
+        "tipo_comprobante": data.get("tipo_comprobante", "Presupuesto A"),
+        "tipoB": data.get("tipo_comprobante", "Presupuesto A") in ["Presupuesto B", "Factura B (Final / Interna)"]
     }
     history_data.insert(0, new_record)
     
@@ -133,7 +134,7 @@ async def api_generate_quote_pdf(request: Request):
         
     products = data.get("products", [])
     total = data.get("total", 0)
-    tipo_b = data.get("tipoB", False)
+    tipo_comprobante = data.get("tipo_comprobante", "Presupuesto A")
     global_discount = data.get("globalDiscount", 0)
     
     buffer = io.BytesIO()
@@ -165,7 +166,8 @@ async def api_generate_quote_pdf(request: Request):
         leading=12
     )
     
-    elements.append(Paragraph("<b>PRESUPUESTO DISGRAF</b>", title_style))
+    title_text = "COMPROBANTE DISGRAF" if "Factura" in tipo_comprobante else "PRESUPUESTO DISGRAF"
+    elements.append(Paragraph(f"<b>{title_text}</b>", title_style))
     elements.append(Spacer(1, 10))
     elements.append(Paragraph(f"<b>Fecha:</b> {datetime.datetime.now().strftime('%d/%m/%Y')}", info_style))
     elements.append(Paragraph(f"<b>Cliente:</b> {client_name}", info_style))
@@ -225,7 +227,7 @@ async def api_generate_quote_pdf(request: Request):
         alignment=2 
     )
     
-    if tipo_b:
+    if tipo_comprobante in ["Presupuesto B", "Factura B (Final / Interna)"]:
         elements.append(Paragraph(f"<b>Total (Final): {total_str}</b>", total_style))
     else:
         elements.append(Paragraph(f"<b>Total Estimado (+ IVA 21%): {total_str}</b>", total_style))
