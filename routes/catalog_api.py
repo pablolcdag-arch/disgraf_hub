@@ -16,6 +16,25 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
 router = APIRouter()
+@router.get("/api/export-maestro")
+async def api_export_maestro(request: Request):
+    user = get_current_user(request)
+    if not user or user["role"] != "admin":
+        return {"error": "Unauthorized"}
+        
+    from fastapi.responses import FileResponse
+    import os
+    
+    maestro_path = os.path.join(DATA_DIR, 'maestro_productos.csv')
+    if not os.path.exists(maestro_path):
+        return {"error": "El archivo maestro no existe aún. Por favor suba un CSV primero."}
+        
+    return FileResponse(
+        path=maestro_path, 
+        filename="maestro_productos_exportado.csv", 
+        media_type="text/csv"
+    )
+
 @router.post("/api/upload-saas")
 async def api_upload_saas(request: Request, saas_file: UploadFile = File(...)):
     user = get_current_user(request)
