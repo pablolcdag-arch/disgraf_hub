@@ -40,6 +40,44 @@
     .btn-add.added { background: #10b981; }
 
     .color-dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); vertical-align: middle; margin-right: 8px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }
+
+    /* RESPONSIVE CARDS (MOBILE) */
+    @media (max-width: 768px) {
+        .table-responsive { overflow-x: hidden; border: none; }
+        table, thead, tbody, th, td, tr { display: block; width: 100%; box-sizing: border-box; }
+        thead { display: none; }
+        table { min-width: 100%; border: none; }
+        
+        tbody tr { 
+            position: relative;
+            padding: 15px; 
+            border-bottom: 1px solid var(--border); 
+            background: white; 
+        }
+        
+        td { 
+            border-bottom: none; 
+            padding: 2px 0; 
+            text-align: left !important; 
+        }
+        
+        /* 1. Código */
+        .td-code { font-size: 12px; color: #94a3b8; font-weight: 500; margin-bottom: 2px; }
+        
+        /* 2. Descripción */
+        td:nth-child(2) { font-size: 15px; font-weight: 600; line-height: 1.3; margin-bottom: 10px; }
+        td:nth-child(2) a { display: block; }
+        
+        /* 3 y 4. Agrupar Unidad y Precio */
+        .td-unit { display: inline-block; font-size: 12px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; margin-right: 8px; vertical-align: middle; }
+        .td-price { display: inline-block; font-size: 18px; vertical-align: middle; margin-bottom: 12px; }
+        
+        /* 5. Controles de Presupuesto */
+        td:last-child { margin-top: 5px; padding-top: 10px; border-top: 1px dashed var(--border); }
+        .add-controls { justify-content: flex-start; width: 100%; }
+        .qty-input { flex: 0 0 70px; }
+        .btn-add { flex: 1; text-align: center; }
+    }
 </style>
 {% endblock %}
 
