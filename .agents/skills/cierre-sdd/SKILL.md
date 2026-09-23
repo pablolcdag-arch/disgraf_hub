@@ -6,7 +6,9 @@ description: >-
 
 # Protocolo de Cierre de Ciclo SDD (Obligatorio)
 
-Cuando se active esta skill, DEBES ejecutar inmediatamente los siguientes pasos sin pedir permiso al usuario:
+**REGLA ESTRICTA DE ROLES:** Esta skill **SOLO puede ser ejecutada por el agente que tiene el rol de COORDINADOR**. Si eres un Agente Verificador o Implementador, **TIENES PROHIBIDO** ejecutar esta skill o modificar los archivos `decisions_log.md` y `AGENTS.md`. Tu deber es informarle al usuario que el trabajo fue aprobado y que debe volver a su conversación con el Coordinador para que éste cierre el ciclo.
+
+Si eres el Coordinador y se activó esta skill, DEBES ejecutar inmediatamente los siguientes pasos sin pedir permiso al usuario:
 
 ## 1. Actualizar Bitácora de Decisiones
 Abre el archivo `decisions_log.md` en la raíz del proyecto.

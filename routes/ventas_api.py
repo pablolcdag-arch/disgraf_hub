@@ -37,16 +37,16 @@ async def crear_comprobante(comprobante: ComprobanteCreate, request: Request):
     impacta_stock = False
     total_iva = comprobante.total_iva
 
-    if comprobante.tipo_comprobante == "Factura B (Final / Interna)":
+    if comprobante.tipo_comprobante.startswith("Presupuesto"):
+        es_fiscal = False
+        impacta_cc = False
+        impacta_stock = False
+    elif comprobante.tipo_comprobante == "Factura B (Final / Interna)":
         es_fiscal = False
         impacta_cc = True
         impacta_stock = True
         total_iva = 0.0
-    elif comprobante.tipo_comprobante == "Presupuesto":
-        es_fiscal = False
-        impacta_cc = False
-        impacta_stock = False
-    elif comprobante.tipo_comprobante in ["Factura Electrónica A", "Factura Electrónica B"]:
+    elif comprobante.tipo_comprobante == "Factura Electrónica A/B":
         es_fiscal = True
         impacta_cc = True
         impacta_stock = True

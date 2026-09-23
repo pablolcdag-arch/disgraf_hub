@@ -328,6 +328,8 @@ Extraen las credenciales locales desde el archivo `.env.deploy` (el cual está e
 ### ⚠️ Regla de deploy general
 Nunca empujar a `main` ni ejecutar `deploy.exp` sin haber verificado localmente que la app inicia y los tests pasan localmente sin errores.
 
+**REGLA ESTRICTA DE ROLES (DEPLOY):** **SOLO EL AGENTE COORDINADOR TIENE PERMITIDO EJECUTAR `./deploy.exp` O `git push`.** Los Agentes Implementadores y Verificadores tienen PROHIBIDO HACER COMMITS, PUSH O DEPLOYS. Su trabajo finaliza entregando el código testeado. El Coordinador será quien empaquete los cambios, actualice la documentación y ejecute el despliegue a producción.
+
 ---
 
 ## 🤖 Patrones Agenticos
