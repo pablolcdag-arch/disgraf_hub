@@ -58,12 +58,25 @@ async def api_upload_saas(request: Request, saas_file: UploadFile = File(...)):
         with open(maestro_path, 'wb') as f:
             f.write(content_saas)
             
+        # Detect encoding and delimiter
         try:
-            df_saas = pd.read_csv(io.BytesIO(content_saas), sep=';', encoding='utf-8', on_bad_lines='skip')
+            first_line = content_saas.split(b'\n')[0].decode('utf-8')
+            encoding = 'utf-8'
+        except UnicodeDecodeError:
+            first_line = content_saas.split(b'\n')[0].decode('latin-1')
+            encoding = 'latin-1'
+            
+        delimiter = ';' if first_line.count(';') >= first_line.count(',') else ','
+        
+        try:
+            df_saas = pd.read_csv(io.BytesIO(content_saas), sep=delimiter, encoding=encoding, on_bad_lines='skip')
         except:
-            df_saas = pd.read_csv(io.BytesIO(content_saas), sep=';', encoding='latin-1', on_bad_lines='skip')
+            df_saas = pd.read_csv(io.BytesIO(content_saas), sep=delimiter, encoding=encoding, on_bad_lines='skip', engine='python')
             
         df_saas.columns = df_saas.columns.str.strip()
+        
+        if 'Nº de producto' not in df_saas.columns or 'Nombre' not in df_saas.columns:
+            return {"error": "No se encontraron las columnas esperadas (Nº de producto, Nombre). Verifique el formato del CSV."}
         
         # Extract all products
         saas_products = []

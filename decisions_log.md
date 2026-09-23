@@ -183,3 +183,10 @@ Este documento rastrea las decisiones estratégicas y arquitectónicas clave tom
 - **Decisión:** Se agregó el botón "Exportar CSV" en la vista del Gestor de Catálogos (`precios.html`) con un endpoint asociado `GET /api/export-maestro` en `routes/catalog_api.py`.
 - **Razón:** Permitir a los usuarios descargar el archivo maestro de productos (CSV) para modificar masivamente descripciones o stocks desde herramientas externas (como Excel) y luego re-importarlo mediante el flujo existente.
 - **Archivos afectados:** `routes/catalog_api.py`, `templates/precios.html`.
+
+---
+
+## [23 de Septiembre 2026] - Corrección de bug en importación CSV
+- **Decisión:** Se implementó autodetección dinámica del delimitador (`,` o `;`) y validación estricta de columnas obligatorias (`Nº de producto`, `Nombre`) al procesar subidas en `api_upload_saas` (`routes/catalog_api.py`).
+- **Razón:** Cuando los usuarios editaban el archivo CSV exportado usando Microsoft Excel y lo volvían a guardar, el programa cambiaba silenciosamente el delimitador de `;` a `,`, provocando que Pandas no pudiera parsear el archivo con el `sep=';'` hardcodeado.
+- **Archivos afectados:** `routes/catalog_api.py`.
