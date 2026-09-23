@@ -202,3 +202,8 @@ Este documento rastrea las decisiones estratégicas y arquitectónicas clave tom
 - **Decisión:** Se crearon las tablas `comprobantes` y `comprobantes_items` en SQLite, incorporando reglas de negocio (`es_fiscal`, `impacta_cc`, `impacta_stock`). Se implementó el endpoint `POST /api/ventas/comprobantes` para la generación de los mismos.
 - **Razón:** Para soportar el almacenamiento persistente de comprobantes de venta (presupuestos, facturas, etc.) y permitir la integración con el Cotizador, avanzando hacia el reemplazo del ERP legacy.
 - **Archivos afectados:** `routes/ventas_api.py`, `main.py`, `data/disgraf_hub.db`.
+
+## [23 de Septiembre 2026] - Ajuste Fiscal de Comprobantes (Ciclo 18.1)
+- **Decisión:** Se separó "Factura Electrónica A" de la "B". Se implementó la lógica estricta de AFIP: los comprobantes "B" (Fiscales, Internos y Presupuestos) incluyen un 21% de IVA en su precio unitario por defecto. Además, se añadió un flag `iva_reducido` (10.5%) manual exclusivo para ventas no fiscales o presupuestos B, desacoplando este cálculo de los descuentos comerciales.
+- **Razón:** Permitir a los vendedores de mostrador hacer descuentos por pago en efectivo sin romper la matemática fiscal ni enredar el cálculo con descuentos por cantidad.
+- **Archivos afectados:** `routes/ventas_api.py`, `routes/cotizador_api.py`, `templates/cotizador.html`.
