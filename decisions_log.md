@@ -122,3 +122,57 @@ Este documento rastrea las decisiones estratégicas y arquitectónicas clave tom
 - **Decisión:** Se implementó una barra de búsqueda global en la página de inicio que filtra sobre todo el catálogo y muestra resultados en una nueva vista dedicada (`v2_search.html`).
 - **Razón:** Facilitar la localización rápida de productos mediante código o nombre. El frontend mantiene estricta compatibilidad con las reglas del proyecto (Renderizado en servidor y vanilla JS para funciones interactivas del carrito) y hereda la navegabilidad lograda en el Ciclo 9 para acceder al detalle de productos.
 - **Archivos afectados:** `routes/v2.py` (modificado), `templates/v2_home.html` (modificado), `templates/v2_search.html` (creado).
+
+---
+
+## [21 de Septiembre 2026] - SDD Ciclo 11: Generador SSG Blog (oficiocarteleria.com.ar)
+- **Decisión:** Se refactorizó la lógica de generación del blog SEO satélite (`seo_service.py`) integrando el manejo robusto de excepciones del SDK `google-genai` y asegurando la escritura local de archivos HTML. Adicionalmente, el template `v2_blog_post.html` se convirtió en un documento HTML *standalone* (independiente).
+- **Razón:** Para el sitio satélite (`oficiocarteleria.com.ar`) servido como SSG puro, heredar del layout principal de FastAPI (`v2_base.html`) ocasionaba dependencias dinámicas, problemas de resolución de rutas relativas a los assets estáticos de la app principal, y enlaces conflictivos. Convertir el template en independiente asegura que los archivos generados funcionen correctamente y de forma optimizada para SEO al servirse en un dominio satélite ajeno.
+- **Archivos afectados:** `seo_service.py` (modificado), `templates/v2_blog_post.html` (modificado).
+
+---
+
+## [21 de Septiembre 2026] - SDD Ciclo 12: Refactor Marketing IA y Rediseño CSS
+- **Decisión:** Se eliminó el scraping de YouTube, se neutralizaron los prompts de la IA para eliminar el sesgo comercial hacia Orafol, y se rediseñó `v2_blog_post.html` usando CSS puro inspirado en plataformas de lectura (Medium).
+- **Razón:** El scraping de YouTube no aportaba valor textual útil para la generación de artículos. Los prompts de la IA sesgaban comercialmente el contenido, restando profesionalismo. El rediseño CSS optimiza la experiencia de lectura (max-width 800px, font 20px, texto #242424) haciéndola más atractiva sin requerir frameworks pesados.
+- **Archivos afectados:** `routes/marketing_api.py` (modificado), `templates/v2_blog_post.html` (modificado).
+
+---
+
+### SDD Ciclo 16 — 22/09/2026
+**Decisión:** Se actualizó la lógica de recomendación de "Productos Relacionados" (También podrías necesitar).
+**Razón:** El sistema anterior solo permitía agrupar productos por la Categoría principal, lo cual generaba sugerencias poco precisas cuando una misma categoría (ej. "Vinilos para impresión") contenía subcategorías muy distintas (ej. "DPI" vs "Orajet").
+**Detalles:** Se modificó `routes/v2.py` para que el algoritmo busque primero si existe una regla en `categorias_meta.json` usando el "slug" de la **Subcategoría** del producto. Si no la encuentra, hace fallback al slug de la Categoría principal, y si tampoco la encuentra, hace fallback a 4 productos al azar de su misma familia.
+
+## [21 de Septiembre 2026] - SDD Ciclo 13: Toques Finales Módulo Marketing IA
+- **Decisión:** Se forzó el uso de etiquetas HTML en el CTA del prompt de Gemini y se implementó un sistema de shortcodes de imágenes vía regex. Además se mejoró visualmente la grilla del blog frontend usando CSS moderno.
+- **Razón:** Para asegurar que los enlaces generados sean clickeables automáticamente, poder embeber imágenes con facilidad en medio del contenido generado por IA y proveer una experiencia visual de alta calidad a los usuarios del blog.
+- **Archivos afectados:** `routes/marketing_api.py`, `templates/v2_blog.html`, `templates/v2_blog_post.html`.
+
+---
+
+## [21 de Septiembre 2026] - SDD Ciclo 14: Estandarización de Imágenes y Preview UI
+- **Decisión:** Se implementó una arquitectura estilo CMS para el manejo de shortcodes: se mantienen crudos (`[FOTO: x.jpeg]`) en la base de datos y se parsean con RegEx únicamente al momento de visualización (Preview y SSG). Las imágenes embebidas se limitaron a 200px (centradas) y la imagen de portada a 400px (object-fit: cover). El endpoint de imágenes se hizo case-insensitive.
+- **Razón:** Para prevenir que los shortcodes se destruyan permanentemente en la base de datos al momento del guardado, alinear el comportamiento con las expectativas del usuario, evitar imágenes rotas por discrepancias de mayúsculas en Linux, y asegurar un diseño limpio y centrado tipo "tarjeta" en la vista previa del administrador.
+- **Archivos afectados:** `routes/marketing_api.py`, `routes/media_api.py`, `seo_service.py`, `templates/v2_blog_post.html`.
+
+---
+
+## [22 de Septiembre 2026] - SDD Ciclo 15: Restauración de Productos Relacionados en Tienda V2
+- **Decisión:** Se restauró la lógica de "Productos Relacionados" (fallback a la misma categoría si no hay datos en `categorias_meta.json`) y se refactorizó el CSS a un bloque estilo Grid responsive.
+- **Razón:** El archivo de producción había sido sobreescrito accidentalmente durante un deploy previo. Se re-implementó asegurando un diseño adaptable en móviles y escritorio (`minmax(150px, 1fr)`).
+- **Archivos afectados:** `routes/v2.py`, `templates/v2_product.html`.
+
+---
+
+## [23 de Septiembre 2026] - SDD Ciclo 17: Implementación del Módulo de Clientes
+- **Decisión:** Se implementó el alta, edición e importación de clientes mediante CSV. Se migró la base de datos `clientes` agregando las columnas necesarias para el mapeo con el sistema SaaS heredado y se creó un modal Vanilla JS para ABM de clientes en el frontend.
+- **Razón:** Proveer a los vendedores la capacidad de gestionar la base de clientes y unificar el directorio, permitiendo además la transición desde el SaaS legacy mediante importación por lotes. Se mantuvo el uso de Vanilla JS y renderizado de plantillas cumpliendo la arquitectura estipulada.
+- **Archivos afectados:** `routes/clientes_api.py`, `templates/clientes.html`, `data/disgraf_hub.db` (migración de esquema).
+
+---
+
+## [23 de Septiembre 2026] - SDD Ciclo 17.1: Ajuste Fino Condiciones Comerciales
+- **Decisión:** Se agregaron 3 columnas de reglas de negocio (`lista_de_precio`, `permite_cuenta_corriente`, `limite_cuenta_corriente`) a la tabla `clientes`, modificando el endpoint y el frontend. Se eliminó el campo desplegable "Categoría" en la vista.
+- **Razón:** Para soportar la lógica de negocio de Cuentas Corrientes y Listas de Precio que diferenciarán a los clientes mayoristas de los minoristas, alineándose con las directivas del Coordinador.
+- **Archivos afectados:** `routes/clientes_api.py`, `templates/clientes.html`, `data/disgraf_hub.db` (migración de esquema).

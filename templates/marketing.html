@@ -80,11 +80,7 @@
                 </div>
                 <button onclick="addInput('websitesList')" class="btn-primary" style="padding: 5px 10px; font-size: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">+ Agregar Web</button>
                 
-                <h4 style="margin: 20px 0 10px 0; font-size: 14px; color: #ef4444;">Canales de YouTube</h4>
-                <div id="youtubeList" style="margin-bottom: 15px;">
-                    <!-- Youtube inputs will render here -->
-                </div>
-                <button onclick="addInput('youtubeList')" class="btn-primary" style="padding: 5px 10px; font-size: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">+ Agregar Canal</button>
+
             </div>
             
             <!-- Cola de Trabajo -->
@@ -316,8 +312,7 @@ async function saveConfig() {
         satellites: getValues('satellitesList'),
         frequency: parseInt(document.getElementById('freqInput').value) || 2,
         sources: {
-            websites: getValues('websitesList'),
-            youtube: getValues('youtubeList')
+            websites: getValues('websitesList')
         }
     };
     

@@ -31,7 +31,6 @@ async def api_get_marketing_config(request: Request):
         "satellites": [],
         "frequency": 2,
         "sources": {
-            "youtube": [],
             "websites": []
         }
     }
@@ -103,7 +102,7 @@ async def api_generate_article(request: Request):
     if os.path.exists(config_path):
         with open(config_path, 'r') as f:
             config = json.load(f)
-            sources = config.get("websites", []) + config.get("youtube", [])
+            sources = config.get("websites", [])
     
     specific_source = data.get("specific_source")
     custom_topic = data.get("custom_topic", "").strip()
@@ -137,16 +136,16 @@ async def api_generate_article(request: Request):
             # Channel specific instructions
             channel_instruction = ""
             if channel == "car_wrapping":
-                channel_instruction = "Eres un maestro del Car Wrapping y ploteo vehicular. Tu enfoque es explicar cómo usar herramientas de calor, espátulas de fieltro y las ventajas de usar la serie Oracal 970 o Orajet 3951. Habla sobre la maleabilidad, adhesivos canalizados (RapidAir) y terminaciones premium. Menciona explícitamente a Orafol, Avery y Arlon."
+                channel_instruction = "Eres un maestro del Car Wrapping y ploteo vehicular. Tu enfoque es explicar cómo usar herramientas de calor, espátulas de fieltro y técnicas avanzadas. Habla sobre maleabilidad, adhesivos canalizados y terminaciones premium. Mantén una postura neutral y experta, mencionando marcas variadas como Avery, Orafol, Arlon o 3M según corresponda, sin sesgo comercial."
             elif channel == "instagram_disgraf":
-                channel_instruction = "Eres el Community Manager de Disgraf. Escribe un caption corto, vibrante y vendedor para Instagram, usando emojis. Enfocate en la urgencia y en que somos distribuidores oficiales de Orafol. Menciona productos estrella como Oracal 651 o Poli-Tape. No uses formato HTML, solo texto puro con hashtags."
+                channel_instruction = "Eres el Community Manager de Disgraf. Escribe un caption corto, vibrante y vendedor para Instagram, usando emojis. Enfócate en la urgencia y nuestro amplio catálogo multimarca. Menciona productos variados sin preferencia. No uses formato HTML, solo texto puro con hashtags."
             else:
-                channel_instruction = "Eres un experto aplicador gráfico de oficio. Habla sobre cartelería, vinilos de corte e impresión de gran formato. SI el tema provisto está relacionado explícitamente con vinilos, destaca sutilmente productos específicos de Orafol como Oracal 651 para corte, o Orajet 3164 y 3651 para impresión. Si el tema NO está relacionado con vinilos (por ejemplo, es sobre Lonas, Herramientas, etc), NO menciones productos de Orafol ni los fuerces en el texto."
+                channel_instruction = "Eres un experto aplicador gráfico de oficio. Habla sobre cartelería, vinilos de corte e impresión de gran formato. Mantén una postura 100% neutral y experta: si el tema es lona, habla solo de lona. Si es impresión, menciona marcas variadas de la industria (como DPI, Avery, Orafol, Arlon) sin favorecer a ninguna en particular. Tu objetivo es aportar valor educativo, sin sesgos comerciales forzados."
 
             context_text = f"Contexto extraído de la fuente ({source}):\n{scraped_text}\n\n" if scraped_text else f"Tema de inspiración: {source}\n\n"
             catalog_text = get_catalog_summary(DATA_DIR)
 
-            prompt = f"{channel_instruction}\n\n{context_text}{catalog_text}Escribe un artículo/post útil e interesante basado en esto. Traduce cualquier información técnica al español argentino de forma natural. El contenido debe ser profundo y práctico: no te limites a explicar qué es un producto, incluye siempre consejos de aplicación, técnicas (ej. cómo tensar un cartel, qué pegamento usar para doblez), diferencias con materiales similares (ej. front vs backlite) y buenas prácticas de taller para aportar valor real al lector.\n\nSalvo que sea para Instagram, el artículo debe tener un título llamativo (con etiqueta h1 o ##), estar formateado en HTML (solo contenido interno, usar h2, h3, p) y tener un tono profesional.\n\nHacia el final del artículo, debes hacer una referencia MUY SUTIL a Disgraf usando este texto o algo muy similar: 'En Argentina, podés conseguir todos los materiales e insumos para tu taller de cartelería e impresión de gran formato a través de www.disgraf.com.ar'. IMPORTANTE: Respeta las REGLAS DE VENTA del catálogo para saber cuándo puedes mencionar venta fraccionada."
+            prompt = f"{channel_instruction}\n\n{context_text}{catalog_text}Escribe un artículo/post útil e interesante basado en esto. Traduce cualquier información técnica al español argentino de forma natural. El contenido debe ser profundo y práctico: no te limites a explicar qué es un producto, incluye siempre consejos de aplicación, técnicas (ej. cómo tensar un cartel, qué pegamento usar para doblez), diferencias con materiales similares (ej. front vs backlite) y buenas prácticas de taller para aportar valor real al lector.\n\nSalvo que sea para Instagram, el artículo debe tener un título llamativo (con etiqueta h1 o ##), estar formateado en HTML (solo contenido interno, usar h2, h3, p) y tener un tono profesional.\n\nHacia el final del artículo, debes hacer una referencia MUY SUTIL a Disgraf. DEBES incluir obligatoriamente un enlace HTML real apuntando a https://disgraf.com.ar. Por ejemplo: '<a href=\"https://disgraf.com.ar\">www.disgraf.com.ar</a>'. No dejes el enlace como texto plano. IMPORTANTE: Respeta las REGLAS DE VENTA del catálogo para saber cuándo puedes mencionar venta fraccionada."
 
             response = gemini_client.models.generate_content(
                 model="gemini-3.6-flash",
@@ -168,6 +167,10 @@ async def api_generate_article(request: Request):
                     title = "Novedades y Consejos para tu Gráfica"
             
             content = raw_text.replace("```html", "").replace("```", "").strip()
+            
+            # Los shortcodes ahora se mantienen crudos en la base de datos
+            # y se parsean únicamente al renderizar (previsualización o generación estática).
+            
     except Exception as e:
         print(f"Error AI: {e}")
         pass
@@ -303,9 +306,11 @@ async def api_approve_draft(request: Request, post_id: str):
         with open(db_path, 'r', encoding='utf-8') as f:
             posts = json.load(f)
             
+        import datetime
         for p in posts:
             if p.get("id") == post_id:
                 p["status"] = "published"
+                p["published_date"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
                 
         with open(db_path, 'w', encoding='utf-8') as f:
             json.dump(posts, f, indent=4)
@@ -374,14 +379,23 @@ async def api_preview_draft(request: Request, post_id: str):
             if not post:
                 return "Not found"
             
-            html = f"<html><body style='font-family:sans-serif; max-width:800px; margin:0 auto; padding:20px;'>"
-            html += f"<div style='background:#f1f5f9; padding:10px; margin-bottom:20px;'><strong>Canal:</strong> {post.get('channel')} | <strong>Estado:</strong> {post.get('status')}</div>"
+            import re
+            content_parsed = re.sub(
+                r'\[FOTO:\s*(.*?)\]', 
+                r'<img src="/media/file/\1" style="max-width:200px; width:100%; height:auto; display:block; margin:20px auto; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1);" alt="Imagen ilustrativa del artículo">', 
+                post.get('content', '')
+            )
+            
+            html = f"<html><body style='font-family:sans-serif; background-color: #f1f5f9; margin:0; padding:20px;'>"
+            html += f"<div style='max-width:800px; margin:0 auto; padding:40px; background-color:#ffffff; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.05);'>"
+            html += f"<div style='background:#f8fafc; padding:12px 15px; margin-bottom:30px; border-radius:8px; font-size:14px; border:1px solid #e2e8f0;'><strong>Canal:</strong> {post.get('channel')} | <strong>Estado:</strong> {post.get('status')}</div>"
             if post.get('image_url'):
-                html += f"<img src='{post.get('image_url')}' style='width:100%; border-radius:12px; margin-bottom:20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);' alt='Portada del Artículo'>"
-            html += f"<h1>{post.get('title')}</h1>"
-            html += f"<div>{post.get('content')}</div>"
-            html += "</body></html>"
-            return html
+                html += f"<img src='{post.get('image_url')}' style='width:100%; max-height:400px; object-fit:cover; border-radius:12px; margin-bottom:30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);' alt='Portada del Artículo'>"
+            html += f"<h1 style='margin-bottom:30px; line-height:1.2;'>{post.get('title')}</h1>"
+            html += f"<div style='font-size:18px; line-height:1.8; color:#333;'>{content_parsed}</div>"
+            html += "</div></body></html>"
+            from fastapi.responses import HTMLResponse
+            return HTMLResponse(content=html)
     except Exception as e:
         return str(e)
 
@@ -399,6 +413,13 @@ async def api_public_content(request: Request, channel: str):
             
         # Filter by channel and status published
         published = [p for p in posts if p.get("status") == "published" and p.get("channel") == channel]
+        import re
+        for p in published:
+            p["content"] = re.sub(
+                r'\[FOTO:\s*(.*?)\]', 
+                r'<img src="/media/file/\1" style="max-width:350px; width:100%; height:auto; display:block; margin:20px auto; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1);" alt="Imagen ilustrativa del artículo">', 
+                p.get('content', '')
+            )
         return published
     except:
         return []

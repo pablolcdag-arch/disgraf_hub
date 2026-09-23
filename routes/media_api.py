@@ -41,7 +41,17 @@ async def api_media_list(request: Request):
 async def media_serve_file(filename: str):
     media_dir = os.path.join(DATA_DIR, "media")
     file_path = os.path.join(media_dir, filename)
+    
+    # Try exact match first
     if os.path.exists(file_path):
         from fastapi.responses import FileResponse
         return FileResponse(file_path)
+        
+    # If not found, try case-insensitive match
+    if os.path.exists(media_dir):
+        for f in os.listdir(media_dir):
+            if f.lower() == filename.lower():
+                from fastapi.responses import FileResponse
+                return FileResponse(os.path.join(media_dir, f))
+                
     return {"error": "File not found"}

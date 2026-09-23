@@ -263,6 +263,7 @@ Todas comparten este `AGENTS.md` como contexto unificado.
 8. **PROHIBIDO** hacer `import` dentro de funciones (limpiar los existentes en main.py)
 9. **PROHIBIDO** modificar el directorio `venv/`
 10. **PROHIBIDO** commitear el archivo `.env`
+11. **PROHIBIDO** adivinar o hardcodear "slugs" o IDs a ojo al crear archivos de configuración JSON (ej. `categorias_meta.json`). El agente DEBE escribir un script en Python para leer los slugs reales extraídos por `get_v2_catalog_data()` antes de armar un mapeo para evitar desconexiones de strings.
 
 ---
 
@@ -353,10 +354,13 @@ Cuando una tarea es compleja, usar el siguiente patrón:
 
 | Agente | Rol | Puede escribir código |
 |---|---|---|
-| **Coordinador** | Lee la tarea, la divide, asigna subtareas | ❌ No |
+| **Coordinador** | Planifica (implementation_plan.md), asigna tareas, redacta prompts para otros agentes | ❌ NUNCA (solo escribe archivos .md) |
 | **Investigador** | Lee archivos, inspecciona DB, audita código | ❌ No |
-| **Implementador A/B/C** | Ejecuta una subtarea acotada | ✅ Sí |
+| **Implementador A/B/C** | Ejecuta una subtarea acotada (Frontend, Backend, etc) | ✅ Sí (código de producción) |
 | **Verificador** | Corre tests, revisa que cumple la spec | ❌ No |
+
+**Invocación del Coordinador:**
+Para usar el coordinador sin que pierda contexto, abre una conversación nueva y di simplemente: *"Asume el rol de Coordinador"*. El agente leerá este archivo y sabrá automáticamente que tiene prohibido modificar código `.py` o `.html`, y que su única tarea es planificar y entregarte prompts para tus otras conversaciones ejecutoras.
 
 **Regla:** Si el Verificador falla 3 veces en la misma subtarea → escalar al usuario con diagnóstico.
 
@@ -404,13 +408,14 @@ Después de cualquier cambio arquitectónico o decisión estratégica, el agente
 
 | Módulo | Estado | Deuda Técnica |
 |---|---|---|
+| Módulo de Clientes (CRM) | ✅ Funcional | ABM y carga masiva por CSV implementados (Ciclo 17). Soporte Cuenta Corriente y Listas (17.1) |
 | Login/Auth | ✅ Funcional | Migrado a JWT (Stateless) |
 | Dashboard Admin | ✅ Funcional | — |
 | Cotizador (vendedores) | ✅ Funcional | — |
 | Gestión de Precios | ✅ Funcional | — |
-| Marketing IA | ✅ Funcional | — |
-| Tienda V2 (catálogo) | ✅ Funcional | Live en hub.disgraf.com.ar/v2. Vista individual, manejo de errores 404 y buscador global completados. |
-| Blog SEO (Satélite) | 🔄 En desarrollo | Migración a SSG Estático (HTML directo) eliminando WP |
+| Marketing IA | ✅ Funcional | Arquitectura de shortcodes corregida tipo CMS. Preview estilizado. (Ciclo 14) |
+| Tienda V2 (catálogo) | ✅ Funcional | Live en hub.disgraf.com.ar/v2. Vista individual, manejo de errores 404, buscador global y productos relacionados completados (con soporte para subcategorías). |
+| Blog SEO (Satélite) | ✅ Generador SSG Completado | Grilla rediseñada y template de posts mejorado con formato elegante. |
 | Tests automatizados | ✅ Completado | Suite completa con pytest |
 | Refactor main.py | ✅ Completado | Dividido en múltiples APIRouters en directorio routes/ |
 | Git/Control de versiones | ✅ Configurado | — |

@@ -59,6 +59,26 @@ expect {
     eof
 }
 
+# 2.2. Upload static directory
+spawn scp -o StrictHostKeyChecking=no -P $port -r $local_dir/static $user@$ip:$remote_dir/
+expect {
+    -nocase "assword:" {
+        send "$password\r"
+        exp_continue
+    }
+    eof
+}
+
+# 2.5 Upload configuration JSONs from data/ (safely ignoring .db, .csv and transactional JSONs)
+spawn bash -c "scp -o StrictHostKeyChecking=no -P $port $local_dir/data/categorias_meta.json $local_dir/data/marketing_config.json $user@$ip:$remote_dir/data/"
+expect {
+    -nocase "assword:" {
+        send "$password\r"
+        exp_continue
+    }
+    eof
+}
+
 # 3. Restart service
 spawn ssh -o StrictHostKeyChecking=no -p $port $user@$ip
 expect {

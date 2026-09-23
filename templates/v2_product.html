@@ -152,6 +152,69 @@
         background: #f8fafc;
         border-color: #cbd5e1;
     }
+
+    .related-products-section {
+        max-width: 900px;
+        margin: 0 auto 40px;
+        padding: 0 15px;
+    }
+    
+    .related-products-title {
+        font-size: 22px;
+        color: var(--text-main);
+        margin-bottom: 20px;
+    }
+
+    .related-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 15px;
+    }
+    
+    @media (min-width: 768px) {
+        .related-grid {
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        .related-products-section {
+            padding: 0;
+        }
+    }
+
+    .related-card {
+        display: flex;
+        flex-direction: column;
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 15px;
+        text-decoration: none;
+        color: inherit;
+        transition: box-shadow 0.2s, transform 0.2s;
+        height: 100%;
+        box-sizing: border-box;
+    }
+
+    .related-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        transform: translateY(-2px);
+        border-color: #cbd5e1;
+    }
+
+    .related-card-title {
+        font-weight: 600;
+        font-size: 14px;
+        margin-bottom: 8px;
+        color: var(--text-main);
+        line-height: 1.4;
+    }
+
+    .related-card-price {
+        font-weight: 700;
+        color: var(--primary-dark);
+        font-size: 15px;
+        margin-top: auto;
+    }
 </style>
 {% endblock %}
 
@@ -221,22 +284,19 @@
 </div>
 
 {% if related_products %}
-<div class="related-products-section" style="max-width: 900px; margin: 0 auto 40px;">
-    <h2 style="font-size: 22px; color: var(--text-main); margin-bottom: 20px;">También podrías necesitar</h2>
-    <div class="related-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px;">
+<div class="related-products-section">
+    <h2 class="related-products-title">También podrías necesitar</h2>
+    <div class="related-grid">
         {% for rel_prod in related_products %}
-        <a href="/v2/producto/{{ rel_prod.id }}" class="related-card" style="display: block; background: white; border: 1px solid var(--border); border-radius: 8px; padding: 15px; text-decoration: none; color: inherit; transition: box-shadow 0.2s, transform 0.2s;">
-            <div style="font-weight: 600; font-size: 14px; margin-bottom: 8px; color: var(--text-main); line-height: 1.4;">
+        <a href="/v2/producto/{{ rel_prod.id }}" class="related-card">
+            <div class="related-card-title">
                 {% if rel_prod.color_hex %}<span class="color-dot" style="background-color: {{ rel_prod.color_hex }}; width: 14px; height: 14px; margin-right: 6px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);"></span>{% endif %}{{ rel_prod.name }}
             </div>
-            <div style="font-weight: 700; color: var(--primary-dark); font-size: 15px;">${{ "{:,.2f}".format(rel_prod.price).replace(',', 'X').replace('.', ',').replace('X', '.') }} x {{ rel_prod.unit|default('un') }}</div>
+            <div class="related-card-price">${{ "{:,.2f}".format(rel_prod.price).replace(',', 'X').replace('.', ',').replace('X', '.') }} x {{ rel_prod.unit|default('un') }}</div>
         </a>
         {% endfor %}
     </div>
 </div>
-<style>
-    .related-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.05); transform: translateY(-2px); border-color: #cbd5e1; }
-</style>
 {% endif %}
 {% endblock %}
 

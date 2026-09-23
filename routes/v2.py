@@ -174,6 +174,7 @@ async def storefront_v2_product(request: Request, product_id: str):
     
     target_product = None
     target_category = None
+    target_subcategory = None
     
     for cat in catalog:
         for sub in cat.get("subcategories", []):
@@ -181,6 +182,7 @@ async def storefront_v2_product(request: Request, product_id: str):
                 if prod["id"] == product_id:
                     target_product = prod
                     target_category = cat
+                    target_subcategory = sub
                     break
             if target_product:
                 break
@@ -203,22 +205,46 @@ async def storefront_v2_product(request: Request, product_id: str):
                 with open(meta_path, 'r', encoding='utf-8') as f:
                     meta_data = json.load(f)
                 
+                # Intentar primero con el slug de la subcategoría
+                sub_slug = slugify(target_subcategory["name"]) if target_subcategory else ""
                 cat_slug = slugify(target_category["name"])
-                if cat_slug in meta_data and "relacionados" in meta_data[cat_slug]:
+                
+                related_slugs = []
+                if sub_slug in meta_data and "relacionados" in meta_data[sub_slug]:
+                    related_slugs = meta_data[sub_slug]["relacionados"]
+                elif cat_slug in meta_data and "relacionados" in meta_data[cat_slug]:
                     related_slugs = meta_data[cat_slug]["relacionados"]
+                    
+                if related_slugs:
                     potential_products = []
                     
                     for cat in catalog:
-                        # Make sure cat["name"] is valid before slugify
+                        # Add products if category slug matches
                         if cat.get("name") and slugify(cat["name"]) in related_slugs:
                             for sub in cat.get("subcategories", []):
                                 potential_products.extend(sub.get("products", []))
+                        # Also add products if subcategory slug matches
+                        else:
+                            for sub in cat.get("subcategories", []):
+                                if slugify(sub.get("name", "")) in related_slugs:
+                                    potential_products.extend(sub.get("products", []))
                                 
                     if potential_products:
                         sample_size = min(4, len(potential_products))
                         related_products = random.sample(potential_products, sample_size)
         except Exception:
             pass
+            
+    # Fallback: Si no hay productos relacionados por metadata, sugerir de la misma categoría
+    if not related_products and target_category:
+        potential_products = []
+        for sub in target_category.get("subcategories", []):
+            for prod in sub.get("products", []):
+                if prod["id"] != product_id:
+                    potential_products.append(prod)
+        if potential_products:
+            sample_size = min(4, len(potential_products))
+            related_products = random.sample(potential_products, sample_size)
             
     return templates.TemplateResponse(request=request, name="v2_product.html", context={
         "catalog": catalog,

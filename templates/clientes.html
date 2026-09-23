@@ -43,6 +43,12 @@
             <div style="padding: 15px; border-bottom: 1px solid var(--border-color);">
                 <h3 style="font-size: 18px; margin-bottom: 10px; color: var(--text-light);">Buscador de Clientes</h3>
                 <input type="text" id="searchClientInput" class="form-control" placeholder="Buscar por Nombre, CUIT o Razón Social..." style="padding: 10px 12px; width: 100%;">
+
+                <div style="margin-top: 15px; display: flex; gap: 10px;">
+                    <button class="btn-primary" onclick="openClientModal()" style="flex:1;">+ Nuevo Cliente</button>
+                    <button class="btn-secondary" onclick="document.getElementById('csvFileInput').click()" style="flex:1;">Importar CSV</button>
+                    <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="importCSV(this)">
+                </div>
             </div>
             <div id="clientsList" style="flex: 1; overflow-y: auto; padding: 10px;">
                 <div style="text-align: center; color: var(--text-muted); padding: 20px; font-size: 14px;">
@@ -55,6 +61,107 @@
         <div class="glass" style="flex: 2; display: flex; flex-direction: column; overflow: hidden; border-radius: 12px;" id="clientDetailsPane">
             <div style="flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
                 Selecciona un cliente para ver su ficha
+            </div>
+        </div>
+
+    
+        <!-- Client Modal -->
+        <div id="clientModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+            <div class="glass" style="width: 600px; max-height: 90vh; overflow-y: auto; padding: 25px; border-radius: 12px; background: var(--glass-bg); border: 1px solid var(--border-color);">
+                <h2 id="clientModalTitle" style="margin-top:0; color: #fff;">Nuevo Cliente</h2>
+                <form id="clientForm" onsubmit="saveClient(event)">
+                    <input type="hidden" id="clientId">
+                    
+                    <h4 style="margin-top: 20px; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; color: #38bdf8;">Datos de Contacto</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Nombre *</label>
+                            <input type="text" id="clientNombre" class="form-control" required style="width:100%; padding: 8px;">
+                        </div>
+
+                        <div>
+                            <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Email</label>
+                            <input type="email" id="clientMail" class="form-control" style="width:100%; padding: 8px;">
+                        </div>
+                        <div>
+                            <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Teléfono</label>
+                            <input type="text" id="clientTelefonos" class="form-control" style="width:100%; padding: 8px;">
+                        </div>
+                        <div style="grid-column: span 2;">
+                            <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Domicilio</label>
+                            <input type="text" id="clientDomicilio" class="form-control" style="width:100%; padding: 8px;">
+                        </div>
+                        <div>
+                            <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Localidad</label>
+                            <input type="text" id="clientLocalidad" class="form-control" style="width:100%; padding: 8px;">
+                        </div>
+                        <div>
+                            <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Código Postal</label>
+                            <input type="text" id="clientCodigoPostal" class="form-control" style="width:100%; padding: 8px;">
+                        </div>
+                    </div>
+
+                    <h4 style="margin-top: 20px; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; color: #38bdf8;">Datos de Facturación</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div style="grid-column: span 2;">
+                            <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Razón Social</label>
+                            <input type="text" id="clientRazonSocial" class="form-control" style="width:100%; padding: 8px;">
+                        </div>
+                        <div>
+                            <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Condición de IVA</label>
+                            <select id="clientCondicionIva" class="form-control" style="width:100%; padding: 8px; background: rgba(0,0,0,0.3); color: white;">
+                                <option value="Consumidor final">Consumidor final</option>
+                                <option value="IVA Responsable Inscripto">IVA Responsable Inscripto</option>
+                                <option value="Monotributo">Monotributo</option>
+                                <option value="Exento">Exento</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">CUIT</label>
+                            <input type="text" id="clientCuit" class="form-control" style="width:100%; padding: 8px;">
+                        </div>
+                        <div>
+                            <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Tipo de documento</label>
+                            <select id="clientOtroTipoDocumento" class="form-control" style="width:100%; padding: 8px; background: rgba(0,0,0,0.3); color: white;">
+                                <option value="DNI">DNI</option>
+                                <option value="Pasaporte">Pasaporte</option>
+                                <option value="Ninguno">Ninguno</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Nro de documento</label>
+                            <input type="text" id="clientDocumento" class="form-control" style="width:100%; padding: 8px;">
+                        </div>
+                    </div>
+                    <h4 style="margin-top: 20px; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; color: #38bdf8;">Condiciones Comerciales</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Lista de Precio</label>
+                            <select id="clientListaDePrecio" class="form-control" style="width:100%; padding: 8px; background: rgba(0,0,0,0.3); color: white;">
+                                <option value="Lista 1">Lista 1</option>
+                                <option value="Lista 2">Lista 2</option>
+                                <option value="Lista 3">Lista 3</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Permite Cuenta Corriente</label>
+                            <div style="padding: 8px 0;">
+                                <input type="checkbox" id="clientPermiteCuentaCorriente" style="transform: scale(1.2); cursor: pointer;">
+                                <label for="clientPermiteCuentaCorriente" style="margin-left: 8px; font-size: 14px; cursor: pointer;">Sí</label>
+                            </div>
+                        </div>
+                        <div>
+                            <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Límite de Crédito ($)</label>
+                            <input type="number" id="clientLimiteCuentaCorriente" class="form-control" step="0.01" style="width:100%; padding: 8px;" value="0.0">
+                        </div>
+                    </div>
+
+                    
+                    <div style="margin-top: 25px; display: flex; justify-content: flex-end; gap: 10px;">
+                        <button type="button" class="btn-secondary" onclick="closeClientModal()">Cancelar</button>
+                        <button type="submit" class="btn-primary" id="btnSaveClient">Guardar</button>
+                    </div>
+                </form>
             </div>
         </div>
 
@@ -149,9 +256,12 @@ function renderFicha(client, history) {
                     ${client.condicion_iva || 'Consumidor Final'}
                 </div>
             </div>
-            <a href="/cotizador" style="text-decoration: none;">
-                <button class="btn-primary" style="background: #10b981;">+ Nuevo Presupuesto</button>
-            </a>
+            <div style="display: flex; gap: 10px;">
+                <a href="/cotizador" style="text-decoration: none;">
+                    <button class="btn-primary" style="background: #10b981;">+ Presupuesto</button>
+                </a>
+                <button class="btn-secondary" onclick='openClientModal(${JSON.stringify(client).replace(/'/g, "&#39;")})'>Editar</button>
+            </div>
         </div>
         
         <div style="padding: 25px; display: flex; gap: 20px; overflow-y: auto; flex-direction: column;">
@@ -197,5 +307,122 @@ document.addEventListener('mouseout', function(e) {
         e.target.closest('.client-item').style.background = 'transparent';
     }
 });
+
+async function importCSV(input) {
+    if(!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    
+    if(!confirm('¿Estás seguro de que deseas importar ' + file.name + '? Los clientes existentes se actualizarán.')) {
+        input.value = '';
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+        const res = await fetch('/api/clientes/importar', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+        if(res.ok) {
+            alert(data.message || 'Importación exitosa');
+            searchInput.dispatchEvent(new Event('input')); // Refresh list
+        } else {
+            alert('Error: ' + (data.detail || data.error));
+        }
+    } catch(err) {
+        alert('Error importando: ' + err.message);
+    }
+    input.value = '';
+}
+
+function openClientModal(client = null) {
+    const modal = document.getElementById('clientModal');
+    const form = document.getElementById('clientForm');
+    form.reset();
+    
+    if(client) {
+        document.getElementById('clientModalTitle').innerText = 'Editar Cliente';
+        document.getElementById('clientId').value = client.id;
+        document.getElementById('clientNombre').value = client.nombre || '';
+        
+        if(client.lista_de_precio) document.getElementById('clientListaDePrecio').value = client.lista_de_precio;
+        document.getElementById('clientPermiteCuentaCorriente').checked = !!client.permite_cuenta_corriente;
+        document.getElementById('clientLimiteCuentaCorriente').value = client.limite_cuenta_corriente || 0.0;
+
+        document.getElementById('clientMail').value = client.mail || '';
+        document.getElementById('clientTelefonos').value = client.telefonos || '';
+        document.getElementById('clientDomicilio').value = client.domicilio || '';
+        document.getElementById('clientLocalidad').value = client.localidad || '';
+        document.getElementById('clientCodigoPostal').value = client.codigo_postal || '';
+        document.getElementById('clientRazonSocial').value = client.razon_social || '';
+        if(client.condicion_iva) document.getElementById('clientCondicionIva').value = client.condicion_iva;
+        document.getElementById('clientCuit').value = client.cuit || '';
+        if(client.otro_tipo_documento) document.getElementById('clientOtroTipoDocumento').value = client.otro_tipo_documento;
+        document.getElementById('clientDocumento').value = client.documento || '';
+    } else {
+        document.getElementById('clientModalTitle').innerText = 'Nuevo Cliente';
+        document.getElementById('clientId').value = '';
+        document.getElementById('clientListaDePrecio').value = 'Lista 1';
+        document.getElementById('clientPermiteCuentaCorriente').checked = false;
+        document.getElementById('clientLimiteCuentaCorriente').value = 0.0;
+    }
+    
+    modal.style.display = 'flex';
+}
+
+function closeClientModal() {
+    document.getElementById('clientModal').style.display = 'none';
+}
+
+async function saveClient(e) {
+    e.preventDefault();
+    const id = document.getElementById('clientId').value;
+    const isEdit = !!id;
+    
+    const payload = {
+        nombre: document.getElementById('clientNombre').value,
+        lista_de_precio: document.getElementById('clientListaDePrecio').value,
+        permite_cuenta_corriente: document.getElementById('clientPermiteCuentaCorriente').checked,
+        limite_cuenta_corriente: parseFloat(document.getElementById('clientLimiteCuentaCorriente').value) || 0.0,
+        mail: document.getElementById('clientMail').value,
+        telefonos: document.getElementById('clientTelefonos').value,
+        domicilio: document.getElementById('clientDomicilio').value,
+        localidad: document.getElementById('clientLocalidad').value,
+        codigo_postal: document.getElementById('clientCodigoPostal').value,
+        razon_social: document.getElementById('clientRazonSocial').value,
+        condicion_iva: document.getElementById('clientCondicionIva').value,
+        cuit: document.getElementById('clientCuit').value,
+        otro_tipo_documento: document.getElementById('clientOtroTipoDocumento').value,
+        documento: document.getElementById('clientDocumento').value
+    };
+    
+    const url = isEdit ? `/api/clientes/${id}` : '/api/clientes';
+    const method = isEdit ? 'PUT' : 'POST';
+    
+    try {
+        const res = await fetch(url, {
+            method: method,
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        
+        if(res.ok) {
+            alert(data.message || 'Guardado exitoso');
+            closeClientModal();
+            searchInput.dispatchEvent(new Event('input')); // Refresh list
+            if(isEdit) {
+                loadClientDetails(id);
+            }
+        } else {
+            alert('Error: ' + (data.detail || data.error || 'Desconocido'));
+        }
+    } catch(err) {
+        alert('Error: ' + err.message);
+    }
+}
 </script>
 {% endblock %}

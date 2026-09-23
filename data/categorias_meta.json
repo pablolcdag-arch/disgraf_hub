@@ -1,14 +1,14 @@
 {
-    "vinilos-de-corte-oracal": {
+    "vinilos-de-corte": {
         "relacionados": ["papel-posicionador"]
     },
-    "vinilos-decorativosespeciales": {
+    "vinilos-decorativos-especiales": {
+        "relacionados": ["herramientas-y-accesorios"]
+    },
+    "vinilos-para-impresion-digital": {
         "relacionados": ["papel-posicionador"]
     },
-    "vinilos-para-impresion-digital-dpi": {
-        "relacionados": ["papel-posicionador"]
-    },
-    "vinilos-para-impresion-digital-orajet-36403641": {
+    "vinilo-para-impresion-digital-orajet-3640-3641": {
         "relacionados": ["papel-posicionador"]
     },
     "vinilo-para-impresion-digital-vehicular-orajet-3651-3651ra": {
@@ -16,5 +16,8 @@
     },
     "laminado-vehicular-oraguard-215-para-orajet-3651-3651ra": {
         "relacionados": ["vinilo-para-impresion-digital-vehicular-orajet-3651-3651ra"]
+    },
+    "papel-posicionador": {
+        "relacionados": ["herramientas-y-accesorios", "vinilos-de-corte"]
     }
 }
