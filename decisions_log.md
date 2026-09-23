@@ -176,3 +176,10 @@ Este documento rastrea las decisiones estratégicas y arquitectónicas clave tom
 - **Decisión:** Se agregaron 3 columnas de reglas de negocio (`lista_de_precio`, `permite_cuenta_corriente`, `limite_cuenta_corriente`) a la tabla `clientes`, modificando el endpoint y el frontend. Se eliminó el campo desplegable "Categoría" en la vista.
 - **Razón:** Para soportar la lógica de negocio de Cuentas Corrientes y Listas de Precio que diferenciarán a los clientes mayoristas de los minoristas, alineándose con las directivas del Coordinador.
 - **Archivos afectados:** `routes/clientes_api.py`, `templates/clientes.html`, `data/disgraf_hub.db` (migración de esquema).
+
+---
+
+## [23 de Septiembre 2026] - Ajuste rápido
+- **Decisión:** Se agregó el botón "Exportar CSV" en la vista del Gestor de Catálogos (`precios.html`) con un endpoint asociado `GET /api/export-maestro` en `routes/catalog_api.py`.
+- **Razón:** Permitir a los usuarios descargar el archivo maestro de productos (CSV) para modificar masivamente descripciones o stocks desde herramientas externas (como Excel) y luego re-importarlo mediante el flujo existente.
+- **Archivos afectados:** `routes/catalog_api.py`, `templates/precios.html`.
