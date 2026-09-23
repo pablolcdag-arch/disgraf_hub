@@ -25,6 +25,7 @@ class ComprobanteCreate(BaseModel):
     total_iva: float
     total: float
     items: List[ComprobanteItem]
+    iva_reducido: bool = False
 
 @router.post("/api/ventas/comprobantes")
 async def crear_comprobante(comprobante: ComprobanteCreate, request: Request):
@@ -46,7 +47,7 @@ async def crear_comprobante(comprobante: ComprobanteCreate, request: Request):
         impacta_cc = True
         impacta_stock = True
         total_iva = 0.0
-    elif comprobante.tipo_comprobante == "Factura Electrónica A/B":
+    elif comprobante.tipo_comprobante in ["Factura Electrónica A", "Factura Electrónica B"]:
         es_fiscal = True
         impacta_cc = True
         impacta_stock = True

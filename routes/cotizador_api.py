@@ -65,6 +65,7 @@ async def api_log_quote(request: Request):
         "total": total,
         "products": products,
         "tipo_comprobante": data.get("tipo_comprobante", "Presupuesto A"),
+        "iva_reducido": data.get("iva_reducido", False),
         "tipoB": data.get("tipo_comprobante", "Presupuesto A") in ["Presupuesto B", "Factura B (Final / Interna)"]
     }
     history_data.insert(0, new_record)
@@ -136,6 +137,7 @@ async def api_generate_quote_pdf(request: Request):
     total = data.get("total", 0)
     tipo_comprobante = data.get("tipo_comprobante", "Presupuesto A")
     global_discount = data.get("globalDiscount", 0)
+    iva_reducido = data.get("iva_reducido", False)
     
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
@@ -145,10 +147,10 @@ async def api_generate_quote_pdf(request: Request):
     title_style = ParagraphStyle(
         'Title',
         parent=styles['Heading1'],
-        fontSize=26,
+        fontSize=20,
         textColor=colors.HexColor('#1e293b'),
         alignment=0,
-        spaceAfter=10
+        spaceAfter=0
     )
     
     info_style = ParagraphStyle(
@@ -165,21 +167,55 @@ async def api_generate_quote_pdf(request: Request):
         fontSize=10,
         leading=12
     )
+
+    if tipo_comprobante == "Factura Electrónica A":
+        letter = "A"
+        title_text = "FACTURA A"
+    elif tipo_comprobante == "Presupuesto A":
+        letter = "P"
+        title_text = "PRESUPUESTO"
+    elif tipo_comprobante == "Factura Electrónica B":
+        letter = "B"
+        title_text = "FACTURA B"
+    else:
+        letter = "P"
+        title_text = "PRESUPUESTO"
+        
+    letter_table = Table([[Paragraph(f"<b>{letter}</b>", ParagraphStyle('L', fontSize=24, alignment=1))]], colWidths=[40], rowHeights=[40])
+    letter_table.setStyle(TableStyle([
+        ('BOX', (0,0), (-1,-1), 2, colors.black),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+    ]))
+
+    header_table = Table([
+        [Paragraph(f"<b>{title_text}</b>", title_style), letter_table, Paragraph(f"<b>Fecha:</b> {datetime.datetime.now().strftime('%d/%m/%Y')}", info_style)]
+    ], colWidths=[200, 100, 200])
+    header_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('ALIGN', (1,0), (1,0), 'CENTER'),
+        ('ALIGN', (2,0), (2,0), 'RIGHT'),
+    ]))
     
-    title_text = "COMPROBANTE DISGRAF" if "Factura" in tipo_comprobante else "PRESUPUESTO DISGRAF"
-    elements.append(Paragraph(f"<b>{title_text}</b>", title_style))
-    elements.append(Spacer(1, 10))
-    elements.append(Paragraph(f"<b>Fecha:</b> {datetime.datetime.now().strftime('%d/%m/%Y')}", info_style))
+    elements.append(header_table)
+    elements.append(Spacer(1, 15))
     elements.append(Paragraph(f"<b>Cliente:</b> {client_name}", info_style))
     elements.append(Paragraph(f"<b>Vendedor:</b> {user['username'].capitalize()}", info_style))
     elements.append(Spacer(1, 25))
     
     table_data = [["Descripción", "Unidad", "Precio Unit.", "Desc.", "Cant.", "Subtotal"]]
     
+    multiplier = 1.0
+    if tipo_comprobante in ["Factura Electrónica B", "Factura B (Final / Interna)", "Presupuesto B"]:
+        multiplier = 1.105 if iva_reducido else 1.21
+
     for p in products:
+        price = p['price'] * multiplier
+        subtotal = p['subtotal'] * multiplier
+        
         desc_para = Paragraph(p['name'], cell_style)
-        price_str = f"$ {p['price']:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
-        subtotal_str = f"$ {p['subtotal']:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+        price_str = f"$ {price:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+        subtotal_str = f"$ {subtotal:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
         discount_str = f"{p.get('discount', 0)}%" if p.get('discount', 0) > 0 else "-"
         
         table_data.append([
@@ -218,7 +254,8 @@ async def api_generate_quote_pdf(request: Request):
         elements.append(Paragraph(f"<b>Descuento especial aplicado: {global_discount}%</b>", info_style))
         elements.append(Spacer(1, 10))
     
-    total_str = f"$ {total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+    display_total = total * multiplier
+    total_str = f"$ {display_total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
     total_style = ParagraphStyle(
         'Total',
         parent=styles['Normal'],
@@ -227,13 +264,22 @@ async def api_generate_quote_pdf(request: Request):
         alignment=2 
     )
     
-    if tipo_comprobante in ["Presupuesto B", "Factura B (Final / Interna)"]:
+    if tipo_comprobante in ["Factura Electrónica B", "Factura B (Final / Interna)", "Presupuesto B"]:
         elements.append(Paragraph(f"<b>Total (Final): {total_str}</b>", total_style))
+        if tipo_comprobante == "Factura Electrónica B":
+            # IVA Contenido
+            # Prompt: "Solo Factura Electrónica B dice 'IVA Contenido: $...' (calculado al 21%)."
+            base_total_21 = display_total / 1.21
+            iva_contenido = display_total - base_total_21
+            iva_cont_str = f"$ {iva_contenido:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+            sub_style = ParagraphStyle('SubTotal', parent=styles['Normal'], fontSize=11, textColor=colors.HexColor('#475569'), alignment=2)
+            elements.append(Spacer(1, 5))
+            elements.append(Paragraph(f"IVA Contenido: {iva_cont_str}", sub_style))
     else:
         elements.append(Paragraph(f"<b>Total Estimado (+ IVA 21%): {total_str}</b>", total_style))
         
-        iva_amount = total * 0.21
-        total_with_iva = total * 1.21
+        iva_amount = display_total * 0.21
+        total_with_iva = display_total * 1.21
         
         iva_str = f"$ {iva_amount:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
         total_with_iva_str = f"$ {total_with_iva:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
