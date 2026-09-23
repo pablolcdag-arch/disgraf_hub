@@ -190,3 +190,10 @@ Este documento rastrea las decisiones estratégicas y arquitectónicas clave tom
 - **Decisión:** Se implementó autodetección dinámica del delimitador (`,` o `;`) y validación estricta de columnas obligatorias (`Nº de producto`, `Nombre`) al procesar subidas en `api_upload_saas` (`routes/catalog_api.py`).
 - **Razón:** Cuando los usuarios editaban el archivo CSV exportado usando Microsoft Excel y lo volvían a guardar, el programa cambiaba silenciosamente el delimitador de `;` a `,`, provocando que Pandas no pudiera parsear el archivo con el `sep=';'` hardcodeado.
 - **Archivos afectados:** `routes/catalog_api.py`.
+
+---
+
+## [23 de Septiembre 2026] - Corrección de lectura dinámica del CSV
+- **Decisión:** Se actualizaron los bloques de lectura del catálogo maestro (`get_v2_catalog_data` en `routes/v2.py` y `api_get_saas_products` en `routes/catalog_api.py`) reemplazando `sep=';'` por autodetección de Pandas (`sep=None, engine='python'`). Se conservó el fallback de encoding `utf-8` a `latin-1`.
+- **Razón:** El archivo maestro almacenado en disco (`data/maestro_productos.csv`) podía tener comas como separador tras la modificación manual del usuario usando Excel. Como la lectura directa por parte de otros módulos mantenía el punto y coma hardcodeado, causaba un fallo de parseo al consultar los productos en la Tienda V2 y el Gestor.
+- **Archivos afectados:** `routes/v2.py`, `routes/catalog_api.py`.

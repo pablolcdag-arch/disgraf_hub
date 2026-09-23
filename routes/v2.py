@@ -47,9 +47,9 @@ def get_v2_catalog_data():
         return []
         
     try:
-        df_saas = pd.read_csv(maestro_path, sep=';', encoding='utf-8', on_bad_lines='skip')
+        df_saas = pd.read_csv(maestro_path, sep=None, engine='python', encoding='utf-8', on_bad_lines='skip')
     except:
-        df_saas = pd.read_csv(maestro_path, sep=';', encoding='latin-1', on_bad_lines='skip')
+        df_saas = pd.read_csv(maestro_path, sep=None, engine='python', encoding='latin-1', on_bad_lines='skip')
         
     df_saas.columns = df_saas.columns.str.strip()
     col_id = 'Nº de producto'
