@@ -362,7 +362,9 @@ Cuando una tarea es compleja, usar el siguiente patrón:
 **Invocación del Coordinador:**
 Para usar el coordinador sin que pierda contexto, abre una conversación nueva y di simplemente: *"Asume el rol de Coordinador"*. El agente leerá este archivo y sabrá automáticamente que tiene prohibido modificar código `.py` o `.html`, y que su única tarea es planificar y entregarte prompts para tus otras conversaciones ejecutoras.
 
-**Regla:** Si el Verificador falla 3 veces en la misma subtarea → escalar al usuario con diagnóstico.
+**Regla para el Coordinador:** Al redactar prompts para el Implementador, **NUNCA** debes pedirle que verifique, corra tests o audite su propio código. El prompt debe finalizar explícitamente indicando que el Implementador avise cuando termine de codificar, para que el usuario le pase el trabajo al Agente Verificador. Esto evita conflictos de roles y mantiene el bucle (loop) intacto.
+
+**Regla para el Verificador:** Si falla 3 veces en la misma subtarea → escalar al usuario con diagnóstico.
 
 ### MCPs Disponibles
 - **Context7:** Documentación actualizada de librerías en tiempo real (FastAPI, google-generativeai)
@@ -404,11 +406,12 @@ Después de cualquier cambio arquitectónico o decisión estratégica, el agente
 
 ---
 
-## 📊 Estado Actual del Proyecto (21/09/2026)
+## 📊 Estado Actual del Proyecto (23/09/2026)
 
 | Módulo | Estado | Deuda Técnica |
 |---|---|---|
 | Módulo de Clientes (CRM) | ✅ Funcional | ABM y carga masiva por CSV implementados (Ciclo 17). Soporte Cuenta Corriente y Listas (17.1) |
+| Módulo de Ventas / Comprobantes | ✅ Funcional | Endpoint de persistencia implementado (Ciclo 18) |
 | Login/Auth | ✅ Funcional | Migrado a JWT (Stateless) |
 | Dashboard Admin | ✅ Funcional | — |
 | Cotizador (vendedores) | ✅ Funcional | — |

@@ -78,10 +78,12 @@
             <div class="glass" style="flex: 1.2; display: flex; flex-direction: column; overflow: hidden; background: rgba(0,0,0,0.2);">
                 <div style="padding: 15px; border-bottom: 1px solid var(--border-color); background: rgba(255,255,255,0.02); display: flex; justify-content: space-between; align-items: center;">
                     <h3 style="font-size: 16px; margin: 0;">Presupuesto Actual</h3>
-                    <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; color: var(--text-muted);">
-                        <input type="checkbox" id="chkTipoB" onchange="toggleTipoB(this.checked)" style="accent-color: #38bdf8; width: 16px; height: 16px;">
-                        Comprobante Tipo B (Final)
-                    </label>
+                    <select id="tipoComprobante" onchange="toggleTipoB(this.value === 'Factura B (Final / Interna)')" class="form-control" style="width: 250px; padding: 5px; background: rgba(0,0,0,0.3); color: white; border: 1px solid var(--border-color); border-radius: 4px;">
+                        <option value="Presupuesto">Presupuesto</option>
+                        <option value="Factura Electrónica A">Factura Electrónica A</option>
+                        <option value="Factura Electrónica B">Factura Electrónica B</option>
+                        <option value="Factura B (Final / Interna)">Factura B (Final / Interna)</option>
+                    </select>
                 </div>
                 
                 <div id="cartList" style="flex: 1; overflow-y: auto; padding: 10px;">
@@ -267,7 +269,7 @@ window.clearCart = () => {
         state.cart = [];
         dom.clientName.value = '';
         state.tipoB = false;
-        document.getElementById('chkTipoB').checked = false;
+        if(document.getElementById('tipoComprobante')) document.getElementById('tipoComprobante').value = 'Presupuesto';
         state.globalDiscount = 0;
         document.getElementById('globalDiscount').value = '0';
         renderCart();
@@ -377,7 +379,9 @@ window.loadHistoryItem = (id) => {
     
     // Load quote options
     state.tipoB = quote.tipoB || false;
-    document.getElementById('chkTipoB').checked = state.tipoB;
+    if(document.getElementById('tipoComprobante')) {
+        document.getElementById('tipoComprobante').value = state.tipoB ? 'Factura B (Final / Interna)' : 'Presupuesto';
+    }
     
     state.globalDiscount = quote.globalDiscount || 0;
     document.getElementById('globalDiscount').value = state.globalDiscount;
@@ -602,6 +606,7 @@ function getQuotePayload() {
         total += subtotal;
         
         return {
+            id: item.product.id,
             name: item.product.name,
             unit: item.product.unit && item.product.unit !== 'nan' ? item.product.unit : 'unid.',
             price: originalUnitPrice, // Enviar el precio original sin descuento para mostrarlo en el PDF
@@ -612,6 +617,7 @@ function getQuotePayload() {
     });
     
     const finalTotal = total * (1 - (state.globalDiscount / 100));
+    const tipoComprobante = document.getElementById('tipoComprobante') ? document.getElementById('tipoComprobante').value : 'Presupuesto';
     
     return {
         client_name: dom.clientName.value.trim(),
@@ -619,6 +625,7 @@ function getQuotePayload() {
         products: products,
         total: finalTotal,
         tipoB: state.tipoB,
+        tipo_comprobante: tipoComprobante,
         globalDiscount: state.globalDiscount
     };
 }
@@ -729,6 +736,43 @@ dom.btnDownloadPDF.addEventListener('click', async () => {
     try {
         const payload = getQuotePayload();
         
+        // Guardar comprobante
+        let subtotalVenta = 0;
+        let itemsVenta = [];
+        payload.products.forEach(p => {
+            itemsVenta.push({
+                producto_id: p.id || 'N/A',
+                descripcion: p.name,
+                cantidad: p.quantity,
+                precio_unitario: p.price,
+                alicuota_iva: payload.tipo_comprobante.includes('Factura Electrónica') ? 21.0 : 0.0,
+                subtotal: p.subtotal
+            });
+            subtotalVenta += p.subtotal;
+        });
+        const totalIva = payload.tipo_comprobante.includes('Factura Electrónica') ? payload.total * 0.21 : 0.0;
+        const totalFinalVenta = payload.tipo_comprobante.includes('Factura Electrónica') ? payload.total * 1.21 : payload.total;
+
+        const ventaPayload = {
+            cliente_id: payload.client_id || payload.client_name || 'Consumidor Final',
+            tipo_comprobante: payload.tipo_comprobante,
+            subtotal: subtotalVenta,
+            total_iva: totalIva,
+            total: totalFinalVenta,
+            items: itemsVenta
+        };
+
+        const resVenta = await fetch('/api/ventas/comprobantes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(ventaPayload)
+        });
+        
+        if (!resVenta.ok) {
+            console.error("Error al registrar comprobante");
+            // Decidir si abortar PDF o continuar. Por ahora continuamos.
+        }
+
         const res = await fetch("/api/generate-quote-pdf", {
             method: "POST",
             headers: { "Content-Type": "application/json" },

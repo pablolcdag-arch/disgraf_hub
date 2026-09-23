@@ -197,3 +197,8 @@ Este documento rastrea las decisiones estratégicas y arquitectónicas clave tom
 - **Decisión:** Se actualizaron los bloques de lectura del catálogo maestro (`get_v2_catalog_data` en `routes/v2.py` y `api_get_saas_products` en `routes/catalog_api.py`) reemplazando `sep=';'` por autodetección de Pandas (`sep=None, engine='python'`). Se conservó el fallback de encoding `utf-8` a `latin-1`.
 - **Razón:** El archivo maestro almacenado en disco (`data/maestro_productos.csv`) podía tener comas como separador tras la modificación manual del usuario usando Excel. Como la lectura directa por parte de otros módulos mantenía el punto y coma hardcodeado, causaba un fallo de parseo al consultar los productos en la Tienda V2 y el Gestor.
 - **Archivos afectados:** `routes/v2.py`, `routes/catalog_api.py`.
+
+## [23 de Septiembre 2026] - SDD Ciclo 18: Base de datos de Comprobantes y Conexión del Cotizador
+- **Decisión:** Se crearon las tablas `comprobantes` y `comprobantes_items` en SQLite, incorporando reglas de negocio (`es_fiscal`, `impacta_cc`, `impacta_stock`). Se implementó el endpoint `POST /api/ventas/comprobantes` para la generación de los mismos.
+- **Razón:** Para soportar el almacenamiento persistente de comprobantes de venta (presupuestos, facturas, etc.) y permitir la integración con el Cotizador, avanzando hacia el reemplazo del ERP legacy.
+- **Archivos afectados:** `routes/ventas_api.py`, `main.py`, `data/disgraf_hub.db`.
