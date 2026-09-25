@@ -407,7 +407,7 @@ window.loadHistoryItem = (id) => {
     }
     if(document.getElementById('lblIvaReducido')) {
         const tComp = document.getElementById('tipoComprobante').value;
-        if (tComp === 'Factura B (Final / Interna)' || tComp === 'Presupuesto B') {
+        if (tComp.includes('Interna') || tComp === 'Presupuesto B') {
             document.getElementById('lblIvaReducido').style.display = 'flex';
             document.getElementById('chkIvaReducido').checked = quote.iva_reducido || false;
         } else {
@@ -565,7 +565,7 @@ window.handleComprobanteChange = () => {
     const chk = document.getElementById('chkIvaReducido');
     const lbl = document.getElementById('lblIvaReducido');
     
-    if (val === 'Factura B (Final / Interna)' || val === 'Presupuesto B') {
+    if (val.includes('Interna') || val === 'Presupuesto B') {
         lbl.style.display = 'flex';
     } else {
         lbl.style.display = 'none';
