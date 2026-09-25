@@ -90,6 +90,7 @@
                             <option value="Factura B (Final / Interna)">Factura B (Final / Interna)</option>
                             <option value="Presupuesto A" selected>Presupuesto A</option>
                             <option value="Presupuesto B">Presupuesto B</option>
+                            <option value="Remito">Remito</option>
                             <option value="Nota de Crédito A">Nota de Crédito A</option>
                             <option value="Nota de Crédito B">Nota de Crédito B</option>
                             <option value="Nota de Crédito Interna">Nota de Crédito Interna</option>
@@ -905,6 +906,96 @@ dom.btnDownloadPDF.addEventListener('click', async () => {
 // Init
 dom.search.addEventListener('input', renderSaasList);
 loadProducts();
+
+(async function handleUrlParams() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const loadId = urlParams.get('load_id');
+    const remitoFrom = urlParams.get('remito_from');
+    
+    if (loadId) {
+        try {
+            const res = await fetch('/api/history-quotes');
+            const history = await res.json();
+            window._historyData = history;
+            
+            const quote = history.find(q => q.id === loadId);
+            if (quote) {
+                // Populate client
+                window.selectedClientId = quote.client_id || null;
+                dom.clientName.value = quote.client === "Consumidor Final" ? "" : quote.client;
+                
+                // Populate cart
+                state.cart = quote.products.map(p => ({
+                    product: {
+                        id: p.id,
+                        name: p.name,
+                        price: p.price,
+                        unit: p.unit || 'unid.'
+                    },
+                    quantity: p.quantity,
+                    discount: p.discount || 0
+                }));
+                
+                state.globalDiscount = quote.globalDiscount || 0;
+                if(document.getElementById('globalDiscount')) document.getElementById('globalDiscount').value = state.globalDiscount;
+                
+                // Select Factura based on Presupuesto type
+                const tComp = document.getElementById('tipoComprobante');
+                if (tComp) {
+                    if (quote.tipo_comprobante && quote.tipo_comprobante.includes('B')) {
+                        tComp.value = 'Factura B (Final / Interna)';
+                    } else {
+                        tComp.value = 'Factura Electrónica A'; // default A
+                    }
+                }
+                
+                if (window.handleComprobanteChange) {
+                    window.handleComprobanteChange();
+                } else {
+                    renderCart();
+                }
+            }
+        } catch (e) {
+            console.error("Error loading quote from url param", e);
+        }
+    } else if (remitoFrom) {
+        try {
+            const res = await fetch(`/api/ventas/comprobante/${remitoFrom}`);
+            if (res.ok) {
+                const comprobante = await res.json();
+                
+                // Set client fallback
+                window.selectedClientId = comprobante.cliente_id;
+                dom.clientName.value = comprobante.cliente_nombre || comprobante.cliente_id || "";
+                
+                // Populate cart
+                state.cart = comprobante.items.map(item => ({
+                    product: {
+                        id: item.producto_id,
+                        name: item.descripcion,
+                        price: item.precio_unitario,
+                        unit: 'unid.'
+                    },
+                    quantity: item.cantidad,
+                    discount: 0
+                }));
+                
+                const tComp = document.getElementById('tipoComprobante');
+                if (tComp) {
+                    tComp.value = 'Remito';
+                }
+                
+                if (window.handleComprobanteChange) {
+                    window.handleComprobanteChange();
+                } else {
+                    renderCart();
+                }
+            }
+        } catch (e) {
+            console.error("Error loading remito from url param", e);
+        }
+    }
+})();
 
 </script>
 {% endblock %}
