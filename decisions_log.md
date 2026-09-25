@@ -207,3 +207,8 @@ Este documento rastrea las decisiones estratégicas y arquitectónicas clave tom
 - **Decisión:** Se separó "Factura Electrónica A" de la "B". Se implementó la lógica estricta de AFIP: los comprobantes "B" (Fiscales, Internos y Presupuestos) incluyen un 21% de IVA en su precio unitario por defecto. Además, se añadió un flag `iva_reducido` (10.5%) manual exclusivo para ventas no fiscales o presupuestos B, desacoplando este cálculo de los descuentos comerciales.
 - **Razón:** Permitir a los vendedores de mostrador hacer descuentos por pago en efectivo sin romper la matemática fiscal ni enredar el cálculo con descuentos por cantidad.
 - **Archivos afectados:** `routes/ventas_api.py`, `routes/cotizador_api.py`, `templates/cotizador.html`.
+
+## [25 de Septiembre 2026] - NC, ND y Conceptos Libres (Ciclo 18.2)
+- **Decisión:** Se amplió la capacidad del Cotizador integrando Notas de Crédito y Notas de Débito (A, B e Internas). Se incorporó seguridad por roles para restringir las Notas de Débito (cargos extra) exclusivamente a administradores (protegiendo el uso indebido). También se implementó un flujo de "Concepto Libre" en UI para cargar cheques rechazados o ítems fuera de catálogo.
+- **Razón:** Proveer al administrador herramientas formales de reversión y recargos financieros, replicando capacidades del ERP heredado sin perder el control de stock (NC devuelven stock, ND no lo afectan).
+- **Archivos afectados:** `routes/ventas_api.py`, `routes/cotizador_api.py`, `templates/cotizador.html`, `implementation_plan.md`.
