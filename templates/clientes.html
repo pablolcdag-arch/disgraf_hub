@@ -165,6 +165,68 @@
             </div>
         </div>
 
+        <!-- Payment Modal -->
+        <div id="paymentModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+            <div class="glass" style="width: 500px; max-height: 90vh; overflow-y: auto; padding: 25px; border-radius: 12px; background: var(--glass-bg); border: 1px solid var(--border-color);">
+                <h2 style="margin-top:0; color: #fff;">Recibo de Pago</h2>
+                <form id="paymentForm" onsubmit="submitPayment(event)">
+                    <input type="hidden" id="payInvoiceId">
+                    <input type="hidden" id="payClientId">
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Forma de Pago</label>
+                        <select id="payMethod" class="form-control" style="width:100%; padding: 8px; background: rgba(0,0,0,0.3); color: white;" onchange="togglePaymentFields()" required>
+                            <option value="Efectivo">Efectivo</option>
+                            <option value="Transferencia">Transferencia</option>
+                            <option value="Cheque/Echeq">Cheque/Echeq</option>
+                            <option value="Retención">Retención</option>
+                        </select>
+                    </div>
+
+                    <div id="payFieldTransferencia" style="display:none; margin-bottom: 15px;">
+                        <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Banco de Destino</label>
+                        <input type="text" id="payBankName" class="form-control" style="width:100%; padding: 8px;">
+                    </div>
+
+                    <div id="payFieldCheque" style="display:none; margin-bottom: 15px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div>
+                                <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Número de cheque</label>
+                                <input type="text" id="payCheckNumber" class="form-control" style="width:100%; padding: 8px;">
+                            </div>
+                            <div>
+                                <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Banco</label>
+                                <input type="text" id="payCheckBank" class="form-control" style="width:100%; padding: 8px;">
+                            </div>
+                            <div style="grid-column: span 2;">
+                                <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Fecha de cobro</label>
+                                <input type="date" id="payCheckDate" class="form-control" style="width:100%; padding: 8px;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="payFieldRetencion" style="display:none; margin-bottom: 15px;">
+                        <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Tipo de Retención</label>
+                        <select id="payRetencionType" class="form-control" style="width:100%; padding: 8px; background: rgba(0,0,0,0.3); color: white;">
+                            <option value="Ganancias">Ganancias</option>
+                            <option value="IIBB CABA">IIBB CABA</option>
+                            <option value="IVA">IVA</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Importe a Pagar ($)</label>
+                        <input type="number" id="payAmount" step="0.01" class="form-control" required style="width:100%; padding: 8px;">
+                    </div>
+                    
+                    <div style="margin-top: 25px; display: flex; justify-content: flex-end; gap: 10px;">
+                        <button type="button" class="btn-secondary" onclick="closePaymentModal()">Cancelar</button>
+                        <button type="submit" class="btn-primary">Ingresar Pago</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
     </main>
 </div>
 
@@ -215,37 +277,114 @@ async function loadClientDetails(id) {
         
         if (client.error) throw new Error(client.error);
         
-        // Fetch history
+        // Fetch history legacy
         const hRes = await fetch(`/api/clientes/${id}/presupuestos`);
-        const history = await hRes.json();
+        const legacyHistory = await hRes.json();
         
-        renderFicha(client, history);
+        // Fetch new DB history
+        let dbHistory = [];
+        try {
+            const vRes = await fetch(`/api/ventas/cliente/${id}`);
+            if (vRes.ok) {
+                const dbData = await vRes.json();
+                dbHistory = dbData.map(db => ({
+                    id: db.id,
+                    date: db.fecha_emision,
+                    seller: "Sistema",
+                    total: db.total,
+                    products: [{}], // Mock for UI count
+                    tipo_comprobante: db.tipo_comprobante
+                }));
+            }
+        } catch(e) { console.error(e); }
+        
+        const combined = [...dbHistory, ...(Array.isArray(legacyHistory) ? legacyHistory : [])];
+        
+        renderFicha(client, combined);
         
     } catch (err) {
         detailsPane.innerHTML = `<div style="flex: 1; display: flex; align-items: center; justify-content: center; color: #ef4444;">Error: ${err.message}</div>`;
     }
 }
 
+window.currentClient = null;
+window.currentHistory = [];
+
 function renderFicha(client, history) {
-    let historyHtml = '';
-    if (!history || history.length === 0) {
-        historyHtml = `<div style="color: var(--text-muted); font-size: 14px; padding: 10px;">No hay presupuestos registrados para este cliente.</div>`;
-    } else {
-        historyHtml = history.map(q => {
-            const dateStr = new Date(q.date).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' });
-            return `
-            <div style="background: rgba(255,255,255,0.05); padding: 12px; margin-bottom: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <div style="color: #38bdf8; font-weight: bold;">ID: ${q.id}</div>
-                    <div style="font-size: 12px; color: var(--text-muted);">${dateStr} | Vendedor: ${q.seller}</div>
-                </div>
-                <div style="text-align: right;">
-                    <div style="font-weight: bold;">$${q.total.toLocaleString('es-AR', {minimumFractionDigits: 2})}</div>
-                    <div style="font-size: 12px; color: var(--text-muted);">${q.products.length} ítems</div>
-                </div>
-            </div>`;
-        }).join('');
+    window.currentClient = client;
+    window.currentHistory = history || [];
+    renderClientTabs('todos');
+}
+
+window.renderClientTabs = (tab) => {
+    const client = window.currentClient;
+    const history = window.currentHistory;
+    if (!client) return;
+    
+    // Filter history based on tab
+    let filteredHistory = history;
+    if (tab === 'presupuestos') {
+        filteredHistory = history.filter(q => q.tipo_comprobante && q.tipo_comprobante.includes('Presupuesto'));
+    } else if (tab === 'facturas') {
+        filteredHistory = history.filter(q => q.tipo_comprobante && q.tipo_comprobante.includes('Factura'));
+    } else if (tab === 'remitos') {
+        filteredHistory = history.filter(q => q.tipo_comprobante && q.tipo_comprobante.includes('Remito'));
+    } else if (tab === 'pagos') {
+        filteredHistory = history.filter(q => q.tipo_comprobante && q.tipo_comprobante.includes('Recibo'));
     }
+
+    let historyHtml = '';
+    if (!filteredHistory || filteredHistory.length === 0) {
+        historyHtml = `<div style="color: var(--text-muted); font-size: 14px; padding: 20px; text-align: center;">No hay comprobantes para esta vista.</div>`;
+    } else {
+        historyHtml = `
+            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-size: 12px; text-align: left;">
+                        <th style="padding: 10px;">Fecha</th>
+                        <th style="padding: 10px;">Tipo</th>
+                        <th style="padding: 10px;">Número</th>
+                        <th style="padding: 10px; text-align: right;">Importe</th>
+                        <th style="padding: 10px; text-align: center;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${filteredHistory.map(q => {
+                        const dateStr = new Date(q.date).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' });
+                        const tipoComp = q.tipo_comprobante || 'Presupuesto A';
+                        let rowColor = 'inherit';
+                        if (tipoComp.includes('Nota de Crédito') || tipoComp.includes('Recibo')) rowColor = '#10b981';
+                        if (tipoComp.includes('Nota de Débito')) rowColor = '#ef4444';
+                        
+                        let actions = '';
+                        if (tipoComp.includes('Presupuesto')) {
+                            actions = `<a href="/cotizador?load_id=${q.id}" class="btn-secondary" style="font-size: 11px; padding: 4px 8px; text-decoration: none;" title="Facturar">$ / Facturar</a>`;
+                        } else if (tipoComp.includes('Factura')) {
+                            actions = `
+                                <button onclick="openPaymentModal('${q.id}')" class="btn-primary" style="font-size: 11px; padding: 4px 8px; background: #10b981;">Cobrar</button>
+                                <a href="/cotizador?remito_from=${q.id}" class="btn-secondary" style="font-size: 11px; padding: 4px 8px; text-decoration: none;">+ Remito</a>
+                            `;
+                        }
+
+                        return `
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s; color: ${rowColor};">
+                            <td style="padding: 12px 10px; font-size: 13px;">${dateStr}</td>
+                            <td style="padding: 12px 10px; font-size: 13px; font-weight: bold;">${tipoComp}</td>
+                            <td style="padding: 12px 10px; font-size: 13px; color: var(--text-muted);">${q.id}</td>
+                            <td style="padding: 12px 10px; font-size: 13px; text-align: right; font-weight: bold;">$${q.total.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                            <td style="padding: 12px 10px; text-align: center; display: flex; justify-content: center; gap: 5px;">
+                                ${actions}
+                            </td>
+                        </tr>`;
+                    }).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    const tabStyles = (id) => tab === id 
+        ? 'color: #38bdf8; border-bottom: 2px solid #38bdf8; font-weight: bold;' 
+        : 'color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent;';
 
     detailsPane.innerHTML = `
         <div style="padding: 25px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: flex-start;">
@@ -258,15 +397,15 @@ function renderFicha(client, history) {
             </div>
             <div style="display: flex; gap: 10px;">
                 <a href="/cotizador" style="text-decoration: none;">
-                    <button class="btn-primary" style="background: #10b981;">+ Presupuesto</button>
+                    <button class="btn-primary" style="background: #10b981;">+ Nuevo Comprobante</button>
                 </a>
-                <button class="btn-secondary" onclick='openClientModal(${JSON.stringify(client).replace(/'/g, "&#39;")})'>Editar</button>
+                <button class="btn-secondary" onclick='openClientModal(${JSON.stringify(client).replace(/'/g, "&#39;")})'>Editar Cliente</button>
             </div>
         </div>
         
         <div style="padding: 25px; display: flex; gap: 20px; overflow-y: auto; flex-direction: column;">
             <!-- Datos Info -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px;">
                 <div>
                     <div style="color: var(--text-muted); font-size: 12px; margin-bottom: 4px;">CUIT / Documento</div>
                     <div style="font-size: 14px;">${client.cuit !== '0' ? client.cuit : client.documento || 'No registrado'}</div>
@@ -279,16 +418,23 @@ function renderFicha(client, history) {
                     <div style="color: var(--text-muted); font-size: 12px; margin-bottom: 4px;">Email</div>
                     <div style="font-size: 14px;">${client.mail || 'No registrado'}</div>
                 </div>
-                <div>
+                <div style="grid-column: span 3;">
                     <div style="color: var(--text-muted); font-size: 12px; margin-bottom: 4px;">Domicilio</div>
                     <div style="font-size: 14px;">${client.domicilio || ''} ${client.localidad || ''} ${client.provincia || ''}</div>
                 </div>
             </div>
             
-            <!-- Historial Section -->
-            <div style="margin-top: 10px;">
-                <h3 style="margin-bottom: 15px; font-size: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Historial de Presupuestos</h3>
-                <div style="max-height: 400px; overflow-y: auto; padding-right: 5px;">
+            <!-- Historial Tabs Section -->
+            <div style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+                <div style="display: flex; gap: 20px; border-bottom: 1px solid var(--border-color); margin-bottom: 10px;">
+                    <div onclick="renderClientTabs('todos')" style="padding-bottom: 8px; transition: color 0.2s; ${tabStyles('todos')}">Cuenta Corriente (Todos)</div>
+                    <div onclick="renderClientTabs('pagos')" style="padding-bottom: 8px; transition: color 0.2s; ${tabStyles('pagos')}">Pagos</div>
+                    <div onclick="renderClientTabs('facturas')" style="padding-bottom: 8px; transition: color 0.2s; ${tabStyles('facturas')}">Facturas</div>
+                    <div onclick="renderClientTabs('remitos')" style="padding-bottom: 8px; transition: color 0.2s; ${tabStyles('remitos')}">Remitos</div>
+                    <div onclick="renderClientTabs('presupuestos')" style="padding-bottom: 8px; transition: color 0.2s; ${tabStyles('presupuestos')}">Presupuestos</div>
+                </div>
+                
+                <div style="flex: 1; overflow-y: auto;">
                     ${historyHtml}
                 </div>
             </div>
@@ -424,5 +570,92 @@ async function saveClient(e) {
         alert('Error: ' + err.message);
     }
 }
+
+window.openPaymentModal = (invoiceId) => {
+    document.getElementById('payInvoiceId').value = invoiceId;
+    document.getElementById('payClientId').value = window.currentClient.id;
+    document.getElementById('paymentForm').reset();
+    togglePaymentFields();
+    document.getElementById('paymentModal').style.display = 'flex';
+};
+
+window.closePaymentModal = () => {
+    document.getElementById('paymentModal').style.display = 'none';
+};
+
+window.togglePaymentFields = () => {
+    const method = document.getElementById('payMethod').value;
+    document.getElementById('payFieldTransferencia').style.display = method === 'Transferencia' ? 'block' : 'none';
+    document.getElementById('payFieldCheque').style.display = method === 'Cheque/Echeq' ? 'block' : 'none';
+    document.getElementById('payFieldRetencion').style.display = method === 'Retención' ? 'block' : 'none';
+    
+    // Reset specific requireds
+    document.getElementById('payBankName').required = method === 'Transferencia';
+    document.getElementById('payCheckNumber').required = method === 'Cheque/Echeq';
+    document.getElementById('payCheckBank').required = method === 'Cheque/Echeq';
+    document.getElementById('payCheckDate').required = method === 'Cheque/Echeq';
+};
+
+window.submitPayment = async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+
+    const invoiceId = document.getElementById('payInvoiceId').value;
+    const clientId = document.getElementById('payClientId').value;
+    const method = document.getElementById('payMethod').value;
+    const amount = parseFloat(document.getElementById('payAmount').value);
+    
+    let description = `Pago en ${method}`;
+    if (method === 'Transferencia') {
+        description += ` (Banco: ${document.getElementById('payBankName').value})`;
+    } else if (method === 'Cheque/Echeq') {
+        description += ` (Cheque #${document.getElementById('payCheckNumber').value} - Banco: ${document.getElementById('payCheckBank').value} - Cobro: ${document.getElementById('payCheckDate').value})`;
+    } else if (method === 'Retención') {
+        description += ` (Tipo: ${document.getElementById('payRetencionType').value})`;
+    }
+    
+    const payload = {
+        cliente_id: clientId,
+        tipo_comprobante: "Recibo de Pago",
+        subtotal: amount,
+        total_iva: 0.0,
+        total: amount,
+        items: [
+            {
+                producto_id: "PAGO",
+                descripcion: description,
+                cantidad: 1,
+                precio_unitario: amount,
+                alicuota_iva: 0.0,
+                subtotal: amount
+            }
+        ],
+        comprobante_asociado_id: invoiceId ? parseInt(invoiceId) : null
+    };
+    
+    try {
+        const res = await fetch("/api/ventas/comprobantes", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        
+        if (res.ok) {
+            closePaymentModal();
+            loadClientDetails(clientId);
+            alert("Pago ingresado correctamente.");
+        } else {
+            const errData = await res.json();
+            alert("Error: " + (errData.detail || "No se pudo ingresar el pago"));
+        }
+    } catch(err) {
+        alert("Error de conexión.");
+    }
+    
+    btn.disabled = false;
+    btn.textContent = 'Ingresar Pago';
+};
 </script>
 {% endblock %}
