@@ -69,7 +69,10 @@
             <div class="glass" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
                 <div style="padding: 15px; border-bottom: 1px solid var(--border-color);">
                     <h3 style="font-size: 16px; margin-bottom: 10px;">Base de Productos (SaaS)</h3>
-                    <input type="text" id="searchSaaS" class="form-control" placeholder="Buscar por nombre o código..." style="padding: 8px 12px;">
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="searchSaaS" class="form-control" placeholder="Buscar por nombre o código..." style="padding: 8px 12px; flex: 1;">
+                        <button onclick="addConceptoLibre()" class="btn-secondary" style="white-space: nowrap; padding: 8px 12px; font-size: 13px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; cursor: pointer;">+ Concepto Libre</button>
+                    </div>
                 </div>
                 <div id="saasList" style="flex: 1; overflow-y: auto; padding: 10px;">
                     <div style="text-align: center; color: var(--text-muted); padding: 20px;">Cargando base de datos...</div>
@@ -87,6 +90,14 @@
                             <option value="Factura B (Final / Interna)">Factura B (Final / Interna)</option>
                             <option value="Presupuesto A" selected>Presupuesto A</option>
                             <option value="Presupuesto B">Presupuesto B</option>
+                            <option value="Nota de Crédito A">Nota de Crédito A</option>
+                            <option value="Nota de Crédito B">Nota de Crédito B</option>
+                            <option value="Nota de Crédito Interna">Nota de Crédito Interna</option>
+                            {% if user and user.role == 'admin' %}
+                            <option value="Nota de Débito A">Nota de Débito A</option>
+                            <option value="Nota de Débito B">Nota de Débito B</option>
+                            <option value="Nota de Débito Interna">Nota de Débito Interna</option>
+                            {% endif %}
                         </select>
                         <label id="lblIvaReducido" style="display: none; align-items: center; gap: 5px; color: var(--text-muted); font-size: 13px; cursor: pointer;">
                             <input type="checkbox" id="chkIvaReducido" onchange="renderCart()" style="accent-color: #38bdf8;"> IVA Reducido (10.5%)
@@ -494,6 +505,33 @@ window.addToCart = (id) => {
     showToast("Producto añadido");
 };
 
+window.addConceptoLibre = () => {
+    const desc = prompt("Descripción del concepto libre:");
+    if (!desc || !desc.trim()) return;
+    const importeStr = prompt("Importe (con punto o coma):");
+    if (!importeStr) return;
+    
+    // Normalizar coma a punto
+    const importeNorm = importeStr.replace(',', '.');
+    const importe = parseFloat(importeNorm);
+    
+    if (isNaN(importe)) {
+        alert("Importe inválido.");
+        return;
+    }
+    
+    const fakeId = 'LIBRE-' + Math.floor(Math.random() * 10000);
+    const newProduct = {
+        id: fakeId,
+        name: desc.trim(),
+        price: importe,
+        unit: 'un'
+    };
+    
+    state.cart.push({ product: newProduct, quantity: 1, discount: 0 });
+    renderCart();
+};
+
 window.removeFromCart = (id) => {
     state.cart = state.cart.filter(item => item.product.id !== id);
     renderCart();
@@ -556,7 +594,7 @@ function renderCart() {
     let total = 0;
     
     const tipoComp = document.getElementById('tipoComprobante') ? document.getElementById('tipoComprobante').value : 'Presupuesto A';
-    const isTipoB = tipoComp.includes('B');
+    const isTipoB = tipoComp.includes('B') || tipoComp.includes('Interna');
     const ivaReducido = document.getElementById('chkIvaReducido') ? document.getElementById('chkIvaReducido').checked : false;
 
     document.getElementById('cartList').innerHTML = state.cart.map(item => {
@@ -637,7 +675,7 @@ function getQuotePayload() {
     let total = 0;
     
     const tipoComp = document.getElementById('tipoComprobante') ? document.getElementById('tipoComprobante').value : 'Presupuesto A';
-    const isTipoB = tipoComp.includes('B');
+    const isTipoB = tipoComp.includes('B') || tipoComp.includes('Interna');
     const ivaReducido = document.getElementById('chkIvaReducido') ? document.getElementById('chkIvaReducido').checked : false;
 
     const products = state.cart.map(item => {
@@ -739,7 +777,7 @@ dom.btnCopyWa.addEventListener('click', async () => {
     const payload = getQuotePayload();
     let text = `Hola! 👋 Te paso el presupuesto solicitado:\n\n`;
     
-    const isTipoB = payload.tipo_comprobante.includes('B');
+    const isTipoB = payload.tipo_comprobante.includes('B') || payload.tipo_comprobante.includes('Interna');
 
     payload.products.forEach(p => {
         let descText = p.discount > 0 ? ` (Desc. ${p.discount}%)` : '';
@@ -792,7 +830,7 @@ dom.btnDownloadPDF.addEventListener('click', async () => {
         // Guardar comprobante
         let subtotalVenta = 0;
         let itemsVenta = [];
-        const showsIva = payload.tipo_comprobante === 'Presupuesto A' || payload.tipo_comprobante === 'Factura Electrónica A';
+        const showsIva = payload.tipo_comprobante.includes('A');
         
         payload.products.forEach(p => {
             itemsVenta.push({
