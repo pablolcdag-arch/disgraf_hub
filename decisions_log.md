@@ -212,3 +212,8 @@ Este documento rastrea las decisiones estratégicas y arquitectónicas clave tom
 - **Decisión:** Se amplió la capacidad del Cotizador integrando Notas de Crédito y Notas de Débito (A, B e Internas). Se incorporó seguridad por roles para restringir las Notas de Débito (cargos extra) exclusivamente a administradores (protegiendo el uso indebido). También se implementó un flujo de "Concepto Libre" en UI para cargar cheques rechazados o ítems fuera de catálogo.
 - **Razón:** Proveer al administrador herramientas formales de reversión y recargos financieros, replicando capacidades del ERP heredado sin perder el control de stock (NC devuelven stock, ND no lo afectan).
 - **Archivos afectados:** `routes/ventas_api.py`, `routes/cotizador_api.py`, `templates/cotizador.html`, `implementation_plan.md`.
+
+## [25 de Septiembre 2026] - Fase 1.5: Remitos, Recibos y Ficha de Cuentas Corrientes (Ciclo 18.3)
+- **Decisión:** Se integraron los Remitos (que no afectan stock ni CC, estrictamente asociados a una factura) y los Recibos de Pago. Se rediseñó la Ficha del Cliente (`clientes.html`) para incluir un dashboard de Cuenta Corriente con pestañas (Todos, Pagos, Facturas, Remitos, Presupuestos) y botones de acción rápida para facturar presupuestos, emitir remitos desde facturas, y cobrar facturas.
+- **Razón:** Proveer un puente visual y funcional hacia el futuro módulo completo de Cuentas Corrientes. Optimiza la velocidad del vendedor al evitar que vuelva a tipear presupuestos y centraliza la carga de cobros (con cheques, retenciones y transferencias).
+- **Archivos afectados:** `data/disgraf_hub.db` (ADD COLUMN comprobante_asociado_id), `routes/ventas_api.py`, `routes/cotizador_api.py`, `templates/clientes.html`, `implementation_plan.md`.
