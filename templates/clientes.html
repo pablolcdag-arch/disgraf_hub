@@ -356,11 +356,13 @@ window.renderClientTabs = (tab) => {
                         if (tipoComp.includes('Nota de Crédito') || tipoComp.includes('Recibo')) rowColor = '#10b981';
                         if (tipoComp.includes('Nota de Débito')) rowColor = '#ef4444';
                         
-                        let actions = '';
+                        let actions = `
+                            <button onclick="downloadPDF('${q.id}', '${tipoComp}', '${q.date}')" class="btn-secondary" style="font-size: 11px; padding: 4px 8px; margin-right: 4px;" title="Ver PDF">📄</button>
+                        `;
                         if (tipoComp.includes('Presupuesto')) {
-                            actions = `<a href="/cotizador?load_id=${q.id}" class="btn-secondary" style="font-size: 11px; padding: 4px 8px; text-decoration: none;" title="Facturar">$ / Facturar</a>`;
+                            actions += `<a href="/cotizador?load_id=${q.id}" class="btn-secondary" style="font-size: 11px; padding: 4px 8px; text-decoration: none;" title="Facturar">$ / Facturar</a>`;
                         } else if (tipoComp.includes('Factura')) {
-                            actions = `
+                            actions += `
                                 <button onclick="openPaymentModal('${q.id}')" class="btn-primary" style="font-size: 11px; padding: 4px 8px; background: #10b981;">Cobrar</button>
                                 <a href="/cotizador?remito_from=${q.id}" class="btn-secondary" style="font-size: 11px; padding: 4px 8px; text-decoration: none;">+ Remito</a>
                             `;
@@ -656,6 +658,75 @@ window.submitPayment = async (e) => {
     
     btn.disabled = false;
     btn.textContent = 'Ingresar Pago';
+};
+
+window.downloadPDF = async (id, tipo, fechaOriginal) => {
+    try {
+        let payload = null;
+
+        if (tipo.includes('Presupuesto')) {
+            const hRes = await fetch(`/api/history-quotes`);
+            const history = await hRes.json();
+            const quote = history.find(q => q.id === id);
+            
+            if (!quote) throw new Error("Presupuesto no encontrado");
+            
+            payload = {
+                client_name: quote.client,
+                client_id: quote.client_id || "",
+                tipo_comprobante: quote.tipo_comprobante || tipo,
+                total: quote.total,
+                products: quote.products,
+                iva_reducido: quote.iva_reducido || false,
+                date: fechaOriginal || quote.date,
+                is_reprint: true
+            };
+        } else {
+            const vRes = await fetch(`/api/ventas/comprobante/${id}`);
+            if (!vRes.ok) throw new Error("Comprobante no encontrado");
+            const dbComp = await vRes.json();
+            
+            payload = {
+                client_name: window.currentClient ? window.currentClient.nombre : (dbComp.cliente_nombre || dbComp.cliente_id),
+                client_id: dbComp.cliente_id,
+                tipo_comprobante: dbComp.tipo_comprobante || tipo,
+                total: dbComp.total,
+                iva_reducido: false,
+                date: fechaOriginal || dbComp.fecha_emision,
+                is_reprint: true,
+                products: dbComp.items.map(item => ({
+                    id: item.producto_id,
+                    name: item.descripcion,
+                    quantity: item.cantidad,
+                    price: item.precio_unitario,
+                    unit: 'unid.',
+                    subtotal: item.subtotal,
+                    discount: 0
+                }))
+            };
+        }
+        
+        const res = await fetch("/api/generate-quote-pdf", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        
+        if (!res.ok) throw new Error("Error generando PDF");
+        
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${tipo.replace(/\s+/g, '_')}_${id}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        
+    } catch (e) {
+        alert("Error al descargar PDF: " + e.message);
+    }
 };
 </script>
 {% endblock %}
