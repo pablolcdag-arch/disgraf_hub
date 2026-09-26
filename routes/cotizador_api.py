@@ -27,6 +27,11 @@ async def api_log_quote(request: Request):
     total = data.get("total", 0)
     products = data.get("products", [])
     
+    is_reprint = data.get("is_reprint", False)
+    quote_id = data.get("quote_id") or data.get("id")
+    if is_reprint or quote_id:
+        return {"status": "success", "message": "Reimpresión ignorada en historial"}
+    
     # Construir mensaje para Telegram
     lines = [
         f"🚨 <b>Nuevo Presupuesto Generado</b>",
@@ -139,6 +144,19 @@ async def api_generate_quote_pdf(request: Request):
     global_discount = data.get("globalDiscount", 0)
     iva_reducido = data.get("iva_reducido", False)
     
+    original_date = data.get("date")
+    if original_date:
+        try:
+            if 'T' in original_date or '-' in original_date:
+                dt = datetime.datetime.fromisoformat(original_date.replace('Z', '+00:00'))
+                date_str = dt.strftime('%d/%m/%Y')
+            else:
+                date_str = original_date
+        except:
+            date_str = datetime.datetime.now().strftime('%d/%m/%Y')
+    else:
+        date_str = datetime.datetime.now().strftime('%d/%m/%Y')
+    
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
     elements = []
@@ -168,7 +186,28 @@ async def api_generate_quote_pdf(request: Request):
         leading=12
     )
 
-    if tipo_comprobante == "Factura Electrónica A":
+    tipo_upper = tipo_comprobante.upper()
+    if "NOTA DE CRÉDITO" in tipo_upper:
+        if " A" in tipo_upper and "INTERNA" not in tipo_upper:
+            title_text = "NOTA DE CRÉDITO A"
+            letter = "A"
+        elif " B" in tipo_upper and "INTERNA" not in tipo_upper:
+            title_text = "NOTA DE CRÉDITO B"
+            letter = "B"
+        else:
+            title_text = "NOTA DE CRÉDITO INTERNA"
+            letter = "X"
+    elif "NOTA DE DÉBITO" in tipo_upper:
+        if " A" in tipo_upper and "INTERNA" not in tipo_upper:
+            title_text = "NOTA DE DÉBITO A"
+            letter = "A"
+        elif " B" in tipo_upper and "INTERNA" not in tipo_upper:
+            title_text = "NOTA DE DÉBITO B"
+            letter = "B"
+        else:
+            title_text = "NOTA DE DÉBITO INTERNA"
+            letter = "X"
+    elif tipo_comprobante == "Factura Electrónica A":
         letter = "A"
         title_text = "FACTURA A"
     elif tipo_comprobante == "Presupuesto A":
@@ -177,6 +216,12 @@ async def api_generate_quote_pdf(request: Request):
     elif tipo_comprobante == "Factura Electrónica B":
         letter = "B"
         title_text = "FACTURA B"
+    elif tipo_comprobante == "Remito":
+        letter = "R"
+        title_text = "REMITO R"
+    elif tipo_comprobante == "Recibo de Pago":
+        letter = "X"
+        title_text = "RECIBO DE PAGO X"
     else:
         letter = "P"
         title_text = "PRESUPUESTO"
@@ -189,7 +234,7 @@ async def api_generate_quote_pdf(request: Request):
     ]))
 
     header_table = Table([
-        [Paragraph(f"<b>{title_text}</b>", title_style), letter_table, Paragraph(f"<b>Fecha:</b> {datetime.datetime.now().strftime('%d/%m/%Y')}", info_style)]
+        [Paragraph(f"<b>{title_text}</b>", title_style), letter_table, Paragraph(f"<b>Fecha:</b> {date_str}", info_style)]
     ], colWidths=[200, 100, 200])
     header_table.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
@@ -203,49 +248,113 @@ async def api_generate_quote_pdf(request: Request):
     elements.append(Paragraph(f"<b>Vendedor:</b> {user['username'].capitalize()}", info_style))
     elements.append(Spacer(1, 25))
     
-    table_data = [["Descripción", "Unidad", "Precio Unit.", "Desc.", "Cant.", "Subtotal"]]
+    is_remito = tipo_comprobante == "Remito"
+    is_recibo = tipo_comprobante == "Recibo de Pago"
+
+    if is_recibo:
+        table_data = [["Descripción", "Importe"]]
+        colWidths = [380, 110]
+    elif is_remito:
+        table_data = [["Descripción", "Unidad", "Cant."]]
+        colWidths = [320, 90, 80]
+    else:
+        table_data = [["Descripción", "Unidad", "Precio Unit.", "Desc.", "Cant.", "Subtotal"]]
+        colWidths = [180, 60, 80, 40, 40, 90]
     
+    is_tipo_b = False
+    if " B" in tipo_comprobante or "Interna" in tipo_comprobante or "Presupuesto B" in tipo_comprobante:
+        is_tipo_b = True
+        
     multiplier = 1.0
-    if tipo_comprobante in ["Factura Electrónica B", "Factura B (Final / Interna)", "Presupuesto B"]:
+    if is_tipo_b:
         multiplier = 1.105 if iva_reducido else 1.21
 
     for p in products:
-        price = p['price'] * multiplier
-        subtotal = p['subtotal'] * multiplier
+        if is_recibo:
+            amount = p.get('subtotal', p.get('price', 0))
+            amount_str = f"$ {amount:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+            desc_para = Paragraph(p['name'], cell_style)
+            table_data.append([desc_para, amount_str])
+        elif is_remito:
+            desc_para = Paragraph(p['name'], cell_style)
+            table_data.append([desc_para, p['unit'], str(p['quantity'])])
+        else:
+            price = p['price'] * multiplier
+            subtotal = p['subtotal'] * multiplier
+            
+            desc_para = Paragraph(p['name'], cell_style)
+            price_str = f"$ {price:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+            subtotal_str = f"$ {subtotal:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+            discount_str = f"{p.get('discount', 0)}%" if p.get('discount', 0) > 0 else "-"
+            
+            table_data.append([
+                desc_para, 
+                p['unit'], 
+                price_str,
+                discount_str,
+                str(p['quantity']), 
+                subtotal_str
+            ])
         
-        desc_para = Paragraph(p['name'], cell_style)
-        price_str = f"$ {price:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
-        subtotal_str = f"$ {subtotal:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
-        discount_str = f"{p.get('discount', 0)}%" if p.get('discount', 0) > 0 else "-"
+    t = Table(table_data, colWidths=colWidths)
+    
+    if is_recibo:
+        t_style = [
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0ea5e9')),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+            ('ALIGN', (0,0), (0,-1), 'LEFT'),
+            ('ALIGN', (1,0), (1,-1), 'RIGHT'),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0,0), (-1,0), 11),
+            ('BOTTOMPADDING', (0,0), (-1,0), 10),
+            ('TOPPADDING', (0,0), (-1,0), 10),
+            ('BACKGROUND', (0,1), (-1,-1), colors.white),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e2e8f0')),
+            ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
+            ('FONTSIZE', (0,1), (-1,-1), 10),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('TOPPADDING', (0,1), (-1,-1), 8),
+            ('BOTTOMPADDING', (0,1), (-1,-1), 8),
+        ]
+    elif is_remito:
+        t_style = [
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0ea5e9')),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+            ('ALIGN', (0,0), (0,-1), 'LEFT'),
+            ('ALIGN', (1,0), (2,-1), 'CENTER'),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0,0), (-1,0), 11),
+            ('BOTTOMPADDING', (0,0), (-1,0), 10),
+            ('TOPPADDING', (0,0), (-1,0), 10),
+            ('BACKGROUND', (0,1), (-1,-1), colors.white),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e2e8f0')),
+            ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
+            ('FONTSIZE', (0,1), (-1,-1), 10),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('TOPPADDING', (0,1), (-1,-1), 8),
+            ('BOTTOMPADDING', (0,1), (-1,-1), 8),
+        ]
+    else:
+        t_style = [
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0ea5e9')),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+            ('ALIGN', (0,0), (-1,0), 'LEFT'),
+            ('ALIGN', (2,0), (5,-1), 'RIGHT'),
+            ('ALIGN', (3,0), (4,-1), 'CENTER'),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0,0), (-1,0), 11),
+            ('BOTTOMPADDING', (0,0), (-1,0), 10),
+            ('TOPPADDING', (0,0), (-1,0), 10),
+            ('BACKGROUND', (0,1), (-1,-1), colors.white),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e2e8f0')),
+            ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
+            ('FONTSIZE', (0,1), (-1,-1), 10),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('TOPPADDING', (0,1), (-1,-1), 8),
+            ('BOTTOMPADDING', (0,1), (-1,-1), 8),
+        ]
         
-        table_data.append([
-            desc_para, 
-            p['unit'], 
-            price_str,
-            discount_str,
-            str(p['quantity']), 
-            subtotal_str
-        ])
-        
-    t = Table(table_data, colWidths=[180, 60, 80, 40, 40, 90])
-    t.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0ea5e9')),
-        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
-        ('ALIGN', (0,0), (-1,0), 'LEFT'),
-        ('ALIGN', (2,0), (5,-1), 'RIGHT'),
-        ('ALIGN', (3,0), (4,-1), 'CENTER'),
-        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0,0), (-1,0), 11),
-        ('BOTTOMPADDING', (0,0), (-1,0), 10),
-        ('TOPPADDING', (0,0), (-1,0), 10),
-        ('BACKGROUND', (0,1), (-1,-1), colors.white),
-        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e2e8f0')),
-        ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
-        ('FONTSIZE', (0,1), (-1,-1), 10),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('TOPPADDING', (0,1), (-1,-1), 8),
-        ('BOTTOMPADDING', (0,1), (-1,-1), 8),
-    ]))
+    t.setStyle(TableStyle(t_style))
     
     elements.append(t)
     elements.append(Spacer(1, 20))
@@ -264,7 +373,11 @@ async def api_generate_quote_pdf(request: Request):
         alignment=2 
     )
     
-    if tipo_comprobante in ["Factura Electrónica B", "Factura B (Final / Interna)", "Presupuesto B"]:
+    if is_remito:
+        pass # Remito doesn't show totals
+    elif is_recibo:
+        elements.append(Paragraph(f"<b>Total: {total_str}</b>", total_style))
+    elif is_tipo_b:
         elements.append(Paragraph(f"<b>Total (Final): {total_str}</b>", total_style))
         if tipo_comprobante == "Factura Electrónica B":
             # IVA Contenido
