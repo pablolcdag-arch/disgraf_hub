@@ -90,21 +90,51 @@ async def api_upload_saas(request: Request, saas_file: UploadFile = File(...)):
         if col_id not in df_saas.columns:
             col_id = df_saas.columns[0]
             
+        import sqlite3
+        db_path = os.path.join(DATA_DIR, 'disgraf_hub.db')
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+            
         for index, row in df_saas.iterrows():
             p_id = str(row.get(col_id, '')).strip()
             p_name = str(row.get(col_desc, '')).strip()
             p_cat = str(row.get(col_cat, '')).strip()
-            p_price = str(row.get(col_price, '')).strip()
+            p_price_str = str(row.get(col_price, '')).strip()
             p_unit = str(row.get(col_unit, '')).strip()
+            
+            try:
+                # Handle possible formatted prices, remove $ and spaces, handle dot/comma
+                clean_str = p_price_str.replace('$', '').strip()
+                if clean_str:
+                    # if standard AR format (1.234,56)
+                    clean_str = clean_str.replace('.', '').replace(',', '.')
+                    p_price = float(clean_str)
+                else:
+                    p_price = 0.0
+            except:
+                p_price = 0.0
             
             if p_id and p_name:
                 saas_products.append({
                     "id": p_id,
                     "name": p_name,
                     "category": p_cat,
-                    "price": p_price,
+                    "price": p_price_str,
                     "unit": p_unit
                 })
+                
+                cursor.execute('''
+                    INSERT INTO productos (codigo, nombre, rubro, precio_final, unidad)
+                    VALUES (?, ?, ?, ?, ?)
+                    ON CONFLICT(codigo) DO UPDATE SET
+                        nombre=excluded.nombre,
+                        rubro=excluded.rubro,
+                        precio_final=excluded.precio_final,
+                        unidad=excluded.unidad
+                ''', (p_id, p_name, p_cat, p_price, p_unit))
+                
+        conn.commit()
+        conn.close()
                 
         # Read current selected catalog
         selected_path = os.path.join(DATA_DIR, 'productos_seleccionados.csv')
@@ -635,3 +665,129 @@ async def api_generate_pdf(request: Request):
         }
     )
 
+
+import sqlite3
+from typing import Optional
+from pydantic import BaseModel
+
+class ProductoBase(BaseModel):
+    codigo: str
+    codigo_proveedor: Optional[str] = None
+    nombre: str
+    unidad: Optional[str] = None
+    rubro: Optional[str] = None
+    proveedor: Optional[str] = None
+    costo_neto: float = 0
+    iva_porcentaje: float = 21.0
+    utilidad_porcentaje: float = 0
+    precio_final: float = 0
+    stock_actual: float = 0
+    stock_minimo: float = 0
+    stock_ideal: float = 0
+    habilitado: int = 1
+    controlar_stock: int = 1
+
+def dict_factory(cursor, row):
+    d = {}
+    for idx, col in enumerate(cursor.description):
+        d[col[0]] = row[idx]
+    return d
+
+@router.get("/api/productos")
+async def get_productos(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return {"error": "Unauthorized"}
+    
+    db_path = os.path.join(DATA_DIR, 'disgraf_hub.db')
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = dict_factory
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM productos")
+    productos = cursor.fetchall()
+    conn.close()
+    return {"productos": productos}
+
+@router.get("/api/productos/{id}")
+async def get_producto(id: int, request: Request):
+    user = get_current_user(request)
+    if not user:
+        return {"error": "Unauthorized"}
+    
+    db_path = os.path.join(DATA_DIR, 'disgraf_hub.db')
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = dict_factory
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM productos WHERE id = ?", (id,))
+    producto = cursor.fetchone()
+    conn.close()
+    
+    if producto:
+        return producto
+    return {"error": "Producto no encontrado"}
+
+@router.post("/api/productos")
+async def create_producto(producto: ProductoBase, request: Request):
+    user = get_current_user(request)
+    if not user or user["role"] != "admin":
+        return {"error": "Unauthorized"}
+        
+    db_path = os.path.join(DATA_DIR, 'disgraf_hub.db')
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute('''
+            INSERT INTO productos (
+                codigo, codigo_proveedor, nombre, unidad, rubro, proveedor,
+                costo_neto, iva_porcentaje, utilidad_porcentaje, precio_final,
+                stock_actual, stock_minimo, stock_ideal, habilitado, controlar_stock
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            producto.codigo, producto.codigo_proveedor, producto.nombre, producto.unidad, producto.rubro, producto.proveedor,
+            producto.costo_neto, producto.iva_porcentaje, producto.utilidad_porcentaje, producto.precio_final,
+            producto.stock_actual, producto.stock_minimo, producto.stock_ideal, producto.habilitado, producto.controlar_stock
+        ))
+        conn.commit()
+        new_id = cursor.lastrowid
+        return {"status": "success", "id": new_id, "message": "Producto creado"}
+    except sqlite3.IntegrityError:
+        return {"error": "Ya existe un producto con ese código"}
+    except Exception as e:
+        return {"error": str(e)}
+    finally:
+        conn.close()
+
+@router.put("/api/productos/{id}")
+async def update_producto(id: int, producto: ProductoBase, request: Request):
+    user = get_current_user(request)
+    if not user or user["role"] != "admin":
+        return {"error": "Unauthorized"}
+        
+    db_path = os.path.join(DATA_DIR, 'disgraf_hub.db')
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute('''
+            UPDATE productos SET
+                codigo = ?, codigo_proveedor = ?, nombre = ?, unidad = ?, rubro = ?, proveedor = ?,
+                costo_neto = ?, iva_porcentaje = ?, utilidad_porcentaje = ?, precio_final = ?,
+                stock_actual = ?, stock_minimo = ?, stock_ideal = ?, habilitado = ?, controlar_stock = ?
+            WHERE id = ?
+        ''', (
+            producto.codigo, producto.codigo_proveedor, producto.nombre, producto.unidad, producto.rubro, producto.proveedor,
+            producto.costo_neto, producto.iva_porcentaje, producto.utilidad_porcentaje, producto.precio_final,
+            producto.stock_actual, producto.stock_minimo, producto.stock_ideal, producto.habilitado, producto.controlar_stock,
+            id
+        ))
+        if cursor.rowcount == 0:
+            return {"error": "Producto no encontrado"}
+        conn.commit()
+        return {"status": "success", "message": "Producto actualizado"}
+    except sqlite3.IntegrityError:
+        return {"error": "Ya existe otro producto con ese código"}
+    except Exception as e:
+        return {"error": str(e)}
+    finally:
+        conn.close()
