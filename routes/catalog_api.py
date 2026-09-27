@@ -85,6 +85,9 @@ async def api_upload_saas(request: Request, saas_file: UploadFile = File(...)):
         col_cat = 'Rubro'
         col_price = 'Precio ($)'
         col_unit = 'Unidad'
+        col_cost = 'Costo ($)'
+        col_utilidad = 'Utilidad (%)'
+        col_proveedor = 'Proveedor'
         
         # If columns have strange names due to encoding, fallback to index
         if col_id not in df_saas.columns:
@@ -94,44 +97,55 @@ async def api_upload_saas(request: Request, saas_file: UploadFile = File(...)):
         db_path = os.path.join(DATA_DIR, 'disgraf_hub.db')
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
+        
+        def parse_num(val):
+            try:
+                if isinstance(val, (int, float)):
+                    return float(val)
+                clean = str(val).replace('$', '').replace('%', '').strip()
+                if clean:
+                    clean = clean.replace('.', '').replace(',', '.')
+                    return float(clean)
+                return 0.0
+            except:
+                return 0.0
             
         for index, row in df_saas.iterrows():
             p_id = str(row.get(col_id, '')).strip()
             p_name = str(row.get(col_desc, '')).strip()
             p_cat = str(row.get(col_cat, '')).strip()
-            p_price_str = str(row.get(col_price, '')).strip()
             p_unit = str(row.get(col_unit, '')).strip()
+            p_proveedor = str(row.get(col_proveedor, '')).strip()
             
-            try:
-                # Handle possible formatted prices, remove $ and spaces, handle dot/comma
-                clean_str = p_price_str.replace('$', '').strip()
-                if clean_str:
-                    # if standard AR format (1.234,56)
-                    clean_str = clean_str.replace('.', '').replace(',', '.')
-                    p_price = float(clean_str)
-                else:
-                    p_price = 0.0
-            except:
-                p_price = 0.0
+            raw_price = row.get(col_price, '')
+            raw_cost = row.get(col_cost, '')
+            raw_util = row.get(col_utilidad, '')
+            
+            p_price = parse_num(raw_price)
+            p_cost = parse_num(raw_cost)
+            p_util = parse_num(raw_util)
             
             if p_id and p_name:
                 saas_products.append({
                     "id": p_id,
                     "name": p_name,
                     "category": p_cat,
-                    "price": p_price_str,
+                    "price": str(raw_price).strip(),
                     "unit": p_unit
                 })
                 
                 cursor.execute('''
-                    INSERT INTO productos (codigo, nombre, rubro, precio_final, unidad)
-                    VALUES (?, ?, ?, ?, ?)
+                    INSERT INTO productos (codigo, nombre, rubro, precio_final, unidad, costo_neto, utilidad_porcentaje, proveedor)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(codigo) DO UPDATE SET
                         nombre=excluded.nombre,
                         rubro=excluded.rubro,
                         precio_final=excluded.precio_final,
-                        unidad=excluded.unidad
-                ''', (p_id, p_name, p_cat, p_price, p_unit))
+                        unidad=excluded.unidad,
+                        costo_neto=excluded.costo_neto,
+                        utilidad_porcentaje=excluded.utilidad_porcentaje,
+                        proveedor=excluded.proveedor
+                ''', (p_id, p_name, p_cat, p_price, p_unit, p_cost, p_util, p_proveedor))
                 
         conn.commit()
         conn.close()
@@ -395,7 +409,9 @@ async def api_sync_wordpress(request: Request):
         return None
 
     def format_price(p):
-        if not str(p).strip(): return ""
+        if p is None or str(p).strip() == "": return ""
+        if isinstance(p, (int, float)):
+            return f"$ {float(p):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
         try:
             clean_str = str(p).replace('$', '').strip().replace('.', '').replace(',', '.')
             num = float(clean_str)
@@ -579,7 +595,9 @@ async def api_generate_pdf(request: Request):
     
     # Format Currency (Argentine format: 1.234,56)
     def format_price(p):
-        if not str(p).strip(): return ""
+        if p is None or str(p).strip() == "": return ""
+        if isinstance(p, (int, float)):
+            return f"$ {float(p):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
         try:
             clean_str = str(p).replace('$', '').strip().replace('.', '').replace(',', '.')
             num = float(clean_str)
@@ -668,6 +686,7 @@ class ProductoBase(BaseModel):
     unidad: Optional[str] = None
     rubro: Optional[str] = None
     proveedor: Optional[str] = None
+    proveedor_2: Optional[str] = None
     costo_neto: float = 0
     iva_porcentaje: float = 21.0
     utilidad_porcentaje: float = 0
@@ -730,12 +749,12 @@ async def create_producto(producto: ProductoBase, request: Request):
     try:
         cursor.execute('''
             INSERT INTO productos (
-                codigo, codigo_proveedor, nombre, unidad, rubro, proveedor,
+                codigo, codigo_proveedor, nombre, unidad, rubro, proveedor, proveedor_2,
                 costo_neto, iva_porcentaje, utilidad_porcentaje, precio_final,
                 stock_actual, stock_minimo, stock_ideal, habilitado, controlar_stock
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
-            producto.codigo, producto.codigo_proveedor, producto.nombre, producto.unidad, producto.rubro, producto.proveedor,
+            producto.codigo, producto.codigo_proveedor, producto.nombre, producto.unidad, producto.rubro, producto.proveedor, producto.proveedor_2,
             producto.costo_neto, producto.iva_porcentaje, producto.utilidad_porcentaje, producto.precio_final,
             producto.stock_actual, producto.stock_minimo, producto.stock_ideal, producto.habilitado, producto.controlar_stock
         ))
@@ -762,12 +781,12 @@ async def update_producto(id: int, producto: ProductoBase, request: Request):
     try:
         cursor.execute('''
             UPDATE productos SET
-                codigo = ?, codigo_proveedor = ?, nombre = ?, unidad = ?, rubro = ?, proveedor = ?,
+                codigo = ?, codigo_proveedor = ?, nombre = ?, unidad = ?, rubro = ?, proveedor = ?, proveedor_2 = ?,
                 costo_neto = ?, iva_porcentaje = ?, utilidad_porcentaje = ?, precio_final = ?,
                 stock_actual = ?, stock_minimo = ?, stock_ideal = ?, habilitado = ?, controlar_stock = ?
             WHERE id = ?
         ''', (
-            producto.codigo, producto.codigo_proveedor, producto.nombre, producto.unidad, producto.rubro, producto.proveedor,
+            producto.codigo, producto.codigo_proveedor, producto.nombre, producto.unidad, producto.rubro, producto.proveedor, producto.proveedor_2,
             producto.costo_neto, producto.iva_porcentaje, producto.utilidad_porcentaje, producto.precio_final,
             producto.stock_actual, producto.stock_minimo, producto.stock_ideal, producto.habilitado, producto.controlar_stock,
             id

@@ -41,6 +41,10 @@
                         <label style="display: block; margin-bottom: 5px; font-size: 13px;">Proveedor</label>
                         <input type="text" id="abm_proveedor" class="form-control" style="width: 100%; padding: 8px;">
                     </div>
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 13px;">Proveedor Alternativo (2)</label>
+                        <input type="text" id="prodProveedor2" class="form-control" style="width: 100%; padding: 8px;">
+                    </div>
                 </div>
 
                 <!-- Comportamiento y Stock -->
@@ -148,6 +152,7 @@
                 document.getElementById('abm_unidad').value = prod.unidad || "";
                 document.getElementById('abm_rubro').value = prod.rubro || "";
                 document.getElementById('abm_proveedor').value = prod.proveedor || "";
+                document.getElementById('prodProveedor2').value = prod.proveedor_2 || "";
                 
                 document.getElementById('abm_habilitado').checked = prod.habilitado == 1;
                 document.getElementById('abm_controlar_stock').checked = prod.controlar_stock == 1;
@@ -192,6 +197,7 @@
             unidad: document.getElementById('abm_unidad').value,
             rubro: document.getElementById('abm_rubro').value,
             proveedor: document.getElementById('abm_proveedor').value,
+            proveedor_2: document.getElementById('prodProveedor2').value,
             
             costo_neto: parseFloat(document.getElementById('abm_costo_neto').value) || 0,
             iva_porcentaje: parseFloat(document.getElementById('abm_iva_porcentaje').value) || 0,
