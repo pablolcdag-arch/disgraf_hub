@@ -880,5 +880,13 @@ window.downloadPDF = async (id, tipo, fechaOriginal) => {
         alert("Error al descargar PDF: " + e.message);
     }
 };
+
+document.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    const viewId = params.get('view_id');
+    if (viewId) {
+        loadClientDetails(viewId);
+    }
+});
 </script>
 {% endblock %}

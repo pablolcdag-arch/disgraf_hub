@@ -295,11 +295,21 @@ async function loadAuditoria() {
             const dateStr = comp.fecha_emision ? new Date(comp.fecha_emision).toLocaleDateString('es-AR') : 'Sin fecha';
             const tipoColor = comp.tipo_comprobante && comp.tipo_comprobante.includes('Factura') ? '#38bdf8' : (comp.tipo_comprobante && comp.tipo_comprobante.includes('Presupuesto') ? '#f59e0b' : '#10b981');
             
+            let tipoHtml = comp.tipo_comprobante || '-';
+            if (comp.tipo_comprobante && comp.tipo_comprobante.includes('Presupuesto') && comp.id) {
+                tipoHtml = `<a href="/cotizador?load_quote=${comp.id}" style="color: inherit; text-decoration: underline;">${tipoHtml}</a>`;
+            }
+            
+            let clienteHtml = dashboardClientMap[comp.cliente_id] || comp.cliente_id || 'Consumidor Final';
+            if (comp.cliente_id) {
+                clienteHtml = `<a href="/clientes?view_id=${comp.cliente_id}" style="color: inherit; text-decoration: underline;">${clienteHtml}</a>`;
+            }
+            
             return `
                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;">
                     <td style="padding: 12px 10px; color: var(--text-main);">${dateStr}</td>
-                    <td style="padding: 12px 10px; color: ${tipoColor}; font-weight: bold;">${comp.tipo_comprobante || '-'}</td>
-                    <td style="padding: 12px 10px; color: var(--text-main);">${dashboardClientMap[comp.cliente_id] || comp.cliente_id || 'Consumidor Final'}</td>
+                    <td style="padding: 12px 10px; color: ${tipoColor}; font-weight: bold;">${tipoHtml}</td>
+                    <td style="padding: 12px 10px; color: var(--text-main);">${clienteHtml}</td>
                     <td style="padding: 12px 10px; font-weight: bold; text-align: right; color: #fff;">${formatter.format(comp.total || 0)}</td>
                 </tr>
             `;

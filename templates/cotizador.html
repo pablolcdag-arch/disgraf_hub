@@ -424,7 +424,7 @@ window.closeHistory = () => {
 
 window.loadHistoryItem = (id) => {
     if(!window._historyData) return;
-    const quote = window._historyData.find(q => q.id === id);
+    const quote = window._historyData.find(q => String(q.id) === String(id));
     if(!quote) return;
     
     if(state.cart.length > 0) {
@@ -941,52 +941,43 @@ loadProducts();
 
 (async function handleUrlParams() {
     const urlParams = new URLSearchParams(window.location.search);
-    const loadId = urlParams.get('load_id');
+    const loadQuote = urlParams.get('load_quote') || urlParams.get('load_id');
     const remitoFrom = urlParams.get('remito_from');
     
-    if (loadId) {
+    if (loadQuote) {
         try {
-            const res = await fetch('/api/history-quotes');
-            const history = await res.json();
-            window._historyData = history;
+            const [res, resClients] = await Promise.all([
+                fetch('/api/cotizador/historial'),
+                fetch('/api/clientes')
+            ]);
             
-            const quote = history.find(q => q.id === loadId);
-            if (quote) {
-                // Populate client
-                window.selectedClientId = quote.client_id || null;
-                dom.clientName.value = quote.client === "Consumidor Final" ? "" : quote.client;
-                
-                // Populate cart
-                state.cart = quote.products.map(p => ({
-                    product: {
-                        id: p.id,
-                        name: p.name,
-                        price: p.price,
-                        unit: p.unit || 'unid.'
-                    },
-                    quantity: p.quantity,
-                    discount: p.discount || 0
-                }));
-                
-                state.globalDiscount = quote.globalDiscount || 0;
-                if(document.getElementById('globalDiscount')) document.getElementById('globalDiscount').value = state.globalDiscount;
-                
-                // Select Factura based on Presupuesto type
-                const tComp = document.getElementById('tipoComprobante');
-                if (tComp) {
-                    if (quote.tipo_comprobante && quote.tipo_comprobante.includes('B')) {
-                        tComp.value = 'Factura B (Final / Interna)';
-                    } else {
-                        tComp.value = 'Factura Electrónica A'; // default A
-                    }
-                }
-                
-                if (window.handleComprobanteChange) {
-                    window.handleComprobanteChange();
-                } else {
-                    renderCart();
+            const history = await res.json();
+            
+            let clientsMap = {};
+            if (resClients.ok) {
+                const dataClients = await resClients.json();
+                if (dataClients.clientes) {
+                    dataClients.clientes.forEach(c => {
+                        clientsMap[c.id] = c.nombre || c.razon_social;
+                    });
                 }
             }
+            
+            const mappedHistory = history.map(q => {
+                let cName = q.client;
+                if (cName && cName !== "Consumidor Final" && clientsMap[cName]) {
+                    cName = clientsMap[cName];
+                } else if (cName && cName !== "Consumidor Final") {
+                    cName = "Cliente #" + cName;
+                }
+                return { ...q, displayClientName: cName };
+            });
+            
+            window._historyData = mappedHistory;
+            
+            // Re-use loadHistoryItem logic without opening modal
+            window.loadHistoryItem(loadQuote);
+            
         } catch (e) {
             console.error("Error loading quote from url param", e);
         }
