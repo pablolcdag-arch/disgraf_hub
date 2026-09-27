@@ -103,6 +103,9 @@
                         <label id="lblIvaReducido" style="display: none; align-items: center; gap: 5px; color: var(--text-muted); font-size: 13px; cursor: pointer;">
                             <input type="checkbox" id="chkIvaReducido" onchange="renderCart()" style="accent-color: #38bdf8;"> IVA Reducido (10.5%)
                         </label>
+                        <label id="lblFacturarAfip" style="display: none; align-items: center; gap: 5px; color: #10b981; font-weight: bold; font-size: 13px; cursor: pointer; background: rgba(16, 185, 129, 0.1); padding: 5px 10px; border-radius: 4px; border: 1px solid rgba(16,185,129,0.3);">
+                            <input type="checkbox" id="ventaFacturarAfip" style="accent-color: #10b981;"> Emitir en AFIP
+                        </label>
                     </div>
                 </div>
                 
@@ -595,15 +598,27 @@ window.updateDiscount = (id, el) => {
 
 window.handleComprobanteChange = () => {
     const val = document.getElementById('tipoComprobante').value;
-    const chk = document.getElementById('chkIvaReducido');
-    const lbl = document.getElementById('lblIvaReducido');
+    const chkIva = document.getElementById('chkIvaReducido');
+    const lblIva = document.getElementById('lblIvaReducido');
+    
+    const chkAfip = document.getElementById('ventaFacturarAfip');
+    const lblAfip = document.getElementById('lblFacturarAfip');
     
     if (val.includes('Interna') || val === 'Presupuesto B') {
-        lbl.style.display = 'flex';
+        lblIva.style.display = 'flex';
     } else {
-        lbl.style.display = 'none';
-        chk.checked = false;
+        lblIva.style.display = 'none';
+        chkIva.checked = false;
     }
+    
+    if (val === 'Factura Electrónica A' || val === 'Factura Electrónica B') {
+        lblAfip.style.display = 'flex';
+        chkAfip.checked = true;
+    } else {
+        lblAfip.style.display = 'none';
+        chkAfip.checked = false;
+    }
+    
     renderCart();
 };
 
@@ -879,13 +894,16 @@ dom.btnDownloadPDF.addEventListener('click', async () => {
         const totalIva = showsIva ? payload.total * 0.21 : 0.0;
         const totalFinalVenta = showsIva ? payload.total * 1.21 : payload.total;
 
+        const facturarAfip = document.getElementById('ventaFacturarAfip') ? document.getElementById('ventaFacturarAfip').checked : false;
+
         const ventaPayload = {
             cliente_id: payload.client_id || payload.client_name || 'Consumidor Final',
             tipo_comprobante: payload.tipo_comprobante,
             subtotal: subtotalVenta,
             total_iva: totalIva,
             total: totalFinalVenta,
-            items: itemsVenta
+            items: itemsVenta,
+            facturar_afip: facturarAfip
         };
 
         const resVenta = await fetch('/api/ventas/comprobantes', {
@@ -895,8 +913,16 @@ dom.btnDownloadPDF.addEventListener('click', async () => {
         });
         
         if (!resVenta.ok) {
-            console.error("Error al registrar comprobante");
-            // Decidir si abortar PDF o continuar. Por ahora continuamos.
+            const errData = await resVenta.json();
+            throw new Error(errData.detail || "Error al registrar o facturar en AFIP");
+        }
+        
+        // Extract CAE if returned by the backend to inject it into the PDF payload
+        const ventaResData = await resVenta.json();
+        if (ventaResData.cae) {
+            payload.cae = ventaResData.cae;
+            payload.cae_vto = ventaResData.cae_vto;
+            payload.numero_afip = ventaResData.numero_afip;
         }
 
         const res = await fetch("/api/generate-quote-pdf", {

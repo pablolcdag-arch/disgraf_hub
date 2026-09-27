@@ -131,7 +131,13 @@ async def crear_comprobante(comprobante: ComprobanteCreate, request: Request):
         conn.commit()
         conn.close()
 
-        return {"id": comprobante_id, "message": "Comprobante creado exitosamente"}
+        return {
+            "id": comprobante_id, 
+            "message": "Comprobante creado exitosamente",
+            "cae": cae,
+            "cae_vto": cae_vto,
+            "numero_afip": numero_afip
+        }
     except Exception as e:
         print("Error creando comprobante:", e)
         raise HTTPException(status_code=500, detail=str(e))
