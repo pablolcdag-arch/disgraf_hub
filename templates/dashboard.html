@@ -37,9 +37,20 @@
 
     <!-- Main Content -->
     <main class="main-content">
-        <div class="page-header" style="margin-bottom: 20px;">
-            <h1>Panel de Control</h1>
-            <p>Bienvenido al hub central. Resumen de actividad reciente.</p>
+        <div class="page-header" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 15px;">
+            <div>
+                <h1 style="margin:0 0 5px 0;">Panel de Control</h1>
+                <p style="margin:0;">Bienvenido al hub central. Resumen de actividad reciente.</p>
+            </div>
+            {% if user.role == "admin" %}
+            <div>
+                <a href="/api/admin/backup" download style="text-decoration: none;">
+                    <button class="btn-primary" style="background-color: #38bdf8; padding: 10px 16px; border-radius: 8px; font-weight: bold;">
+                        📦 Descargar Backup Sistema (ZIP)
+                    </button>
+                </a>
+            </div>
+            {% endif %}
         </div>
         
         <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
