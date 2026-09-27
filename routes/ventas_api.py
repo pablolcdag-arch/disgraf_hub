@@ -27,6 +27,9 @@ class ComprobanteCreate(BaseModel):
     items: List[ComprobanteItem]
     iva_reducido: bool = False
     comprobante_asociado_id: Optional[int] = None
+    facturar_afip: Optional[bool] = False
+
+import afip_service
 
 @router.post("/api/ventas/comprobantes")
 async def crear_comprobante(comprobante: ComprobanteCreate, request: Request):
@@ -77,6 +80,24 @@ async def crear_comprobante(comprobante: ComprobanteCreate, request: Request):
 
     fecha_emision = comprobante.fecha_emision or str(date.today())
 
+    cae = None
+    cae_vto = None
+    numero_afip = None
+
+    if comprobante.facturar_afip:
+        try:
+            afip_res = afip_service.emitir_factura(
+                cliente_nro=comprobante.cliente_id,
+                total=comprobante.total,
+                tipo_factura=comprobante.tipo_comprobante,
+                iva_reducido=comprobante.iva_reducido
+            )
+            cae = afip_res['cae']
+            cae_vto = afip_res['cae_vto']
+            numero_afip = afip_res['numero_afip']
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Error en AFIP: {str(e)}")
+
     db_path = os.path.join(DATA_DIR, 'disgraf_hub.db')
     try:
         conn = sqlite3.connect(db_path)
@@ -86,12 +107,12 @@ async def crear_comprobante(comprobante: ComprobanteCreate, request: Request):
             INSERT INTO comprobantes (
                 cliente_id, tipo_comprobante, numero_comprobante, fecha_emision,
                 es_fiscal, impacta_cc, impacta_stock, subtotal, total_iva, total,
-                comprobante_asociado_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                comprobante_asociado_id, cae, cae_vto, numero_afip
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             comprobante.cliente_id, comprobante.tipo_comprobante, comprobante.numero_comprobante,
             fecha_emision, es_fiscal, impacta_cc, impacta_stock, comprobante.subtotal, total_iva, comprobante.total,
-            comprobante.comprobante_asociado_id
+            comprobante.comprobante_asociado_id, cae, cae_vto, numero_afip
         ))
         
         comprobante_id = cursor.lastrowid
@@ -130,7 +151,7 @@ async def get_cliente_comprobantes(cliente_id: str, request: Request):
         cursor.execute('''
             SELECT id, cliente_id, tipo_comprobante, numero_comprobante, fecha_emision,
                    es_fiscal, impacta_cc, impacta_stock, subtotal, total_iva, total,
-                   estado, comprobante_asociado_id
+                   estado, comprobante_asociado_id, cae, cae_vto, numero_afip
             FROM comprobantes
             WHERE cliente_id = ?
             ORDER BY fecha_emision DESC, id DESC
@@ -160,7 +181,7 @@ async def get_comprobante(id: int, request: Request):
         cursor.execute('''
             SELECT id, cliente_id, tipo_comprobante, numero_comprobante, fecha_emision,
                    es_fiscal, impacta_cc, impacta_stock, subtotal, total_iva, total,
-                   estado, comprobante_asociado_id
+                   estado, comprobante_asociado_id, cae, cae_vto, numero_afip
             FROM comprobantes
             WHERE id = ?
         ''', (id,))
@@ -408,4 +429,38 @@ async def reportes_deudores(request: Request):
         return {"deudores": deudores}
     except Exception as e:
         print("Error generando reporte deudores:", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/api/ventas/comprobante/{id}")
+async def delete_comprobante(id: int, request: Request):
+    user = get_current_user(request)
+    if not user or user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    db_path = os.path.join(DATA_DIR, 'disgraf_hub.db')
+    try:
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT cae FROM comprobantes WHERE id = ?", (id,))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            raise HTTPException(status_code=404, detail="Comprobante no encontrado")
+
+        if row["cae"]:
+            conn.close()
+            raise HTTPException(status_code=403, detail="No se puede eliminar un comprobante emitido en AFIP.")
+
+        cursor.execute("DELETE FROM comprobantes_items WHERE comprobante_id = ?", (id,))
+        cursor.execute("DELETE FROM comprobantes WHERE id = ?", (id,))
+        conn.commit()
+        conn.close()
+
+        return {"status": "ok"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("Error eliminando comprobante:", e)
         raise HTTPException(status_code=500, detail=str(e))

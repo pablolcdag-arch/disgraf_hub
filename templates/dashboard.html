@@ -106,6 +106,12 @@
                     {% endif %}
                     
                     <div class="glass action-card">
+                        <h3>🧾 Nueva Venta</h3>
+                        <p style="font-size: 13px;">Emitir comprobante o factura AFIP.</p>
+                        <button class="btn-primary" onclick="openNuevaVentaModal()" style="background-color: #f59e0b; padding: 8px;">Nueva Venta</button>
+                    </div>
+                    
+                    <div class="glass action-card">
                         <h3>📋 Cotizador Rápido</h3>
                         <p style="font-size: 13px;">Armar presupuestos en mostrador.</p>
                         <a href="/cotizador" style="text-decoration: none;"><button class="btn-primary" style="background-color: #10b981; padding: 8px;">Abrir Cotizador</button></a>
@@ -147,11 +153,13 @@
                                     <th style="padding: 10px; font-weight: normal;">Tipo</th>
                                     <th style="padding: 10px; font-weight: normal;">Cliente ID</th>
                                     <th style="padding: 10px; font-weight: normal; text-align: right;">Total</th>
+                                    <th style="padding: 10px; font-weight: normal; text-align: center;">Estado AFIP</th>
+                                    <th style="padding: 10px; font-weight: normal; text-align: center;">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="auditTableBody">
                                 <tr>
-                                    <td colspan="4" style="text-align: center; padding: 20px; color: var(--text-muted);">Utiliza los filtros para buscar comprobantes.</td>
+                                    <td colspan="6" style="text-align: center; padding: 20px; color: var(--text-muted);">Utiliza los filtros para buscar comprobantes.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -176,6 +184,48 @@
     </main>
 </div>
 
+<!-- Nueva Venta Modal -->
+<div id="nuevaVentaModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div class="glass" style="width: 500px; max-height: 90vh; overflow-y: auto; padding: 25px; border-radius: 12px; background: var(--glass-bg); border: 1px solid var(--border-color);">
+        <h2 style="margin-top:0; color: #fff;">Nueva Venta / Emitir Comprobante</h2>
+        <!-- tab "Ventas/Comprobantes" pseudo representation for visual completeness based on prompt -->
+        <div style="margin-bottom: 20px; border-bottom: 1px solid var(--border-color);">
+            <div style="display:inline-block; padding: 10px 15px; color: #38bdf8; border-bottom: 2px solid #38bdf8; font-weight:bold;">Ventas/Comprobantes</div>
+        </div>
+        <form id="nuevaVentaForm" onsubmit="saveVenta(event)">
+            <div style="margin-bottom: 15px;">
+                <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Cliente ID</label>
+                <input type="text" id="ventaClienteId" class="form-control" required style="width:100%; padding: 8px;">
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Monto Total ($)</label>
+                <input type="number" id="ventaMonto" step="0.01" class="form-control" required style="width:100%; padding: 8px;">
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Tipo de Comprobante</label>
+                <select id="ventaTipo" class="form-control" style="width:100%; padding: 8px;">
+                    <option value="Factura Electrónica B">Factura B (Consumidor Final / Exento)</option>
+                    <option value="Factura Electrónica A">Factura A (Resp. Inscripto)</option>
+                    <option value="Presupuesto">Presupuesto (Uso Interno)</option>
+                </select>
+            </div>
+            
+            <div style="margin-bottom: 25px; background: rgba(16, 185, 129, 0.1); padding: 15px; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.3);">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="ventaFacturarAfip" style="width: 24px; height: 24px; margin-right: 15px; cursor: pointer;">
+                    <span style="font-size: 16px; font-weight: bold; color: #10b981;">Emitir Factura Electrónica (AFIP)</span>
+                </label>
+            </div>
+
+            <div style="margin-top: 25px; display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="btn-secondary" onclick="closeNuevaVentaModal()">Cancelar</button>
+                <button type="submit" class="btn-primary">Guardar Venta</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <script>
 let dashboardClientMap = {};
@@ -281,7 +331,7 @@ async function loadAuditoria() {
     btn.textContent = "Buscando...";
     
     const tbody = document.getElementById('auditTableBody');
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 20px; color: var(--text-muted);">Cargando datos...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 20px; color: var(--text-muted);">Cargando datos...</td></tr>`;
     
     const desde = document.getElementById('auditDesde').value;
     const hasta = document.getElementById('auditHasta').value;
@@ -300,7 +350,7 @@ async function loadAuditoria() {
         const data = await res.json();
         
         if (!data.comprobantes || data.comprobantes.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 20px; color: var(--text-muted);">No se encontraron comprobantes para esta búsqueda.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 20px; color: var(--text-muted);">No se encontraron comprobantes para esta búsqueda.</td></tr>`;
             return;
         }
         
@@ -320,18 +370,30 @@ async function loadAuditoria() {
                 clienteHtml = `<a href="/clientes?view_id=${comp.cliente_id}" style="color: inherit; text-decoration: underline;">${clienteHtml}</a>`;
             }
             
+            let estadoAfip = "Comprobante Interno";
+            if (comp.cae) {
+                estadoAfip = `<span style="background: #10b981; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">CAE: ${comp.cae}</span>`;
+            }
+            
+            let btnEliminar = '';
+            if (!comp.cae) {
+                btnEliminar = `<button class="btn-secondary" onclick="eliminarComprobante(${comp.id})" style="font-size: 11px; padding: 4px 8px; background: #ef4444; color: white; border: none; cursor: pointer;">Eliminar</button>`;
+            }
+
             return `
                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;">
                     <td style="padding: 12px 10px; color: var(--text-main);">${dateStr}</td>
                     <td style="padding: 12px 10px; color: ${tipoColor}; font-weight: bold;">${tipoHtml}</td>
                     <td style="padding: 12px 10px; color: var(--text-main);">${clienteHtml}</td>
                     <td style="padding: 12px 10px; font-weight: bold; text-align: right; color: #fff;">${formatter.format(comp.total || 0)}</td>
+                    <td style="padding: 12px 10px; text-align: center;">${estadoAfip}</td>
+                    <td style="padding: 12px 10px; text-align: center;">${btnEliminar}</td>
                 </tr>
             `;
         }).join('');
         
     } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 20px; color: #ef4444;">Ocurrió un error al cargar la auditoría.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 20px; color: #ef4444;">Ocurrió un error al cargar la auditoría.</td></tr>`;
         console.error(err);
     } finally {
         btn.disabled = false;
@@ -380,5 +442,86 @@ document.getElementById('backupFileInput')?.addEventListener('change', async fun
         e.target.value = '';
     }
 });
+
+window.openNuevaVentaModal = () => {
+    document.getElementById('nuevaVentaForm').reset();
+    document.getElementById('nuevaVentaModal').style.display = 'flex';
+};
+
+window.closeNuevaVentaModal = () => {
+    document.getElementById('nuevaVentaModal').style.display = 'none';
+};
+
+window.saveVenta = async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+
+    const clienteId = document.getElementById('ventaClienteId').value;
+    const monto = parseFloat(document.getElementById('ventaMonto').value);
+    const facturarAfip = document.getElementById('ventaFacturarAfip').checked;
+    const tipoComprobante = document.getElementById('ventaTipo').value;
+
+    const payload = {
+        cliente_id: clienteId,
+        tipo_comprobante: tipoComprobante,
+        subtotal: monto,
+        total_iva: 0.0,
+        total: monto,
+        items: [
+            {
+                producto_id: "VENTA",
+                descripcion: "Venta General",
+                cantidad: 1,
+                precio_unitario: monto,
+                alicuota_iva: 0.0,
+                subtotal: monto
+            }
+        ],
+        facturar_afip: facturarAfip
+    };
+
+    try {
+        const res = await fetch("/api/ventas/comprobantes", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            closeNuevaVentaModal();
+            loadAuditoria();
+            if (typeof showToast === 'function') showToast("✅ Venta registrada correctamente");
+            else alert("Venta registrada correctamente.");
+        } else {
+            const errData = await res.json();
+            alert("Error: " + (errData.detail || "No se pudo registrar la venta"));
+        }
+    } catch(err) {
+        alert("Error de conexión.");
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Guardar Venta';
+};
+
+window.eliminarComprobante = async (id) => {
+    if (!confirm('¿Estás seguro de eliminar este comprobante?')) return;
+    try {
+        const res = await fetch(`/api/ventas/comprobante/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            if (typeof showToast === 'function') showToast("✅ Comprobante eliminado");
+            else alert("Comprobante eliminado");
+            loadAuditoria();
+        } else {
+            const data = await res.json();
+            alert("Error: " + (data.detail || "No se pudo eliminar"));
+        }
+    } catch (e) {
+        alert("Error de red");
+    }
+};
+
 </script>
 {% endblock %}
