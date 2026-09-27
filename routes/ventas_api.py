@@ -256,27 +256,38 @@ async def reportes_dashboard(request: Request):
         
         # Ventas de hoy
         cursor.execute('''
-            SELECT SUM(total) as suma
+            
+            SELECT 
+                SUM(CASE WHEN tipo_comprobante LIKE 'Factura%' OR tipo_comprobante LIKE 'Recibo%' THEN total 
+                         WHEN tipo_comprobante LIKE 'Nota de Cr_dito%' THEN -total 
+                         ELSE 0 END) as suma
             FROM comprobantes
-            WHERE fecha_emision = ? AND tipo_comprobante LIKE 'Factura%'
+            WHERE fecha_emision = ? 
+
         ''', (fecha_hoy,))
         row_hoy = cursor.fetchone()
         ventas_hoy = row_hoy['suma'] if row_hoy and row_hoy['suma'] else 0.0
         
         # Ventas de la semana (últimos 7 días)
         cursor.execute('''
-            SELECT SUM(total) as suma
+            SELECT 
+                SUM(CASE WHEN tipo_comprobante LIKE 'Factura%' OR tipo_comprobante LIKE 'Recibo%' THEN total 
+                         WHEN tipo_comprobante LIKE 'Nota de Cr_dito%' THEN -total 
+                         ELSE 0 END) as suma
             FROM comprobantes
-            WHERE fecha_emision >= date('now', '-7 days') AND tipo_comprobante LIKE 'Factura%'
+            WHERE fecha_emision >= date('now', '-7 days') 
         ''')
         row_semana = cursor.fetchone()
         ventas_semana = row_semana['suma'] if row_semana and row_semana['suma'] else 0.0
         
         # Ventas del mes (últimos 30 días)
         cursor.execute('''
-            SELECT SUM(total) as suma
+            SELECT 
+                SUM(CASE WHEN tipo_comprobante LIKE 'Factura%' OR tipo_comprobante LIKE 'Recibo%' THEN total 
+                         WHEN tipo_comprobante LIKE 'Nota de Cr_dito%' THEN -total 
+                         ELSE 0 END) as suma
             FROM comprobantes
-            WHERE fecha_emision >= date('now', '-30 days') AND tipo_comprobante LIKE 'Factura%'
+            WHERE fecha_emision >= date('now', '-30 days') 
         ''')
         row_mes = cursor.fetchone()
         ventas_mes = row_mes['suma'] if row_mes and row_mes['suma'] else 0.0
@@ -343,8 +354,8 @@ async def reportes_auditoria(
             params.append(fecha_hasta)
             
         if tipo_comprobante:
-            query += " AND tipo_comprobante = ?"
-            params.append(tipo_comprobante)
+            query += " AND tipo_comprobante LIKE ?"
+            params.append(tipo_comprobante + "%")
             
         query += " ORDER BY fecha_emision DESC, id DESC LIMIT 100"
         
