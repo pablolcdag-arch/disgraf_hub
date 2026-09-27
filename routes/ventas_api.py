@@ -86,8 +86,19 @@ async def crear_comprobante(comprobante: ComprobanteCreate, request: Request):
 
     if comprobante.facturar_afip:
         try:
+            # Buscar el CUIT real del cliente en la DB
+            cuit_cliente = "0"
+            db_path = os.path.join(DATA_DIR, "disgraf_hub.db")
+            with sqlite3.connect(db_path) as conn_cuit:
+                row = conn_cuit.execute(
+                    "SELECT cuit FROM clientes WHERE id = ?",
+                    (comprobante.cliente_id,)
+                ).fetchone()
+                if row and row[0]:
+                    cuit_cliente = str(row[0]).strip()
+
             afip_res = afip_service.emitir_factura(
-                cliente_nro=comprobante.cliente_id,
+                cliente_nro=cuit_cliente,
                 total=comprobante.total,
                 tipo_factura=comprobante.tipo_comprobante,
                 iva_reducido=comprobante.iva_reducido
@@ -97,6 +108,7 @@ async def crear_comprobante(comprobante: ComprobanteCreate, request: Request):
             numero_afip = afip_res['numero_afip']
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Error en AFIP: {str(e)}")
+
 
     db_path = os.path.join(DATA_DIR, 'disgraf_hub.db')
     try:
