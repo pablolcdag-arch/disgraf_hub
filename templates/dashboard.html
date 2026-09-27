@@ -161,8 +161,28 @@
     </main>
 </div>
 
+
 <script>
+let dashboardClientMap = {};
+
+async function fetchDashboardClients() {
+    try {
+        const res = await fetch("/api/clientes");
+        if (res.ok) {
+            const data = await res.json();
+            if (data.clientes) {
+                data.clientes.forEach(c => {
+                    dashboardClientMap[c.id] = c.nombre || c.razon_social;
+                });
+            }
+        }
+    } catch (e) {
+        console.error("Error fetching clients for dashboard", e);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
+    await fetchDashboardClients();
     try {
         const res = await fetch("/api/reportes/dashboard");
         if (res.ok) {
