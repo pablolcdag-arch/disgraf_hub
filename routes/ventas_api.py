@@ -369,3 +369,43 @@ async def reportes_auditoria(
     except Exception as e:
         print("Error generando reporte auditoria:", e)
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/api/reportes/deudores")
+async def reportes_deudores(request: Request):
+    user = get_current_user(request)
+    if not user or user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Solo los administradores pueden acceder a los reportes")
+        
+    db_path = os.path.join(DATA_DIR, 'disgraf_hub.db')
+    try:
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT 
+                cliente_id,
+                SUM(
+                    CASE 
+                        WHEN tipo_comprobante LIKE 'Factura%' OR tipo_comprobante LIKE 'Nota de Débito%' THEN total
+                        WHEN tipo_comprobante LIKE 'Recibo%' OR tipo_comprobante LIKE 'Nota de Crédito%' THEN -total
+                        WHEN tipo_comprobante = 'Ajuste de Saldo' THEN -total
+                        ELSE 0
+                    END
+                ) as saldo
+            FROM comprobantes
+            WHERE impacta_cc = 1
+            GROUP BY cliente_id
+            HAVING saldo > 1
+            ORDER BY saldo DESC
+        ''')
+        
+        rows = cursor.fetchall()
+        deudores = [dict(r) for r in rows]
+        
+        conn.close()
+        
+        return {"deudores": deudores}
+    except Exception as e:
+        print("Error generando reporte deudores:", e)
+        raise HTTPException(status_code=500, detail=str(e))

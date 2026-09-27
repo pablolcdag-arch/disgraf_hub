@@ -13,7 +13,9 @@ import io
 
 router = APIRouter()
 
-@router.post("/api/log-quote")
+import sqlite3
+
+@router.post("/api/cotizador/guardar")
 async def api_log_quote(request: Request):
     user = get_current_user(request)
     if not user:
@@ -51,80 +53,116 @@ async def api_log_quote(request: Request):
     print(msg)
     print("===========================")
         
-    history_path = os.path.join(DATA_DIR, 'historial_presupuestos.json')
-    history_data = []
-    
-    if os.path.exists(history_path):
-        try:
-            with open(history_path, 'r', encoding='utf-8') as f:
-                history_data = json.load(f)
-        except:
-            pass
-            
-    new_record = {
-        "id": str(uuid.uuid4())[:8],
-        "date": datetime.datetime.now().isoformat(),
-        "seller": user["username"],
-        "client": client_name,
-        "client_id": data.get("client_id"),
-        "total": total,
-        "products": products,
-        "tipo_comprobante": data.get("tipo_comprobante", "Presupuesto A"),
-        "iva_reducido": data.get("iva_reducido", False),
-        "tipoB": data.get("tipo_comprobante", "Presupuesto A") in ["Presupuesto B", "Factura B (Final / Interna)"]
-    }
-    history_data.insert(0, new_record)
-    
-    ten_days_ago = datetime.datetime.now() - datetime.timedelta(days=10)
-    valid_history = []
-    for r in history_data:
-        try:
-            r_date = datetime.datetime.fromisoformat(r["date"])
-            if r_date >= ten_days_ago:
-                valid_history.append(r)
-        except:
-            pass
-            
-    with open(history_path, 'w', encoding='utf-8') as f:
-        json.dump(valid_history, f, ensure_ascii=False, indent=2)
+    db_path = os.path.join(DATA_DIR, 'disgraf_hub.db')
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
         
-    return {"status": "success"}
+        fecha_emision = datetime.datetime.now().isoformat()
+        tipo_comprobante = data.get("tipo_comprobante", "Presupuesto A")
+        cliente_id = data.get("client_id", client_name) # Fallback to name if ID not provided
+        
+        cursor.execute('''
+            INSERT INTO comprobantes (
+                cliente_id, tipo_comprobante, fecha_emision,
+                es_fiscal, impacta_cc, impacta_stock, subtotal, total_iva, total
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            cliente_id, tipo_comprobante, fecha_emision,
+            False, False, False, total, 0.0, total
+        ))
+        
+        comprobante_id = cursor.lastrowid
+        
+        for p in products:
+            cursor.execute('''
+                INSERT INTO comprobantes_items (
+                    comprobante_id, producto_id, descripcion, cantidad,
+                    precio_unitario, alicuota_iva, subtotal
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                comprobante_id, p.get("id", ""), p.get("name", ""), p.get("quantity", 0),
+                p.get("price", 0), 0.0, p.get("subtotal", 0)
+            ))
+            
+        conn.commit()
+        conn.close()
+        return {"status": "success"}
+    except Exception as e:
+        print("Error guardando presupuesto en SQLite:", e)
+        return {"error": str(e)}
 
-@router.get("/api/history-quotes")
+@router.get("/api/cotizador/historial")
 async def api_history_quotes(request: Request):
     user = get_current_user(request)
     if not user:
         return {"error": "Unauthorized"}
         
-    history_path = os.path.join(DATA_DIR, 'historial_presupuestos.json')
-    if os.path.exists(history_path):
-        try:
-            with open(history_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except:
-            return []
-    return []
+    db_path = os.path.join(DATA_DIR, 'disgraf_hub.db')
+    try:
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT id, cliente_id, total, fecha_emision, tipo_comprobante
+            FROM comprobantes
+            WHERE tipo_comprobante LIKE 'Presupuesto%'
+            ORDER BY id DESC
+            LIMIT 50
+        ''')
+        rows = cursor.fetchall()
+        
+        history = []
+        for r in rows:
+            comp_id = r["id"]
+            record = {
+                "id": str(comp_id),
+                "date": r["fecha_emision"],
+                "seller": user["username"], # We don't have seller in comprobantes table currently, so we use current user or we could add it
+                "client": r["cliente_id"],
+                "total": r["total"],
+                "tipo_comprobante": r["tipo_comprobante"],
+                "tipoB": r["tipo_comprobante"] in ["Presupuesto B", "Factura B (Final / Interna)"]
+            }
+            
+            # Fetch items
+            cursor.execute('''
+                SELECT producto_id as id, descripcion as name, cantidad as quantity, 
+                       precio_unitario as price, subtotal, '' as unit
+                FROM comprobantes_items
+                WHERE comprobante_id = ?
+            ''', (comp_id,))
+            items = cursor.fetchall()
+            record["products"] = [dict(item) for item in items]
+            
+            history.append(record)
+            
+        conn.close()
+        return history
+    except Exception as e:
+        print("Error obteniendo historial de presupuestos:", e)
+        return []
 
-@router.delete("/api/history-quotes/{quote_id}")
+@router.delete("/api/cotizador/historial/{quote_id}")
 async def api_delete_history_quote(quote_id: str, request: Request):
     user = get_current_user(request)
     if not user or user.get("role") != "admin":
         return {"error": "Unauthorized"}
         
-    history_path = os.path.join(DATA_DIR, 'historial_presupuestos.json')
-    if not os.path.exists(history_path):
-        return {"error": "History file not found"}
-        
+    db_path = os.path.join(DATA_DIR, 'disgraf_hub.db')
     try:
-        with open(history_path, 'r', encoding='utf-8') as f:
-            history = json.load(f)
-            
-        new_history = [q for q in history if q.get("id") != quote_id]
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
         
-        with open(history_path, 'w', encoding='utf-8') as f:
-            json.dump(new_history, f, ensure_ascii=False, indent=2)
+        cursor.execute("DELETE FROM comprobantes_items WHERE comprobante_id = ?", (quote_id,))
+        cursor.execute("DELETE FROM comprobantes WHERE id = ?", (quote_id,))
+        
+        conn.commit()
+        conn.close()
         return {"status": "success"}
     except Exception as e:
+        print("Error eliminando presupuesto:", e)
         return {"error": str(e)}
 
 @router.post("/api/generate-quote-pdf")

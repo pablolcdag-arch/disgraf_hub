@@ -307,19 +307,43 @@ window.openHistory = async () => {
     list.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px;">Cargando historial...</div>`;
     
     try {
-        const res = await fetch("/api/history-quotes");
+        const [res, resClients] = await Promise.all([
+            fetch("/api/cotizador/historial"),
+            fetch("/api/clientes")
+        ]);
         const data = await res.json();
+        
+        let clientsMap = {};
+        if (resClients.ok) {
+            const dataClients = await resClients.json();
+            if (dataClients.clientes) {
+                dataClients.clientes.forEach(c => {
+                    clientsMap[c.id] = c.nombre || c.razon_social;
+                });
+            }
+        }
+        
         if(data.error) throw new Error(data.error);
         
         if(!data || data.length === 0) {
-            list.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px;">No hay presupuestos en los últimos 10 días.</div>`;
+            list.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px;">No hay presupuestos recientes.</div>`;
             return;
         }
         
+        // Map data to inject real client name
+        const mappedData = data.map(q => {
+            let cName = q.client;
+            if (cName && cName !== "Consumidor Final" && clientsMap[cName]) {
+                cName = clientsMap[cName];
+            } else if (cName && cName !== "Consumidor Final") {
+                cName = "Cliente #" + cName;
+            }
+            return { ...q, displayClientName: cName };
+        });
         
         // Store data globally to load it later
-        window._historyData = data;
-        renderHistoryList(data);
+        window._historyData = mappedData;
+        renderHistoryList(mappedData);
         
     } catch(err) {
         list.innerHTML = `<div style="text-align: center; color: #ef4444; padding: 20px;">Error cargando historial: ${err.message}</div>`;
@@ -333,7 +357,14 @@ function renderHistoryList(data) {
         return;
     }
     list.innerHTML = data.map(q => {
-        const dateStr = new Date(q.date).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' });
+        let dateStr = q.date;
+        if (dateStr && dateStr.includes('-')) {
+            const parts = dateStr.split('-');
+            if (parts.length === 3) {
+                dateStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+        }
+        
         const deleteBtn = window.userRole === 'admin' 
             ? `<button class="btn btn-primary" style="background:transparent; color:#ef4444; padding:0 5px; font-size:14px; min-width:auto;" onclick="deleteQuote('${q.id}', event)" title="Borrar Presupuesto">🗑️</button>` 
             : '';
@@ -341,7 +372,7 @@ function renderHistoryList(data) {
         <div class="cart-item" style="cursor: pointer;" onclick="loadHistoryItem('${q.id}')">
             <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
                 <div>
-                    <strong style="color: #38bdf8;">${q.client}</strong> 
+                    <strong style="color: #38bdf8;">${q.displayClientName || q.client}</strong> 
                     <span style="font-size: 10px; color: var(--text-muted); margin-left: 5px;">ID: ${q.id}</span>
                 </div>
                 <div>
@@ -351,7 +382,7 @@ function renderHistoryList(data) {
             </div>
             <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">Vendedor: ${q.seller}</div>
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 12px;">${q.products.length} productos</span>
+                <span style="font-size: 12px;">${q.products ? q.products.length : 0} productos</span>
                 <strong>${formatPrice(q.total)}</strong>
             </div>
         </div>`;
@@ -362,7 +393,8 @@ document.getElementById('historySearch').addEventListener('input', (e) => {
     if(!window._historyData) return;
     const term = e.target.value.toLowerCase();
     const filtered = window._historyData.filter(q => {
-        return q.client.toLowerCase().includes(term) || 
+        const cName = q.displayClientName ? q.displayClientName.toLowerCase() : (q.client ? q.client.toLowerCase() : '');
+        return cName.includes(term) || 
                q.id.toLowerCase().includes(term) || 
                q.total.toString().includes(term);
     });
@@ -399,7 +431,7 @@ window.loadHistoryItem = (id) => {
         if(!confirm("Tienes un presupuesto en curso. ¿Deseas reemplazarlo con este del historial?")) return;
     }
     
-    dom.clientName.value = quote.client === "Consumidor Final" ? "" : quote.client;
+    dom.clientName.value = quote.displayClientName === "Consumidor Final" ? "" : (quote.displayClientName || quote.client);
     
     // Load quote options
     state.tipoB = quote.tipoB || false;
@@ -424,12 +456,12 @@ window.loadHistoryItem = (id) => {
     state.cart = quote.products.map(p => {
         return {
             product: {
-                id: Math.random().toString(36).substr(2, 9), // Fake ID just for cart matching if needed
-                name: p.name,
-                unit: p.unit,
-                price: p.price
+                id: p.producto_id || Math.random().toString(36).substr(2, 9),
+                name: p.descripcion || p.name,
+                unit: p.unit || 'unid.',
+                price: p.precio_unitario || p.price
             },
-            quantity: p.quantity,
+            quantity: p.cantidad || p.quantity,
             discount: p.discount || 0
         };
     });
