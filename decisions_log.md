@@ -263,3 +263,7 @@ Este documento rastrea las decisiones estratégicas y arquitectónicas clave tom
 - **Decisión:** Se integró el facturador electrónico de AFIP utilizando la librería `afip.py`, delegando un Punto de Venta exclusivo (00010) bajo régimen de Responsable Inscripto (Facturas A y B). 
 - **Seguridad:** Se incorporó un bloqueo por backend (`DELETE /api/ventas/comprobante/{id}`) que impide eliminar registros en SQLite que ya posean un CAE otorgado, cumpliendo con la normativa fiscal de inmutabilidad (solo pueden anularse con Notas de Crédito).
 - **Archivos afectados:** `afip_service.py` [NUEVO], `routes/ventas_api.py`, `routes/cotizador_api.py`, `templates/dashboard.html`, `requirements.txt`.
+
+## 27/09/2026 - SDD Ciclo 9.1: Hotfix AFIP en Cotizador
+- **Decisión:** Se integró la selección de facturación AFIP directamente en el `Cotizador Rápido` (el único módulo que utiliza el vendedor), bloqueando la casilla de verificación para comprobantes electrónicos (Factura A/B y Notas de Crédito A/B) para garantizar que si se elige un comprobante electrónico, se envíe a AFIP.
+- **Archivos afectados:** `templates/cotizador.html`, `routes/ventas_api.py`.

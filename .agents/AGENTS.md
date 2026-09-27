@@ -415,10 +415,10 @@ Después de cualquier cambio arquitectónico o decisión estratégica, el agente
 | Módulo | Estado | Deuda Técnica |
 |---|---|---|
 | Módulo de Clientes (CRM) | ✅ Funcional | ABM y carga masiva por CSV implementados (Ciclo 17). Soporte Cuenta Corriente y Listas (17.1). Ajustes manuales (Fase 2.1). |
-| Módulo de Ventas / Comprobantes | ✅ Funcional | Flujo completo E2E, Notas, Recibos y Remitos integrados (Ciclo 18.3). |
+| Módulo de Ventas / Comprobantes | ✅ Funcional | Flujo completo E2E, Notas, Recibos y Remitos integrados (Ciclo 18.3). AFIP WebServices integrados en Sprint 9. |
 | Login/Auth | ✅ Funcional | Migrado a JWT (Stateless) |
 | Dashboard Admin | ✅ Funcional | Historial avanzado, CRM de ventas, filtros dinámicos y Sistema de Backups Automáticos (Sprint 8). |
-| Cotizador (vendedores) | ✅ Funcional | — |
+| Cotizador (vendedores) | ✅ Funcional | Generación de PDFs con soporte integrado de Facturación Electrónica AFIP. |
 | Gestión de Catálogo y Stock | ✅ Funcional | Migrado completamente de SQLite. Incluye ABM manual, Fraccionamiento y carga masiva por CSV con soporte extendido para Costo, Utilidad y Múltiples Proveedores (Sprint 7). |
 | Marketing IA | ✅ Funcional | Arquitectura de shortcodes corregida tipo CMS. Preview estilizado. (Ciclo 14) |
 | Tienda V2 (catálogo) | ✅ Funcional | Live en hub.disgraf.com.ar/v2. Ahora lee directamente desde SQLite. |
