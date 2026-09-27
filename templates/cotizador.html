@@ -869,13 +869,12 @@ dom.btnDownloadPDF.addEventListener('click', async () => {
         return;
     }
 
-    // Validación de negocio: Factura A requiere cliente con CUIT
+    // Validación de negocio: Factura A no puede emitirse a Consumidor Final
     const tipoSeleccionado = document.getElementById('tipoComprobante').value;
     if (tipoSeleccionado === 'Factura Electrónica A') {
         const clienteNombre = document.getElementById('clientName').value.trim();
-        const clienteId = window.selectedClientId;
-        if (!clienteId || !clienteNombre || clienteNombre.toLowerCase() === 'consumidor final') {
-            showToast('La Factura Electrónica A requiere un cliente Responsable Inscripto con CUIT válido. Seleccioná un cliente del autocomplete o usá Factura B para Consumidor Final.', true);
+        if (!clienteNombre || clienteNombre.toLowerCase() === 'consumidor final') {
+            showToast('La Factura Electrónica A no puede emitirse a Consumidor Final. Ingresá un cliente Responsable Inscripto con CUIT o usá Factura B.', true);
             return;
         }
     }
