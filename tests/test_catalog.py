@@ -23,6 +23,38 @@ def mock_data_dir(tmp_path, monkeypatch):
     meta = tmp_path / "categorias_meta.json"
     meta.write_text(json.dumps({"Vinilos": {"seo_text": "Texto SEO"}}), encoding="utf-8")
     
+    # Create disgraf_hub.db
+    import sqlite3
+    db_path = tmp_path / "disgraf_hub.db"
+    conn = sqlite3.connect(str(db_path))
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS productos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            codigo TEXT UNIQUE,
+            codigo_proveedor TEXT,
+            nombre TEXT,
+            unidad TEXT,
+            rubro TEXT,
+            proveedor TEXT,
+            costo_neto REAL DEFAULT 0,
+            iva_porcentaje REAL DEFAULT 21.0,
+            utilidad_porcentaje REAL DEFAULT 0,
+            precio_final REAL DEFAULT 0,
+            stock_actual REAL DEFAULT 0,
+            stock_minimo REAL DEFAULT 0,
+            stock_ideal REAL DEFAULT 0,
+            habilitado INTEGER DEFAULT 1,
+            controlar_stock INTEGER DEFAULT 1
+        )
+    ''')
+    cursor.execute('''
+        INSERT INTO productos (codigo, nombre, rubro, precio_final, unidad, habilitado)
+        VALUES ('100', 'Vinilo', 'Carteleria', 1000.0, 'Mts', 1)
+    ''')
+    conn.commit()
+    conn.close()
+    
     return tmp_path
 
 @pytest.fixture

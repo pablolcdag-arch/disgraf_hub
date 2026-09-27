@@ -37,67 +37,152 @@
 
     <!-- Main Content -->
     <main class="main-content">
-        <div class="page-header">
+        <div class="page-header" style="margin-bottom: 20px;">
             <h1>Panel de Control</h1>
-            <p>Bienvenido al hub central. Selecciona un módulo para comenzar.</p>
+            <p>Bienvenido al hub central. Resumen de actividad reciente.</p>
         </div>
         
-        <div class="cards-grid">
-            {% if user.role == "admin" %}
-            <div class="glass action-card">
-                <h3>🔄 Fusión de Precios</h3>
-                <p>Cruza los datos de SaaS Argentina con las listas de proveedores para obtener el catálogo final.</p>
-                <a href="/precios" style="text-decoration: none;"><button class="btn-primary">Subir Archivos</button></a>
-            </div>
+        <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
             
-            <div class="glass action-card">
-                <h3>🌐 Sincronización Web</h3>
-                <p>Impacta los cambios de precios en WordPress y actualiza el PDF público.</p>
-                <button class="btn-primary" onclick="syncWeb()" id="syncBtn">Ejecutar Sincronización</button>
+            <!-- Main Metrics and Quick Actions -->
+            <div style="flex: 2; display: flex; flex-direction: column; gap: 20px; min-width: 60%;">
+                
+                <!-- Metrics Row -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;" id="metricsPanel">
+                    <div class="glass action-card" style="padding: 20px; text-align: center;">
+                        <h4 style="margin: 0; color: var(--text-muted); font-size: 14px;">Ventas de Hoy</h4>
+                        <div id="metricVentasHoy" style="font-size: 28px; font-weight: bold; color: #10b981; margin-top: 10px;">Cargando...</div>
+                    </div>
+                    <div class="glass action-card" style="padding: 20px; text-align: center;">
+                        <h4 style="margin: 0; color: var(--text-muted); font-size: 14px;">Ventas de la Semana</h4>
+                        <div id="metricVentasSemana" style="font-size: 28px; font-weight: bold; color: #38bdf8; margin-top: 10px;">Cargando...</div>
+                    </div>
+                    <div class="glass action-card" style="padding: 20px; text-align: center;">
+                        <h4 style="margin: 0; color: var(--text-muted); font-size: 14px;">Facturas Emitidas</h4>
+                        <div id="metricFacturas" style="font-size: 28px; font-weight: bold; color: #f59e0b; margin-top: 10px;">Cargando...</div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions Grid -->
+                <h3 style="margin: 10px 0 0 0; color: #fff;">Accesos Rápidos</h3>
+                <div class="cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+                    {% if user.role == "admin" %}
+                    <div class="glass action-card">
+                        <h3>🔄 Fusión de Precios</h3>
+                        <p style="font-size: 13px;">Cruza los datos de SaaS con listas de proveedores.</p>
+                        <a href="/precios" style="text-decoration: none;"><button class="btn-primary" style="padding: 8px;">Ir al Gestor</button></a>
+                    </div>
+                    
+                    <div class="glass action-card">
+                        <h3>🌐 Sincronización Web</h3>
+                        <p style="font-size: 13px;">Impacta precios en WordPress.</p>
+                        <button class="btn-primary" onclick="syncWeb()" id="syncBtn" style="padding: 8px;">Ejecutar Sinc. Web</button>
+                    </div>
+                    
+                    <div class="glass action-card">
+                        <h3>📢 Marketing IA</h3>
+                        <p style="font-size: 13px;">Genera posts y ofertas con IA.</p>
+                        <a href="/marketing" style="text-decoration: none;"><button class="btn-primary" style="background-color: #ec4899; padding: 8px;">Marketing IA</button></a>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="glass action-card">
+                        <h3>📋 Cotizador Rápido</h3>
+                        <p style="font-size: 13px;">Armar presupuestos en mostrador.</p>
+                        <a href="/cotizador" style="text-decoration: none;"><button class="btn-primary" style="background-color: #10b981; padding: 8px;">Abrir Cotizador</button></a>
+                    </div>
+                </div>
             </div>
-            
-            <div class="glass action-card">
-                <h3>📢 Marketing IA</h3>
-                <p>Genera publicaciones de blog SEO y ofertas para productos específicos usando inteligencia artificial.</p>
-                <a href="/marketing" style="text-decoration: none;"><button class="btn-primary" style="background-color: #ec4899;">Generar Contenido</button></a>
+
+            <!-- Lateral Panel: Últimos Presupuestos -->
+            <div class="glass" style="flex: 1; min-width: 300px; padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);">
+                <h3 style="margin-top: 0; color: #fff; margin-bottom: 15px;">Últimos Presupuestos</h3>
+                <div id="latestQuotesList" style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="color: var(--text-muted); text-align: center; font-size: 14px;">Cargando presupuestos...</div>
+                </div>
+                <div style="margin-top: 15px; text-align: center;">
+                    <a href="/cotizador" style="color: #38bdf8; text-decoration: none; font-size: 13px;">Ver todos en Cotizador →</a>
+                </div>
             </div>
-            {% endif %}
-            
-            <div class="glass action-card">
-                <h3>📋 Cotizador Rápido</h3>
-                <p>Busca precios finales de productos para armar presupuestos en el mostrador.</p>
-                <a href="/cotizador" style="text-decoration: none;"><button class="btn-primary" style="background-color: #10b981;">Abrir Cotizador</button></a>
-            </div>
+
         </div>
-</main>
+    </main>
 </div>
 
 <script>
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const res = await fetch("/api/reportes/dashboard");
+        if (res.ok) {
+            const data = await res.json();
+            
+            // Format currency
+            const formatter = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+            
+            document.getElementById('metricVentasHoy').textContent = formatter.format(data.ventas_hoy || 0);
+            document.getElementById('metricVentasSemana').textContent = formatter.format(data.ventas_semana || 0);
+            document.getElementById('metricFacturas').textContent = data.cantidad_facturas || 0;
+            
+            // Render Latest Quotes
+            const quotesContainer = document.getElementById('latestQuotesList');
+            if (data.ultimos_presupuestos && data.ultimos_presupuestos.length > 0) {
+                quotesContainer.innerHTML = data.ultimos_presupuestos.map(q => {
+                    const dateStr = q.fecha_emision ? new Date(q.fecha_emision).toLocaleDateString('es-AR') : 'Sin fecha';
+                    return `
+                        <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid transparent; transition: background 0.2s;">
+                            <div>
+                                <div style="font-weight: bold; font-size: 14px; color: #fff;">Presupuesto #${q.id}</div>
+                                <div style="font-size: 12px; color: var(--text-muted);">Cliente ID: ${q.cliente_id || 'Consumidor Final'} • ${dateStr}</div>
+                            </div>
+                            <div style="font-weight: bold; color: #10b981; font-size: 14px;">
+                                ${formatter.format(q.total || 0)}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                quotesContainer.innerHTML = `<div style="color: var(--text-muted); text-align: center; font-size: 14px;">No hay presupuestos recientes.</div>`;
+            }
+        }
+    } catch(err) {
+        console.error("Error fetching dashboard reports:", err);
+        document.getElementById('metricVentasHoy').textContent = "Error";
+        document.getElementById('metricVentasSemana').textContent = "Error";
+        document.getElementById('metricFacturas').textContent = "Error";
+    }
+});
+
 async function syncWeb() {
     const btn = document.getElementById('syncBtn');
     if (btn) {
         btn.disabled = true;
         btn.innerText = "Sincronizando...";
     }
-    showToast("⚙️ Sincronizando catálogo con WordPress, por favor espera...");
+    // Show toast is in base.html usually or defined elsewhere, just alert as fallback
+    if (typeof showToast === 'function') {
+        showToast("⚙️ Sincronizando catálogo con WordPress, por favor espera...");
+    } else {
+        alert("Sincronizando...");
+    }
     
     try {
         const response = await fetch('/api/run-legacy-sync', { method: 'POST' });
         const data = await response.json();
         
         if (data.status === 'success') {
-            showToast("✅ Catálogo exportado y sincronizado con disgraf.com.ar");
+            if (typeof showToast === 'function') showToast("✅ Catálogo exportado y sincronizado con disgraf.com.ar");
+            else alert("✅ Catálogo sincronizado");
         } else {
-            showToast("❌ Error: " + (data.error || 'Fallo desconocido'));
-            console.error(data);
+            if (typeof showToast === 'function') showToast("❌ Error: " + (data.error || 'Fallo desconocido'));
+            else alert("❌ Error: " + data.error);
         }
     } catch (e) {
-        showToast("❌ Error de red al intentar sincronizar");
-        console.error(e);
+        if (typeof showToast === 'function') showToast("❌ Error de red al intentar sincronizar");
+        else alert("❌ Error de red");
     } finally {
         if (btn) {
             btn.disabled = false;
-            btn.innerText = "Ejecutar Sincronización";
+            btn.innerText = "Ejecutar Sinc. Web";
         }
     }
 }

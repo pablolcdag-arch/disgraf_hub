@@ -227,10 +227,80 @@
             </div>
         </div>
 
+        <!-- Ajuste de Saldo Modal -->
+        <div id="ajusteSaldoModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+            <div class="glass" style="width: 400px; padding: 25px; border-radius: 12px; background: var(--glass-bg); border: 1px solid var(--border-color);">
+                <h2 style="margin-top:0; color: #fff;">⚖️ Ajuste de Saldo Inicial</h2>
+                <form id="ajusteSaldoForm" onsubmit="submitAjusteSaldo(event)">
+                    <div style="margin-bottom: 15px;">
+                        <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Monto ($)</label>
+                        <input type="number" id="ajusteMonto" step="0.01" class="form-control" required style="width:100%; padding: 8px;" placeholder="Ej: 5000.00 o -1500.50">
+                        <small style="color: var(--text-muted); font-size: 11px;">Monto positivo = Aumenta la deuda (Nota de Débito). Monto negativo = Reduce la deuda (Nota de Crédito).</small>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Concepto</label>
+                        <input type="text" id="ajusteConcepto" class="form-control" required style="width:100%; padding: 8px;" placeholder="Ej: Deuda Inicial, Ajuste por redondeo">
+                    </div>
+
+                    <div style="margin-top: 25px; display: flex; justify-content: flex-end; gap: 10px;">
+                        <button type="button" class="btn-secondary" onclick="closeAjusteSaldoModal()">Cancelar</button>
+                        <button type="submit" class="btn-primary">Aplicar Ajuste</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
     </main>
 </div>
 
 <script>
+window.openAjusteSaldoModal = () => {
+    document.getElementById('ajusteSaldoForm').reset();
+    document.getElementById('ajusteSaldoModal').style.display = 'flex';
+};
+
+window.closeAjusteSaldoModal = () => {
+    document.getElementById('ajusteSaldoModal').style.display = 'none';
+};
+
+window.submitAjusteSaldo = async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.textContent = 'Aplicando...';
+
+    const monto = parseFloat(document.getElementById('ajusteMonto').value);
+    const concepto = document.getElementById('ajusteConcepto').value;
+    const clientId = window.currentClient.id;
+
+    try {
+        const res = await fetch("/api/ventas/ajuste-saldo", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                cliente_id: clientId,
+                monto: monto,
+                concepto: concepto
+            })
+        });
+
+        if (res.ok) {
+            closeAjusteSaldoModal();
+            loadClientDetails(clientId);
+            alert("Ajuste de saldo aplicado correctamente.");
+        } else {
+            const errData = await res.json();
+            alert("Error: " + (errData.detail || "No se pudo aplicar el ajuste"));
+        }
+    } catch(err) {
+        alert("Error de conexión.");
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Aplicar Ajuste';
+};
+
 let searchTimeout = null;
 const searchInput = document.getElementById('searchClientInput');
 const clientsList = document.getElementById('clientsList');
@@ -397,7 +467,10 @@ window.renderClientTabs = (tab) => {
                     ${client.condicion_iva || 'Consumidor Final'}
                 </div>
             </div>
-            <div style="display: flex; gap: 10px;">
+            <div style="display: flex; gap: 10px; align-items: center;">
+                {% if user and user.role == 'admin' %}
+                <button class="btn-secondary" onclick="openAjusteSaldoModal()" title="Ajuste de Saldo Inicial">⚖️ Ajuste</button>
+                {% endif %}
                 <a href="/cotizador" style="text-decoration: none;">
                     <button class="btn-primary" style="background: #10b981;">+ Nuevo Comprobante</button>
                 </a>
