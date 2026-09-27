@@ -1,0 +1,242 @@
+<!-- Modal Producto ABM -->
+<div id="productoAbmModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; overflow-y: auto; padding: 20px;">
+    <div class="glass" style="background: var(--card-bg); padding: 30px; border-radius: 8px; width: 800px; max-width: 95%; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+            <h3 id="abmModalTitle" style="margin: 0; font-size: 20px;">Editar Producto</h3>
+            <button onclick="closeAbmModal()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-main);">✕</button>
+        </div>
+        
+        <form id="abmForm" onsubmit="event.preventDefault(); saveAbmProduct();">
+            <input type="hidden" id="abm_db_id">
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <!-- Datos Básicos -->
+                <div style="background: rgba(0,0,0,0.1); padding: 15px; border-radius: 6px; border: 1px solid var(--border-color);">
+                    <h4 style="margin-top: 0; margin-bottom: 15px; color: var(--primary-color);">Datos Básicos</h4>
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 13px;">Nombre *</label>
+                        <input type="text" id="abm_nombre" class="form-control" required style="width: 100%; padding: 8px;">
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; margin-bottom: 5px; font-size: 13px;">Código *</label>
+                            <input type="text" id="abm_codigo" class="form-control" required style="width: 100%; padding: 8px;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; margin-bottom: 5px; font-size: 13px;">Cód. Proveedor</label>
+                            <input type="text" id="abm_codigo_proveedor" class="form-control" style="width: 100%; padding: 8px;">
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; margin-bottom: 5px; font-size: 13px;">Unidad</label>
+                            <input type="text" id="abm_unidad" class="form-control" style="width: 100%; padding: 8px;" placeholder="ej: UN, MTS, M2">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; margin-bottom: 5px; font-size: 13px;">Rubro</label>
+                            <input type="text" id="abm_rubro" class="form-control" style="width: 100%; padding: 8px;">
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 13px;">Proveedor</label>
+                        <input type="text" id="abm_proveedor" class="form-control" style="width: 100%; padding: 8px;">
+                    </div>
+                </div>
+
+                <!-- Comportamiento y Stock -->
+                <div style="display: flex; flex-direction: column; gap: 20px;">
+                    <div style="background: rgba(0,0,0,0.1); padding: 15px; border-radius: 6px; border: 1px solid var(--border-color);">
+                        <h4 style="margin-top: 0; margin-bottom: 15px; color: var(--primary-color);">Comportamiento</h4>
+                        <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; cursor: pointer;">
+                            <input type="checkbox" id="abm_habilitado" style="width: 16px; height: 16px;">
+                            <span style="font-size: 14px;">Habilitado (Visible en catálogo)</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" id="abm_controlar_stock" style="width: 16px; height: 16px;">
+                            <span style="font-size: 14px;">Controlar Stock</span>
+                        </label>
+                    </div>
+
+                    <div style="background: rgba(0,0,0,0.1); padding: 15px; border-radius: 6px; border: 1px solid var(--border-color); flex: 1;">
+                        <h4 style="margin-top: 0; margin-bottom: 15px; color: var(--primary-color);">Stock</h4>
+                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <div style="flex: 1;">
+                                <label style="display: block; margin-bottom: 5px; font-size: 13px;">Stock Actual</label>
+                                <input type="number" id="abm_stock_actual" class="form-control" step="0.01" style="width: 100%; padding: 8px;">
+                            </div>
+                            <div style="flex: 1;">
+                                <label style="display: block; margin-bottom: 5px; font-size: 13px;">Stock Mínimo</label>
+                                <input type="number" id="abm_stock_minimo" class="form-control" step="0.01" style="width: 100%; padding: 8px;">
+                            </div>
+                            <div style="flex: 1;">
+                                <label style="display: block; margin-bottom: 5px; font-size: 13px;">Stock Ideal</label>
+                                <input type="number" id="abm_stock_ideal" class="form-control" step="0.01" style="width: 100%; padding: 8px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Importes -->
+            <div style="background: rgba(0,0,0,0.1); padding: 15px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 20px;">
+                <h4 style="margin-top: 0; margin-bottom: 15px; color: var(--primary-color);">Importes</h4>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; align-items: end;">
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-size: 13px;">Costo Neto ($)</label>
+                        <input type="number" id="abm_costo_neto" class="form-control abm-calc" step="0.01" style="width: 100%; padding: 8px;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-size: 13px;">% IVA</label>
+                        <input type="number" id="abm_iva_porcentaje" class="form-control abm-calc" step="0.01" value="21" style="width: 100%; padding: 8px;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-size: 13px;">% Utilidad</label>
+                        <input type="number" id="abm_utilidad_porcentaje" class="form-control abm-calc" step="0.01" value="0" style="width: 100%; padding: 8px;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-size: 13px;">Precio Final Calculado</label>
+                        <input type="number" id="abm_precio_final" class="form-control" step="0.01" readonly style="width: 100%; padding: 8px; background: rgba(16, 185, 129, 0.2); font-weight: bold; font-size: 16px; border: 1px solid #10b981; color: var(--text-main);">
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                <div>
+                    <span id="abmStatus" style="font-size: 13px; color: #10b981;"></span>
+                </div>
+                <div style="display: flex; gap: 15px;">
+                    <button type="button" onclick="closeAbmModal()" style="padding: 10px 20px; border: 1px solid var(--border-color); background: none; color: var(--text-main); border-radius: 4px; cursor: pointer;">Cancelar</button>
+                    <button type="submit" id="btnSaveAbm" class="btn-primary" style="padding: 10px 20px; width: auto; font-size: 14px;">💾 Guardar Producto</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function calculatePrecioFinal() {
+        const costo = parseFloat(document.getElementById('abm_costo_neto').value) || 0;
+        const iva = parseFloat(document.getElementById('abm_iva_porcentaje').value) || 0;
+        const utilidad = parseFloat(document.getElementById('abm_utilidad_porcentaje').value) || 0;
+        
+        const costoConUtilidad = costo * (1 + (utilidad / 100));
+        const precioFinal = costoConUtilidad * (1 + (iva / 100));
+        
+        document.getElementById('abm_precio_final').value = precioFinal.toFixed(2);
+    }
+
+    document.querySelectorAll('.abm-calc').forEach(el => {
+        el.addEventListener('input', calculatePrecioFinal);
+    });
+
+    window.openAbmModal = async (db_id = null) => {
+        document.getElementById('abmStatus').textContent = "";
+        const form = document.getElementById('abmForm');
+        form.reset();
+        document.getElementById('abm_db_id').value = "";
+        
+        if (db_id) {
+            document.getElementById('abmModalTitle').textContent = "Editar Producto";
+            
+            // Si db_id es el id de SQLite (numérico), buscamos el producto
+            const prod = state.dbProducts.find(p => p.id == db_id);
+            if (prod) {
+                document.getElementById('abm_db_id').value = prod.id;
+                document.getElementById('abm_nombre').value = prod.nombre || "";
+                document.getElementById('abm_codigo').value = prod.codigo || "";
+                document.getElementById('abm_codigo_proveedor').value = prod.codigo_proveedor || "";
+                document.getElementById('abm_unidad').value = prod.unidad || "";
+                document.getElementById('abm_rubro').value = prod.rubro || "";
+                document.getElementById('abm_proveedor').value = prod.proveedor || "";
+                
+                document.getElementById('abm_habilitado').checked = prod.habilitado == 1;
+                document.getElementById('abm_controlar_stock').checked = prod.controlar_stock == 1;
+                
+                document.getElementById('abm_stock_actual').value = prod.stock_actual || 0;
+                document.getElementById('abm_stock_minimo').value = prod.stock_minimo || 0;
+                document.getElementById('abm_stock_ideal').value = prod.stock_ideal || 0;
+                
+                document.getElementById('abm_costo_neto').value = prod.costo_neto || 0;
+                document.getElementById('abm_iva_porcentaje').value = prod.iva_porcentaje ?? 21;
+                document.getElementById('abm_utilidad_porcentaje').value = prod.utilidad_porcentaje || 0;
+                document.getElementById('abm_precio_final').value = prod.precio_final || 0;
+            } else {
+                // Puede ser que el producto no esté en SQLite aún
+                alert("Producto no encontrado en la base de datos.");
+                return;
+            }
+        } else {
+            document.getElementById('abmModalTitle').textContent = "Nuevo Producto";
+            document.getElementById('abm_habilitado').checked = true;
+            document.getElementById('abm_controlar_stock').checked = true;
+            document.getElementById('abm_iva_porcentaje').value = 21;
+        }
+        
+        document.getElementById('productoAbmModal').style.display = 'flex';
+    };
+
+    window.closeAbmModal = () => {
+        document.getElementById('productoAbmModal').style.display = 'none';
+    };
+
+    window.saveAbmProduct = async () => {
+        const btn = document.getElementById('btnSaveAbm');
+        btn.textContent = "⏳ Guardando...";
+        btn.disabled = true;
+        document.getElementById('abmStatus').textContent = "";
+        
+        const payload = {
+            codigo: document.getElementById('abm_codigo').value,
+            codigo_proveedor: document.getElementById('abm_codigo_proveedor').value,
+            nombre: document.getElementById('abm_nombre').value,
+            unidad: document.getElementById('abm_unidad').value,
+            rubro: document.getElementById('abm_rubro').value,
+            proveedor: document.getElementById('abm_proveedor').value,
+            
+            costo_neto: parseFloat(document.getElementById('abm_costo_neto').value) || 0,
+            iva_porcentaje: parseFloat(document.getElementById('abm_iva_porcentaje').value) || 0,
+            utilidad_porcentaje: parseFloat(document.getElementById('abm_utilidad_porcentaje').value) || 0,
+            precio_final: parseFloat(document.getElementById('abm_precio_final').value) || 0,
+            
+            stock_actual: parseFloat(document.getElementById('abm_stock_actual').value) || 0,
+            stock_minimo: parseFloat(document.getElementById('abm_stock_minimo').value) || 0,
+            stock_ideal: parseFloat(document.getElementById('abm_stock_ideal').value) || 0,
+            
+            habilitado: document.getElementById('abm_habilitado').checked ? 1 : 0,
+            controlar_stock: document.getElementById('abm_controlar_stock').checked ? 1 : 0
+        };
+        
+        const db_id = document.getElementById('abm_db_id').value;
+        const method = db_id ? "PUT" : "POST";
+        const url = db_id ? `/api/productos/${db_id}` : `/api/productos`;
+        
+        try {
+            const res = await fetch(url, {
+                method: method,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            document.getElementById('abmStatus').textContent = "✅ Guardado correctamente";
+            
+            // Recargar la tabla completa
+            await reloadProductsData();
+            
+            setTimeout(() => {
+                closeAbmModal();
+            }, 1000);
+            
+        } catch(err) {
+            alert("Error al guardar: " + err.message);
+        } finally {
+            btn.textContent = "💾 Guardar Producto";
+            btn.disabled = false;
+        }
+    };
+</script>
+

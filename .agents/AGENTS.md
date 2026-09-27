@@ -356,10 +356,12 @@ Cuando una tarea es compleja, usar el siguiente patrón:
 
 | Agente | Rol | Puede escribir código |
 |---|---|---|
-| **Coordinador** | Planifica (implementation_plan.md), asigna tareas, redacta prompts para otros agentes | ❌ NUNCA (solo escribe archivos .md) |
+| **Coordinador** | Único. Planifica (implementation_plan.md), asigna tareas, redacta prompts para otros agentes, hace DEPLOY. | ❌ NUNCA (solo escribe archivos .md) |
 | **Investigador** | Lee archivos, inspecciona DB, audita código | ❌ No |
-| **Implementador A/B/C** | Ejecuta una subtarea acotada (Frontend, Backend, etc) | ✅ Sí (código de producción) |
-| **Verificador** | Corre tests, revisa que cumple la spec | ❌ No |
+| **Implementador ERP** | Ejecuta subtareas de Backend, APIs y Base de Datos | ✅ Sí (código de producción) |
+| **Verificador ERP** | Corre tests de Python, revisa APIs y SQLite | ❌ No |
+| **Implementador Front** | Ejecuta subtareas de Interfaz, HTML, JS y CSS | ✅ Sí (código de producción) |
+| **Verificador Front** | Verifica sintaxis de Jinja/HTML, audita flujos de UI | ❌ No |
 
 **Invocación del Coordinador:**
 Para usar el coordinador sin que pierda contexto, abre una conversación nueva y di simplemente: *"Asume el rol de Coordinador"*. El agente leerá este archivo y sabrá automáticamente que tiene prohibido modificar código `.py` o `.html`, y que su única tarea es planificar y entregarte prompts para tus otras conversaciones ejecutoras.
@@ -413,7 +415,7 @@ Después de cualquier cambio arquitectónico o decisión estratégica, el agente
 | Módulo | Estado | Deuda Técnica |
 |---|---|---|
 | Módulo de Clientes (CRM) | ✅ Funcional | ABM y carga masiva por CSV implementados (Ciclo 17). Soporte Cuenta Corriente y Listas (17.1) |
-| Módulo de Ventas / Comprobantes | ✅ Funcional | Endpoint de persistencia implementado (Ciclo 18) |
+| Módulo de Ventas / Comprobantes | ✅ Funcional | Flujo completo E2E, Notas, Recibos y Remitos integrados (Ciclo 18.3) |
 | Login/Auth | ✅ Funcional | Migrado a JWT (Stateless) |
 | Dashboard Admin | ✅ Funcional | — |
 | Cotizador (vendedores) | ✅ Funcional | — |
