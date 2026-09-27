@@ -361,17 +361,17 @@ window.openDeudoresModal = async () => {
         const formatter = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
         
         tbody.innerHTML = data.deudores.map(d => {
-            const clientName = clientMap[d.cliente_id] ? clientMap[d.cliente_id] : \`Cliente #\${d.cliente_id}\`;
+            const clientName = clientMap[d.cliente_id] ? clientMap[d.cliente_id] : `Cliente #${d.cliente_id}`;
             
-            return \`
+            return `
                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                    <td style="padding: 12px 10px; color: var(--text-muted);">#\${d.cliente_id}</td>
-                    <td style="padding: 12px 10px; font-weight: bold; color: var(--text-main);">\${clientName}</td>
+                    <td style="padding: 12px 10px; color: var(--text-muted);">#${d.cliente_id}</td>
+                    <td style="padding: 12px 10px; font-weight: bold; color: var(--text-main);">${clientName}</td>
                     <td style="padding: 12px 10px; text-align: right; color: #ef4444; font-weight: bold;">
-                        \${formatter.format(d.saldo)}
+                        ${formatter.format(d.saldo)}
                     </td>
                 </tr>
-            \`;
+            `;
         }).join('');
         
     } catch(err) {

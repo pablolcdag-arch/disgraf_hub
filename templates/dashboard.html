@@ -185,7 +185,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid transparent; transition: background 0.2s;">
                             <div>
                                 <div style="font-weight: bold; font-size: 14px; color: #fff;">Presupuesto #${q.id}</div>
-                                <div style="font-size: 12px; color: var(--text-muted);">Cliente ID: ${q.cliente_id || 'Consumidor Final'} • ${dateStr}</div>
+                                <div style="font-size: 12px; color: var(--text-muted);">Cliente ID: ${dashboardClientMap[q.cliente_id] || q.cliente_id || 'Consumidor Final'} • ${dateStr}</div>
                             </div>
                             <div style="font-weight: bold; color: #10b981; font-size: 14px;">
                                 ${formatter.format(q.total || 0)}
@@ -279,7 +279,7 @@ async function loadAuditoria() {
                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;">
                     <td style="padding: 12px 10px; color: var(--text-main);">${dateStr}</td>
                     <td style="padding: 12px 10px; color: ${tipoColor}; font-weight: bold;">${comp.tipo_comprobante || '-'}</td>
-                    <td style="padding: 12px 10px; color: var(--text-main);">${comp.cliente_id || 'Consumidor Final'}</td>
+                    <td style="padding: 12px 10px; color: var(--text-main);">${dashboardClientMap[comp.cliente_id] || comp.cliente_id || 'Consumidor Final'}</td>
                     <td style="padding: 12px 10px; font-weight: bold; text-align: right; color: #fff;">${formatter.format(comp.total || 0)}</td>
                 </tr>
             `;
