@@ -285,3 +285,22 @@ async def update_cliente(client_id: int, cliente: ClienteUpdate, request: Reques
     except Exception as e:
         print("Error actualizando cliente:", e)
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/api/clientes")
+async def api_get_all_clientes(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return {"error": "Unauthorized"}
+        
+    db_path = os.path.join(DATA_DIR, 'disgraf_hub.db')
+    try:
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, nombre, razon_social FROM clientes")
+        rows = cursor.fetchall()
+        conn.close()
+        
+        return {"clientes": [dict(r) for r in rows]}
+    except Exception as e:
+        return {"error": str(e)}
