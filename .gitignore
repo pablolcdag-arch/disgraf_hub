@@ -32,3 +32,5 @@ logs/
 .gemini/
 scratch/
 
+
+afip_certs/

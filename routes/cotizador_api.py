@@ -182,6 +182,24 @@ async def api_generate_quote_pdf(request: Request):
     global_discount = data.get("globalDiscount", 0)
     iva_reducido = data.get("iva_reducido", False)
     
+    quote_id = data.get("quote_id") or data.get("id")
+    cae = data.get("cae")
+    cae_vto = data.get("cae_vto")
+    numero_afip = data.get("numero_afip")
+    pto_vta = os.environ.get('AFIP_PTO_VTA', '10')
+    
+    if quote_id and not cae:
+        db_path = os.path.join(DATA_DIR, 'disgraf_hub.db')
+        try:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            cursor.execute('SELECT cae, cae_vto, numero_afip FROM comprobantes WHERE id = ?', (quote_id,))
+            row = cursor.fetchone()
+            if row and row[0]:
+                cae, cae_vto, numero_afip = row
+            conn.close()
+        except:
+            pass    
     original_date = data.get("date")
     if original_date:
         try:
@@ -271,8 +289,13 @@ async def api_generate_quote_pdf(request: Request):
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
     ]))
 
+    header_title_cell = Paragraph(f"<b>{title_text}</b>", title_style)
+    if numero_afip:
+        numero_afip_str = f"Nº {int(pto_vta):05d}-{int(numero_afip):08d}"
+        header_title_cell = Paragraph(f"<b>{title_text}</b><br/>{numero_afip_str}", title_style)
+        
     header_table = Table([
-        [Paragraph(f"<b>{title_text}</b>", title_style), letter_table, Paragraph(f"<b>Fecha:</b> {date_str}", info_style)]
+        [header_title_cell, letter_table, Paragraph(f"<b>Fecha:</b> {date_str}", info_style)]
     ], colWidths=[200, 100, 200])
     header_table.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
@@ -446,6 +469,46 @@ async def api_generate_quote_pdf(request: Request):
         elements.append(Paragraph(f"IVA (21%): {iva_str}", sub_style))
         elements.append(Spacer(1, 5))
         elements.append(Paragraph(f"<b>Total con IVA: {total_with_iva_str}</b>", total_style))
+
+    if cae:
+        import afip_service
+        from reportlab.platypus import Image
+        
+        doc_nro = int(data.get("client_id", "0")) if str(data.get("client_id", "")).isdigit() else 0
+        if doc_nro > 0:
+            doc_tipo = 80 if len(str(doc_nro)) == 11 else 96
+        else:
+            doc_tipo = 99
+            doc_nro = 0
+            
+        tipo_cbte = 1 if tipo_comprobante == "Factura Electrónica A" else 6
+        
+        try:
+            qr_bytes = afip_service.generar_qr_afip(
+                cae=cae,
+                numero_afip=numero_afip,
+                pto_vta=int(pto_vta),
+                doc_tipo=doc_tipo,
+                doc_nro=doc_nro,
+                tipo_cbte=tipo_cbte,
+                fecha=datetime.datetime.now().strftime("%Y-%m-%d"),
+                total=display_total
+            )
+            img = Image(io.BytesIO(qr_bytes), width=100, height=100)
+        except Exception as e:
+            print("Error generando QR:", e)
+            img = Paragraph("QR no disponible", info_style)
+        
+        cae_style = ParagraphStyle('CAE', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor('#475569'))
+        footer_table = Table([
+            [img, Paragraph(f"<b>CAE:</b> {cae}<br/><b>Vto CAE:</b> {cae_vto}", cae_style)]
+        ], colWidths=[110, 300])
+        footer_table.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ]))
+        
+        elements.append(Spacer(1, 20))
+        elements.append(footer_table)
 
     doc.build(elements)
     

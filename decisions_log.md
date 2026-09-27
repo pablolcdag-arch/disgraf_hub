@@ -222,3 +222,44 @@ Este documento rastrea las decisiones estratégicas y arquitectónicas clave tom
 - **Decisión:** Se implementó `GET /api/ventas/comprobante/{id}` para obtener el comprobante histórico y reconstruirlo en el Frontend mediante parámetros de URL (`load_id` y `remito_from`). Además, se agregó el botón para descargar/reimprimir el PDF original respetando su fecha de creación (sin generar clones). Se unificó la barra de navegación de todos los layouts.
 - **Razón:** Cerrar los flujos End-to-End para asegurar que los saltos entre Presupuesto -> Factura -> Remito se auto-pueblen correctamente en el carrito, brindando velocidad en el mostrador. La unificación de menús mejoró el UX general.
 - **Archivos afectados:** `routes/ventas_api.py`, `routes/cotizador_api.py`, `templates/cotizador.html`, `templates/clientes.html`, `templates/precios.html`, `templates/dashboard.html`.
+
+## [27 de Septiembre 2026] - Fase 2.1: Gestión de Stock y Dashboard CRM
+- **Decisión:** Se migró el catálogo de productos desde el archivo CSV a la base de datos `disgraf_hub.db` (`productos`), habilitando operaciones de stock transaccionales. El archivo CSV quedó relegado exclusivamente para actualizaciones masivas de precios.
+- **Razón:** La dependencia del archivo CSV generaba riesgos de concurrencia y no permitía gestionar inventario real. La migración a SQLite garantiza escalabilidad.
+- **Archivos afectados:** `routes/catalog_api.py`, `routes/v2.py`, `data/disgraf_hub.db`.
+
+## [27 de Septiembre 2026] - Fase 2.1: Fraccionamiento y ABM Individual
+- **Decisión:** Se implementó una Ficha de Producto Individual (`producto_abm.html`) para editar costos, utilidad e IVA a mano. Adicionalmente, se creó un modal de Fraccionamiento de Stock (Frontend) y lógica transaccional (Backend) que permite restar stock de un rollo padre (ej. 126cm) y sumarlo al producto hijo (ej. 63cm).
+- **Razón:** El equipo de depósito realiza fraccionamiento físico de bobinas, lo cual requería reflejo en el sistema sin obligar a la automatización ciega en el Cotizador (que genera discrepancias físicas).
+- **Archivos afectados:** `routes/catalog_api.py`, `templates/precios.html`, `templates/producto_abm.html`.
+
+## [27 de Septiembre 2026] - Fase 2.1: Auditoría y Saldos Iniciales
+- **Decisión:** Se creó el botón de "Ajuste de Saldo" (solo Admin) en la Cuenta Corriente de los clientes para arrancar con deudas o favores iniciales. Se renovó por completo el `dashboard.html` añadiendo métricas de Ventas de Hoy, Semana, Mes, y una grilla completa de Auditoría de Comprobantes con filtros dinámicos (Fecha y Tipo) conectados a `comprobantes`.
+- **Razón:** Necesidad crítica de negocio de analizar presupuestos no cerrados y tener redundancia visual en la web (Panel de Control) antes de integrar el Bot Vendedor de Telegram en el futuro.
+- **Archivos afectados:** `routes/ventas_api.py`, `templates/clientes.html`, `templates/dashboard.html`.
+
+## [27 de Septiembre 2026] - Fase 2.1: Migración Final del Cotizador (Sprint 5)
+- **Decisión:** Se abandonó el uso de `historial_presupuestos.json`. Todos los presupuestos generados en `cotizador.html` ahora se guardan directo en las tablas `comprobantes` y `comprobantes_items` de SQLite.
+- **Razón:** El JSON legacy impedía que el Dashboard global pudiese rastrear, filtrar y sumar presupuestos con la misma lógica que las facturas. La unificación habilita que todo comprobante comercial nazca del mismo motor relacional.
+- **Decisión:** Se añadió el reporte de "Clientes Deudores" replicando SaaS Argentina, calculando sumas de Facturas y restas de Recibos/Notas de Crédito al vuelo (`HAVING saldo > 1`).
+- **Archivos afectados:** `routes/cotizador_api.py`, `routes/ventas_api.py`, `templates/clientes.html`, `templates/cotizador.html`.
+
+## 27/09/2026 - SDD Ciclo 7: Sincronización Avanzada de Catálogo y Fix de Precios
+- **Decisión:** Se integraron las columnas 'Costo ($)', 'Utilidad (%)' y 'Proveedor' de SaaS a la base de datos local (SQLite). Se preparó el esquema de base de datos añadiendo `proveedor_2`. Se arregló el método `format_price` para evitar el truncamiento de puntos decimales en el gestor de PDF y WordPress.
+- **Razón:** El CSV subido ignoraba campos clave, forzando actualizaciones manuales tediosas e imposibilitando la futura autonomía del hub. Además, el PDF calculaba montos millonarios multiplicando erróneamente por 1000 los números flotantes.
+- **Archivos afectados:** `data/disgraf_hub.db` (Schema), `routes/catalog_api.py`, `templates/producto_abm.html`.
+
+## 27/09/2026 - SDD Ciclo 8: Sistema de Backups Automáticos (Telegram)
+- **Decisión:** Se implementó un módulo de backup que empaqueta la base de datos y configuraciones (`data/`), con un botón manual para el Dashboard y un CronJob (apscheduler) que lo envía cada noche al administrador vía Telegram.
+- **Razón:** Blindar la base de datos (Saldos de Cuentas Corrientes y Catálogo SQLite) antes de la transición completa del ERP y la integración con AFIP.
+- **Archivos afectados:** `backup_service.py` [NUEVO], `routes/admin_api.py` [NUEVO], `main.py`, `templates/dashboard.html`.
+
+## 27/09/2026 - SDD Ciclo 8.1: Restauración Manual de Backups
+- **Decisión:** Se implementó un endpoint `POST /api/admin/restore` y un botón en la UI para que un administrador pueda subir un archivo `.zip` de backup y sobreescribir la carpeta `data/` del sistema.
+- **Razón:** Proveer total autonomía al administrador para aplicar tareas de "Disaster Recovery" sin depender de comandos SSH, manteniendo el rol de seguridad al máximo.
+- **Archivos afectados:** `routes/admin_api.py`, `templates/dashboard.html`.
+
+## 27/09/2026 - SDD Ciclo 9: Integración AFIP (ARCA)
+- **Decisión:** Se integró el facturador electrónico de AFIP utilizando la librería `afip.py`, delegando un Punto de Venta exclusivo (00010) bajo régimen de Responsable Inscripto (Facturas A y B). 
+- **Seguridad:** Se incorporó un bloqueo por backend (`DELETE /api/ventas/comprobante/{id}`) que impide eliminar registros en SQLite que ya posean un CAE otorgado, cumpliendo con la normativa fiscal de inmutabilidad (solo pueden anularse con Notas de Crédito).
+- **Archivos afectados:** `afip_service.py` [NUEVO], `routes/ventas_api.py`, `routes/cotizador_api.py`, `templates/dashboard.html`, `requirements.txt`.

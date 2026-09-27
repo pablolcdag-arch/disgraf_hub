@@ -9,3 +9,5 @@ jinja2
 google-genai
 PyJWT>=2.8.0
 apscheduler>=3.10.0
+afip.py>=0.8.0
+qrcode

@@ -414,14 +414,14 @@ Después de cualquier cambio arquitectónico o decisión estratégica, el agente
 
 | Módulo | Estado | Deuda Técnica |
 |---|---|---|
-| Módulo de Clientes (CRM) | ✅ Funcional | ABM y carga masiva por CSV implementados (Ciclo 17). Soporte Cuenta Corriente y Listas (17.1) |
-| Módulo de Ventas / Comprobantes | ✅ Funcional | Flujo completo E2E, Notas, Recibos y Remitos integrados (Ciclo 18.3) |
+| Módulo de Clientes (CRM) | ✅ Funcional | ABM y carga masiva por CSV implementados (Ciclo 17). Soporte Cuenta Corriente y Listas (17.1). Ajustes manuales (Fase 2.1). |
+| Módulo de Ventas / Comprobantes | ✅ Funcional | Flujo completo E2E, Notas, Recibos y Remitos integrados (Ciclo 18.3). |
 | Login/Auth | ✅ Funcional | Migrado a JWT (Stateless) |
-| Dashboard Admin | ✅ Funcional | — |
+| Dashboard Admin | ✅ Funcional | Historial avanzado, CRM de ventas, filtros dinámicos y Sistema de Backups Automáticos (Sprint 8). |
 | Cotizador (vendedores) | ✅ Funcional | — |
-| Gestión de Precios | ✅ Funcional | — |
+| Gestión de Catálogo y Stock | ✅ Funcional | Migrado completamente de SQLite. Incluye ABM manual, Fraccionamiento y carga masiva por CSV con soporte extendido para Costo, Utilidad y Múltiples Proveedores (Sprint 7). |
 | Marketing IA | ✅ Funcional | Arquitectura de shortcodes corregida tipo CMS. Preview estilizado. (Ciclo 14) |
-| Tienda V2 (catálogo) | ✅ Funcional | Live en hub.disgraf.com.ar/v2. Vista individual, manejo de errores 404, buscador global y productos relacionados completados (con soporte para subcategorías). |
+| Tienda V2 (catálogo) | ✅ Funcional | Live en hub.disgraf.com.ar/v2. Ahora lee directamente desde SQLite. |
 | Blog SEO (Satélite) | ✅ Generador SSG Completado | Grilla rediseñada y template de posts mejorado con formato elegante. |
 | Tests automatizados | ✅ Completado | Suite completa con pytest |
 | Refactor main.py | ✅ Completado | Dividido en múltiples APIRouters en directorio routes/ |

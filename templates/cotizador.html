@@ -611,9 +611,10 @@ window.handleComprobanteChange = () => {
         chkIva.checked = false;
     }
     
-    if (val === 'Factura Electrónica A' || val === 'Factura Electrónica B') {
+    if (val === 'Factura Electrónica A' || val === 'Factura Electrónica B' || val === 'Nota de Crédito A' || val === 'Nota de Crédito B' || val === 'Nota de Débito A' || val === 'Nota de Débito B') {
         lblAfip.style.display = 'flex';
         chkAfip.checked = true;
+        chkAfip.disabled = true; // No permitir destildarlo
     } else {
         lblAfip.style.display = 'none';
         chkAfip.checked = false;
