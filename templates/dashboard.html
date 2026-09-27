@@ -43,7 +43,11 @@
                 <p style="margin:0;">Bienvenido al hub central. Resumen de actividad reciente.</p>
             </div>
             {% if user.role == "admin" %}
-            <div>
+            <div style="display: flex; gap: 10px;">
+                <input type="file" id="backupFileInput" accept=".zip" style="display: none;">
+                <button class="btn-primary" id="btnRestoreBackup" style="background-color: #ef4444; padding: 10px 16px; border-radius: 8px; font-weight: bold;" onclick="document.getElementById('backupFileInput').click()">
+                    ⚠️ Restaurar Backup
+                </button>
                 <a href="/api/admin/backup" download style="text-decoration: none;">
                     <button class="btn-primary" style="background-color: #38bdf8; padding: 10px 16px; border-radius: 8px; font-weight: bold;">
                         📦 Descargar Backup Sistema (ZIP)
@@ -334,5 +338,47 @@ async function loadAuditoria() {
         btn.textContent = "🔍 Buscar";
     }
 }
+
+document.getElementById('backupFileInput')?.addEventListener('change', async function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const isConfirmed = confirm("⚠️ ADVERTENCIA EXTREMA: Estás por sobreescribir toda la base de datos y perderás los datos actuales. ¿Estás absolutamente seguro de continuar?");
+    
+    if (!isConfirmed) {
+        e.target.value = ''; // Reset input
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const restoreBtn = document.getElementById('btnRestoreBackup');
+    const oldText = restoreBtn.innerText;
+    restoreBtn.innerText = "⏳ Restaurando...";
+    restoreBtn.disabled = true;
+    
+    try {
+        const response = await fetch('/api/admin/restore', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            alert("Backup restaurado correctamente");
+            window.location.reload();
+        } else {
+            const data = await response.json();
+            alert("Error al restaurar: " + (data.error || data.detail || 'Fallo desconocido'));
+        }
+    } catch (err) {
+        alert("Error de red al intentar restaurar el backup");
+        console.error(err);
+    } finally {
+        restoreBtn.innerText = oldText;
+        restoreBtn.disabled = false;
+        e.target.value = '';
+    }
+});
 </script>
 {% endblock %}
