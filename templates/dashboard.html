@@ -48,18 +48,22 @@
             <div style="flex: 2; display: flex; flex-direction: column; gap: 20px; min-width: 60%;">
                 
                 <!-- Metrics Row -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;" id="metricsPanel">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;" id="metricsPanel">
                     <div class="glass action-card" style="padding: 20px; text-align: center;">
                         <h4 style="margin: 0; color: var(--text-muted); font-size: 14px;">Ventas de Hoy</h4>
-                        <div id="metricVentasHoy" style="font-size: 28px; font-weight: bold; color: #10b981; margin-top: 10px;">Cargando...</div>
+                        <div id="metricVentasHoy" style="font-size: 24px; font-weight: bold; color: #10b981; margin-top: 10px;">Cargando...</div>
                     </div>
                     <div class="glass action-card" style="padding: 20px; text-align: center;">
                         <h4 style="margin: 0; color: var(--text-muted); font-size: 14px;">Ventas de la Semana</h4>
-                        <div id="metricVentasSemana" style="font-size: 28px; font-weight: bold; color: #38bdf8; margin-top: 10px;">Cargando...</div>
+                        <div id="metricVentasSemana" style="font-size: 24px; font-weight: bold; color: #38bdf8; margin-top: 10px;">Cargando...</div>
+                    </div>
+                    <div class="glass action-card" style="padding: 20px; text-align: center;">
+                        <h4 style="margin: 0; color: var(--text-muted); font-size: 14px;">Ventas del Mes</h4>
+                        <div id="metricVentasMes" style="font-size: 24px; font-weight: bold; color: #8b5cf6; margin-top: 10px;">Cargando...</div>
                     </div>
                     <div class="glass action-card" style="padding: 20px; text-align: center;">
                         <h4 style="margin: 0; color: var(--text-muted); font-size: 14px;">Facturas Emitidas</h4>
-                        <div id="metricFacturas" style="font-size: 28px; font-weight: bold; color: #f59e0b; margin-top: 10px;">Cargando...</div>
+                        <div id="metricFacturas" style="font-size: 24px; font-weight: bold; color: #f59e0b; margin-top: 10px;">Cargando...</div>
                     </div>
                 </div>
 
@@ -92,7 +96,55 @@
                         <a href="/cotizador" style="text-decoration: none;"><button class="btn-primary" style="background-color: #10b981; padding: 8px;">Abrir Cotizador</button></a>
                     </div>
                 </div>
+
+                <!-- Auditoría de Comprobantes -->
+                <h3 style="margin: 20px 0 0 0; color: #fff;">Auditoría de Comprobantes</h3>
+                <div class="glass" style="padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);">
+                    <!-- Filters -->
+                    <div style="display: flex; gap: 15px; align-items: flex-end; margin-bottom: 20px; flex-wrap: wrap;">
+                        <div>
+                            <label style="display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">Desde</label>
+                            <input type="date" id="auditDesde" class="form-control" style="padding: 8px;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">Hasta</label>
+                            <input type="date" id="auditHasta" class="form-control" style="padding: 8px;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">Tipo</label>
+                            <select id="auditTipo" class="form-control" style="padding: 8px; min-width: 150px;">
+                                <option value="Todos">Todos</option>
+                                <option value="Factura">Facturas</option>
+                                <option value="Presupuesto">Presupuestos</option>
+                            </select>
+                        </div>
+                        <div>
+                            <button class="btn-primary" onclick="loadAuditoria()" style="padding: 8px 15px;">🔍 Buscar</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Table -->
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-muted);">
+                                    <th style="padding: 10px; font-weight: normal;">Fecha</th>
+                                    <th style="padding: 10px; font-weight: normal;">Tipo</th>
+                                    <th style="padding: 10px; font-weight: normal;">Cliente ID</th>
+                                    <th style="padding: 10px; font-weight: normal; text-align: right;">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="auditTableBody">
+                                <tr>
+                                    <td colspan="4" style="text-align: center; padding: 20px; color: var(--text-muted);">Utiliza los filtros para buscar comprobantes.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
             </div>
+
 
             <!-- Lateral Panel: Últimos Presupuestos -->
             <div class="glass" style="flex: 1; min-width: 300px; padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);">
@@ -121,6 +173,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             document.getElementById('metricVentasHoy').textContent = formatter.format(data.ventas_hoy || 0);
             document.getElementById('metricVentasSemana').textContent = formatter.format(data.ventas_semana || 0);
+            document.getElementById('metricVentasMes').textContent = formatter.format(data.ventas_mes || 0);
             document.getElementById('metricFacturas').textContent = data.cantidad_facturas || 0;
             
             // Render Latest Quotes
@@ -184,6 +237,60 @@ async function syncWeb() {
             btn.disabled = false;
             btn.innerText = "Ejecutar Sinc. Web";
         }
+    }
+}
+
+async function loadAuditoria() {
+    const btn = document.querySelector('button[onclick="loadAuditoria()"]');
+    btn.disabled = true;
+    btn.textContent = "Buscando...";
+    
+    const tbody = document.getElementById('auditTableBody');
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 20px; color: var(--text-muted);">Cargando datos...</td></tr>`;
+    
+    const desde = document.getElementById('auditDesde').value;
+    const hasta = document.getElementById('auditHasta').value;
+    const tipo = document.getElementById('auditTipo').value;
+    
+    // Construir Query Params
+    const params = new URLSearchParams();
+    if (desde) params.append('fecha_desde', desde);
+    if (hasta) params.append('fecha_hasta', hasta);
+    if (tipo && tipo !== 'Todos') params.append('tipo_comprobante', tipo);
+    
+    try {
+        const res = await fetch(`/api/reportes/auditoria?${params.toString()}`);
+        if (!res.ok) throw new Error("Error al obtener auditoría");
+        
+        const data = await res.json();
+        
+        if (!data.comprobantes || data.comprobantes.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 20px; color: var(--text-muted);">No se encontraron comprobantes para esta búsqueda.</td></tr>`;
+            return;
+        }
+        
+        const formatter = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+        
+        tbody.innerHTML = data.comprobantes.map(comp => {
+            const dateStr = comp.fecha_emision ? new Date(comp.fecha_emision).toLocaleDateString('es-AR') : 'Sin fecha';
+            const tipoColor = comp.tipo_comprobante && comp.tipo_comprobante.includes('Factura') ? '#38bdf8' : (comp.tipo_comprobante && comp.tipo_comprobante.includes('Presupuesto') ? '#f59e0b' : '#10b981');
+            
+            return `
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;">
+                    <td style="padding: 12px 10px; color: var(--text-main);">${dateStr}</td>
+                    <td style="padding: 12px 10px; color: ${tipoColor}; font-weight: bold;">${comp.tipo_comprobante || '-'}</td>
+                    <td style="padding: 12px 10px; color: var(--text-main);">${comp.cliente_id || 'Consumidor Final'}</td>
+                    <td style="padding: 12px 10px; font-weight: bold; text-align: right; color: #fff;">${formatter.format(comp.total || 0)}</td>
+                </tr>
+            `;
+        }).join('');
+        
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 20px; color: #ef4444;">Ocurrió un error al cargar la auditoría.</td></tr>`;
+        console.error(err);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "🔍 Buscar";
     }
 }
 </script>

@@ -243,8 +243,8 @@ async def ajuste_saldo(payload: AjusteSaldoPayload, request: Request):
 @router.get("/api/reportes/dashboard")
 async def reportes_dashboard(request: Request):
     user = get_current_user(request)
-    if not user:
-        raise HTTPException(status_code=401, detail="Unauthorized")
+    if not user or user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Solo los administradores pueden acceder a los reportes")
         
     db_path = os.path.join(DATA_DIR, 'disgraf_hub.db')
     try:
@@ -272,6 +272,15 @@ async def reportes_dashboard(request: Request):
         row_semana = cursor.fetchone()
         ventas_semana = row_semana['suma'] if row_semana and row_semana['suma'] else 0.0
         
+        # Ventas del mes (últimos 30 días)
+        cursor.execute('''
+            SELECT SUM(total) as suma
+            FROM comprobantes
+            WHERE fecha_emision >= date('now', '-30 days') AND tipo_comprobante LIKE 'Factura%'
+        ''')
+        row_mes = cursor.fetchone()
+        ventas_mes = row_mes['suma'] if row_mes and row_mes['suma'] else 0.0
+        
         # Cantidad de facturas emitidas
         cursor.execute('''
             SELECT COUNT(*) as cantidad
@@ -286,7 +295,7 @@ async def reportes_dashboard(request: Request):
             SELECT id, cliente_id, total, fecha_emision
             FROM comprobantes
             WHERE tipo_comprobante LIKE 'Presupuesto%'
-            ORDER BY id DESC
+            ORDER BY fecha_emision DESC, id DESC
             LIMIT 5
         ''')
         rows_presupuestos = cursor.fetchall()
@@ -297,9 +306,55 @@ async def reportes_dashboard(request: Request):
         return {
             "ventas_hoy": ventas_hoy,
             "ventas_semana": ventas_semana,
+            "ventas_mes": ventas_mes,
             "cantidad_facturas": cantidad_facturas,
             "ultimos_presupuestos": ultimos_presupuestos
         }
     except Exception as e:
         print("Error generando reportes dashboard:", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/api/reportes/auditoria")
+async def reportes_auditoria(
+    request: Request,
+    fecha_desde: Optional[str] = None,
+    fecha_hasta: Optional[str] = None,
+    tipo_comprobante: Optional[str] = None
+):
+    user = get_current_user(request)
+    if not user or user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Solo los administradores pueden acceder a los reportes")
+        
+    db_path = os.path.join(DATA_DIR, 'disgraf_hub.db')
+    try:
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        query = "SELECT * FROM comprobantes WHERE 1=1"
+        params = []
+        
+        if fecha_desde:
+            query += " AND fecha_emision >= ?"
+            params.append(fecha_desde)
+            
+        if fecha_hasta:
+            query += " AND fecha_emision <= ?"
+            params.append(fecha_hasta)
+            
+        if tipo_comprobante:
+            query += " AND tipo_comprobante = ?"
+            params.append(tipo_comprobante)
+            
+        query += " ORDER BY fecha_emision DESC, id DESC LIMIT 100"
+        
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+        
+        comprobantes = [dict(r) for r in rows]
+        conn.close()
+        
+        return {"comprobantes": comprobantes}
+    except Exception as e:
+        print("Error generando reporte auditoria:", e)
         raise HTTPException(status_code=500, detail=str(e))
