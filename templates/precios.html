@@ -75,7 +75,10 @@
                 <div style="padding: 15px; border-bottom: 1px solid var(--border-color);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                         <h3 style="font-size: 16px; margin: 0;">Todos los Productos</h3>
-                        <button onclick="openAbmModal()" class="btn-primary" style="padding: 5px 10px; width: auto; font-size: 12px;">+ Nuevo</button>
+                        <div style="display: flex; gap: 5px;">
+                            <button onclick="openFraccionarModal()" class="btn-secondary" style="padding: 5px 10px; width: auto; font-size: 12px; background: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.3); color: #38bdf8;">✂️ Fraccionar</button>
+                            <button onclick="openAbmModal()" class="btn-primary" style="padding: 5px 10px; width: auto; font-size: 12px;">+ Nuevo</button>
+                        </div>
                     </div>
                     <input type="text" id="searchSaaS" class="form-control" placeholder="Buscar producto..." style="padding: 8px 12px; margin-bottom: 10px;">
                     
@@ -136,6 +139,45 @@
             <button onclick="closeCategorySettings()" style="padding: 8px 15px; border: 1px solid var(--border-color); background: none; color: var(--text-main); border-radius: 4px; cursor: pointer;">Cancelar</button>
             <button onclick="saveCategorySettings()" class="btn-primary" style="width: auto; padding: 8px 15px;">Guardar</button>
         </div>
+    </div>
+</div>
+
+<!-- Modal Fraccionar Stock -->
+<div id="fraccionarModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="glass" style="background: var(--card-bg); padding: 25px; border-radius: 8px; width: 500px; max-width: 90%;">
+        <h3 style="margin-top: 0; color: #38bdf8;">✂️ Fraccionar Stock</h3>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Descuenta stock de un producto origen (ej. Bobina) y lo suma a un producto destino (ej. Metro).</p>
+        
+        <form id="fraccionarForm" onsubmit="submitFraccionar(event)">
+            <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05);">
+                <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: bold;">Producto Origen (se descuenta)</label>
+                <select id="fracOrigenId" class="form-control" required style="width: 100%; padding: 8px; margin-bottom: 10px; background: rgba(0,0,0,0.3); color: white;">
+                    <option value="">Seleccione producto...</option>
+                </select>
+                
+                <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: bold;">Cantidad a descontar</label>
+                <input type="number" id="fracOrigenCant" step="0.01" class="form-control" required style="width: 100%; padding: 8px;" placeholder="Ej: 1">
+            </div>
+            
+            <div style="text-align: center; color: var(--text-muted); margin-bottom: 15px;">
+                ⬇️ se transforma en ⬇️
+            </div>
+            
+            <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05);">
+                <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: bold;">Producto Destino (se suma)</label>
+                <select id="fracDestinoId" class="form-control" required style="width: 100%; padding: 8px; margin-bottom: 10px; background: rgba(0,0,0,0.3); color: white;">
+                    <option value="">Seleccione producto...</option>
+                </select>
+                
+                <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: bold;">Cantidad resultante</label>
+                <input type="number" id="fracDestinoCant" step="0.01" class="form-control" required style="width: 100%; padding: 8px;" placeholder="Ej: 50">
+            </div>
+            
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="closeFraccionarModal()" class="btn-secondary" style="padding: 8px 15px; border: 1px solid var(--border-color); background: none; color: var(--text-main); border-radius: 4px; cursor: pointer;">Cancelar</button>
+                <button type="submit" id="btnSubmitFraccionar" class="btn-primary" style="width: auto; padding: 8px 15px; background: #38bdf8;">Confirmar Fraccionamiento</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -840,6 +882,67 @@ window.saveCategorySettings = async () => {
         showToast("✅ Configuración guardada permanentemente.");
     } catch(err) {
         showToast("❌ Error al guardar la configuración.");
+    }
+};
+
+window.openFraccionarModal = () => {
+    const origenSelect = document.getElementById('fracOrigenId');
+    const destinoSelect = document.getElementById('fracDestinoId');
+    
+    // Poblar selects con state.dbProducts
+    let optionsHTML = '<option value="">Seleccione producto...</option>';
+    if (state.dbProducts && state.dbProducts.length > 0) {
+        state.dbProducts.forEach(p => {
+            optionsHTML += `<option value="${p.id}">${p.nombre} (Stock: ${p.stock_actual || 0})</option>`;
+        });
+    }
+    
+    origenSelect.innerHTML = optionsHTML;
+    destinoSelect.innerHTML = optionsHTML;
+    
+    document.getElementById('fraccionarForm').reset();
+    document.getElementById('fraccionarModal').style.display = 'flex';
+};
+
+window.closeFraccionarModal = () => {
+    document.getElementById('fraccionarModal').style.display = 'none';
+};
+
+window.submitFraccionar = async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btnSubmitFraccionar');
+    btn.disabled = true;
+    btn.textContent = 'Procesando...';
+    
+    const payload = {
+        producto_origen_id: parseInt(document.getElementById('fracOrigenId').value),
+        cantidad_origen: parseFloat(document.getElementById('fracOrigenCant').value),
+        producto_destino_id: parseInt(document.getElementById('fracDestinoId').value),
+        cantidad_destino: parseFloat(document.getElementById('fracDestinoCant').value)
+    };
+    
+    try {
+        const res = await fetch("/api/stock/fraccionar", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+            throw new Error(data.detail || data.error || "Error al fraccionar el stock");
+        }
+        
+        closeFraccionarModal();
+        alert("✅ Fraccionamiento exitoso. El stock ha sido actualizado.");
+        await reloadProductsData(); // Refresh table data
+        
+    } catch(err) {
+        alert("❌ Error: " + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Confirmar Fraccionamiento';
     }
 };
 

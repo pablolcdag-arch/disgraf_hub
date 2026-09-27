@@ -782,3 +782,58 @@ async def update_producto(id: int, producto: ProductoBase, request: Request):
         return {"error": str(e)}
     finally:
         conn.close()
+
+class FraccionarPayload(BaseModel):
+    producto_origen_id: int
+    cantidad_origen: float
+    producto_destino_id: int
+    cantidad_destino: float
+
+@router.post("/api/stock/fraccionar")
+async def fraccionar_stock(payload: FraccionarPayload, request: Request):
+    user = get_current_user(request)
+    if not user or user.get("role") != "admin":
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Unauthorized")
+        
+    db_path = os.path.join(DATA_DIR, 'disgraf_hub.db')
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        # Verify both products exist
+        cursor.execute("SELECT id FROM productos WHERE id = ?", (payload.producto_origen_id,))
+        if not cursor.fetchone():
+            conn.close()
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="Producto origen no encontrado")
+            
+        cursor.execute("SELECT id FROM productos WHERE id = ?", (payload.producto_destino_id,))
+        if not cursor.fetchone():
+            conn.close()
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="Producto destino no encontrado")
+            
+        # Update stock within a transaction
+        cursor.execute('''
+            UPDATE productos 
+            SET stock_actual = stock_actual - ?
+            WHERE id = ?
+        ''', (payload.cantidad_origen, payload.producto_origen_id))
+        
+        cursor.execute('''
+            UPDATE productos 
+            SET stock_actual = stock_actual + ?
+            WHERE id = ?
+        ''', (payload.cantidad_destino, payload.producto_destino_id))
+        
+        conn.commit()
+        conn.close()
+        
+        return {"status": "success", "message": "Fraccionamiento de stock completado"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("Error fraccionando stock:", e)
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=str(e))
