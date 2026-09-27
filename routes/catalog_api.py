@@ -193,40 +193,31 @@ async def api_load_catalog(request: Request):
     import os
     
     saas_products = []
-    maestro_path = os.path.join(DATA_DIR, 'maestro_productos.csv')
     
-    if os.path.exists(maestro_path):
-        try:
-            df_saas = pd.read_csv(maestro_path, sep=None, engine='python', encoding='utf-8', on_bad_lines='skip')
-        except:
-            df_saas = pd.read_csv(maestro_path, sep=None, engine='python', encoding='latin-1', on_bad_lines='skip')
+    import sqlite3
+    db_path = os.path.join(DATA_DIR, 'disgraf_hub.db')
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT codigo, nombre, rubro, precio_final, unidad FROM productos WHERE habilitado = 1")
+        rows = cursor.fetchall()
+        for row in rows:
+            p_id, p_name, p_cat, p_price, p_unit = row
+            # Format price back to string as expected by frontend
+            # The previous frontend expects something like "1.234,56" or just string
+            p_price_str = f"{p_price:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.') if p_price else "0,00"
             
-        df_saas.columns = df_saas.columns.str.strip()
-        
-        col_id = 'Nº de producto'
-        col_desc = 'Nombre'
-        col_cat = 'Rubro'
-        col_price = 'Precio ($)'
-        col_unit = 'Unidad'
-        
-        if col_id not in df_saas.columns:
-            col_id = df_saas.columns[0]
-            
-        for index, row in df_saas.iterrows():
-            p_id = str(row.get(col_id, '')).strip()
-            p_name = str(row.get(col_desc, '')).strip()
-            p_cat = str(row.get(col_cat, '')).strip()
-            p_price = str(row.get(col_price, '')).strip()
-            p_unit = str(row.get(col_unit, '')).strip()
-            
-            if p_id and p_name:
-                saas_products.append({
-                    "id": p_id,
-                    "name": p_name,
-                    "category": p_cat,
-                    "price": p_price,
-                    "unit": p_unit
-                })
+            saas_products.append({
+                "id": str(p_id),
+                "name": str(p_name),
+                "category": str(p_cat or ""),
+                "price": p_price_str,
+                "unit": str(p_unit or "")
+            })
+        conn.close()
+    except Exception as e:
+        print("Error loading products from SQLite:", e)
+                
                 
     selected_path = os.path.join(DATA_DIR, 'productos_seleccionados.csv')
     selected_catalog = []

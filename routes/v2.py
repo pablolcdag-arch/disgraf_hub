@@ -40,50 +40,47 @@ ORACAL_COLORS = {
 }
 
 def get_v2_catalog_data():
-    maestro_path = os.path.join(DATA_DIR, 'maestro_productos.csv')
     selected_path = os.path.join(DATA_DIR, 'productos_seleccionados.csv')
     
-    if not os.path.exists(maestro_path) or not os.path.exists(selected_path):
+    if not os.path.exists(selected_path):
         return []
         
-    try:
-        df_saas = pd.read_csv(maestro_path, sep=None, engine='python', encoding='utf-8', on_bad_lines='skip')
-    except:
-        df_saas = pd.read_csv(maestro_path, sep=None, engine='python', encoding='latin-1', on_bad_lines='skip')
-        
-    df_saas.columns = df_saas.columns.str.strip()
-    col_id = 'Nº de producto'
-    col_desc = 'Nombre'
-    col_price = 'Precio ($)'
-    col_unit = 'Unidad'
-    if col_id not in df_saas.columns: col_id = df_saas.columns[0]
-    
     product_map = {}
-    for index, row in df_saas.iterrows():
-        p_id = str(row.get(col_id, '')).strip()
-        p_name = str(row.get(col_desc, '')).strip()
-        p_unit = str(row.get(col_unit, '')).strip()
-        try:
-            p_price = float(str(row.get(col_price, 0)).replace(',', '.'))
-        except:
-            p_price = 0
+    import sqlite3
+    db_path = os.path.join(DATA_DIR, 'disgraf_hub.db')
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT codigo, nombre, precio_final, unidad FROM productos WHERE habilitado = 1")
+        rows = cursor.fetchall()
+        for row in rows:
+            p_id, p_name, p_price, p_unit = row
+            p_id = str(p_id)
+            p_name = str(p_name)
+            p_unit = str(p_unit or "")
+            p_price = float(p_price or 0)
             
-        if p_id and p_price > 0:
-            color_hex = None
-            has_color_chart = False
-            
-            if "ORACAL" in p_name.upper() or "ORALITE" in p_name.upper() or "651" in p_name:
-                match = re.search(r'-(\d{2,3})\b', p_name)
-                if match:
-                    code = match.group(1).zfill(3)
-                    color_hex = ORACAL_COLORS.get(code)
-                    if not color_hex:
-                        color_hex = ORACAL_COLORS.get(match.group(1))
-            
-            if "(Brillante y Mate)" in p_name or "Colores" in p_name or "Blanco y Negro" in p_name:
-                has_color_chart = True
+            if p_id and p_price > 0:
+                color_hex = None
+                has_color_chart = False
+                
+                if "ORACAL" in p_name.upper() or "ORALITE" in p_name.upper() or "651" in p_name:
+                    match = re.search(r'-(\d{2,3})\b', p_name)
+                    if match:
+                        code = match.group(1).zfill(3)
+                        color_hex = ORACAL_COLORS.get(code)
+                        if not color_hex:
+                            color_hex = ORACAL_COLORS.get(match.group(1))
+                
+                if "(Brillante y Mate)" in p_name or "Colores" in p_name or "Blanco y Negro" in p_name:
+                    has_color_chart = True
 
-            product_map[p_id] = {"id": p_id, "name": p_name, "price": p_price, "unit": p_unit, "color_hex": color_hex, "has_color_chart": has_color_chart}
+                product_map[p_id] = {"id": p_id, "name": p_name, "price": p_price, "unit": p_unit, "color_hex": color_hex, "has_color_chart": has_color_chart}
+        conn.close()
+    except Exception as e:
+        print("Error loading products from SQLite for v2:", e)
+        return []
+            
             
     catalog = []
     current_cat_obj = None
