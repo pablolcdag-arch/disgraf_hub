@@ -279,6 +279,13 @@ def emitir_factura(cliente_nro, total: float, tipo_factura: str, iva_reducido: b
         doc_tipo = 99  # Consumidor Final
         doc_nro = 0
 
+    # Regla AFIP: Factura A (tipo_cbte=1) solo puede emitirse con CUIT válido (DocTipo=80)
+    if tipo_cbte == 1 and (doc_tipo != 80 or doc_nro == 0):
+        raise ValueError(
+            "Factura A requiere un cliente Responsable Inscripto con CUIT válido. "
+            "No se puede emitir Factura A a Consumidor Final."
+        )
+
     # Calcular montos de IVA
     alicuota_pct = 10.5 if iva_reducido else 21.0
     id_alicuota = 4 if iva_reducido else 5  # 4=10.5%, 5=21%

@@ -868,7 +868,18 @@ dom.btnDownloadPDF.addEventListener('click', async () => {
         showToast("El presupuesto está vacío", true);
         return;
     }
-    
+
+    // Validación de negocio: Factura A requiere cliente con CUIT
+    const tipoSeleccionado = document.getElementById('tipoComprobante').value;
+    if (tipoSeleccionado === 'Factura Electrónica A') {
+        const clienteNombre = document.getElementById('clientName').value.trim();
+        const clienteId = window.selectedClientId;
+        if (!clienteId || !clienteNombre || clienteNombre.toLowerCase() === 'consumidor final') {
+            showToast('La Factura Electrónica A requiere un cliente Responsable Inscripto con CUIT válido. Seleccioná un cliente del autocomplete o usá Factura B para Consumidor Final.', true);
+            return;
+        }
+    }
+
     const originalText = dom.btnDownloadPDF.innerHTML;
     dom.btnDownloadPDF.textContent = "⏳ Generando...";
     dom.btnDownloadPDF.style.opacity = 0.5;
