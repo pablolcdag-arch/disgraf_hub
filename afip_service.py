@@ -9,6 +9,30 @@ from lxml import etree
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.serialization import pkcs7
 from cryptography import x509
+from requests.adapters import HTTPAdapter
+from urllib3.util.ssl_ import create_urllib3_context
+
+
+# ---------------------------------------------------------------------------
+# Adaptador SSL para servidores AFIP/ARCA con claves DH pequeñas (legacy)
+# Soluciona: [SSL: DH_KEY_TOO_SMALL] en Python 3.10+
+# ---------------------------------------------------------------------------
+class AFIPSSLAdapter(HTTPAdapter):
+    """Adaptador SSL que permite las claves DH pequeñas de los servidores de AFIP/ARCA."""
+
+    def init_poolmanager(self, *args, **kwargs):
+        ctx = create_urllib3_context()
+        ctx.set_ciphers("DEFAULT@SECLEVEL=1")
+        kwargs["ssl_context"] = ctx
+        super().init_poolmanager(*args, **kwargs)
+
+
+def _make_afip_session() -> requests.Session:
+    """Crea un requests.Session configurado para los servidores legacy SSL de AFIP."""
+    session = requests.Session()
+    session.mount("https://", AFIPSSLAdapter())
+    return session
+
 
 # ---------------------------------------------------------------------------
 # URLs de producción AFIP/ARCA
@@ -122,7 +146,8 @@ def get_ticket_acceso() -> tuple:
     }
 
     try:
-        response = requests.post(WSAA_URL, data=soap_body.encode("utf-8"), headers=headers, timeout=30)
+        session = _make_afip_session()
+        response = session.post(WSAA_URL, data=soap_body.encode("utf-8"), headers=headers, timeout=30)
         response.raise_for_status()
     except Exception as e:
         raise ValueError(f"Error AFIP WSAA (HTTP): {e}")
@@ -195,7 +220,8 @@ def _get_ultimo_comprobante(token: str, sign: str, pto_vta: int, tipo_cbte: int)
     }
 
     try:
-        response = requests.post(WSFE_URL, data=soap_body.encode("utf-8"), headers=headers, timeout=30)
+        session = _make_afip_session()
+        response = session.post(WSFE_URL, data=soap_body.encode("utf-8"), headers=headers, timeout=30)
         response.raise_for_status()
     except Exception as e:
         raise ValueError(f"Error AFIP WSFE (FECompUltimoAutorizado HTTP): {e}")
@@ -330,7 +356,8 @@ def emitir_factura(cliente_nro, total: float, tipo_factura: str, iva_reducido: b
     }
 
     try:
-        response = requests.post(WSFE_URL, data=soap_body.encode("utf-8"), headers=headers, timeout=30)
+        session = _make_afip_session()
+        response = session.post(WSFE_URL, data=soap_body.encode("utf-8"), headers=headers, timeout=30)
         response.raise_for_status()
     except Exception as e:
         raise ValueError(f"Error AFIP WSFE (FECAESolicitar HTTP): {e}")
