@@ -472,7 +472,9 @@ window.renderClientTabs = (tab) => {
     
     // Filter history based on tab
     let filteredHistory = history;
-    if (tab === 'presupuestos') {
+    if (tab === 'todos') {
+        filteredHistory = history.filter(q => q.impacta_cc === 1);
+    } else if (tab === 'presupuestos') {
         filteredHistory = history.filter(q => q.tipo_comprobante && q.tipo_comprobante.includes('Presupuesto'));
     } else if (tab === 'facturas') {
         filteredHistory = history.filter(q => q.tipo_comprobante && q.tipo_comprobante.includes('Factura'));
