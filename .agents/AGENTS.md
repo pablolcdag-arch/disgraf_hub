@@ -414,7 +414,7 @@ Después de cualquier cambio arquitectónico o decisión estratégica, el agente
 
 | Módulo | Estado | Deuda Técnica |
 |---|---|---|
-| Módulo de Clientes (CRM) | ✅ Funcional | ABM y carga masiva por CSV implementados (Ciclo 17). Soporte Cuenta Corriente y Listas (17.1). Ajustes manuales (Fase 2.1). |
+| Módulo de Clientes (CRM) | ✅ Funcional | ABM y carga masiva por CSV implementados. Ruteo export OK y Schema DB productiva sincronizada (Ciclo 11.1). Soporte CC y Listas. |
 | Módulo de Ventas / Comprobantes | ✅ Funcional | Flujo completo E2E, Notas de Crédito, Recibos y Remitos integrados (Sprint 10). AFIP WebServices SOAP en producción. |
 | Login/Auth | ✅ Funcional | Migrado a JWT (Stateless) |
 | Dashboard Admin | ✅ Funcional | Historial avanzado, CRM de ventas, filtros dinámicos y Sistema de Backups Automáticos (Sprint 8). |
