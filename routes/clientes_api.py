@@ -73,6 +73,44 @@ async def api_buscar_clientes(q: str = "", limit: int = 10, request: Request = N
         print("Error buscando clientes:", e)
         return []
 
+@router.get("/api/clientes/export")
+async def export_clientes(request: Request):
+    user = get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+        
+    db_path = os.path.join(DATA_DIR, 'disgraf_hub.db')
+    try:
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT * FROM clientes")
+        rows = cursor.fetchall()
+        conn.close()
+        
+        output = io.StringIO()
+        if rows:
+            fieldnames = rows[0].keys()
+            writer = csv.DictWriter(output, fieldnames=fieldnames, delimiter=';')
+            writer.writeheader()
+            for row in rows:
+                writer.writerow(dict(row))
+        else:
+            writer = csv.writer(output, delimiter=';')
+            writer.writerow(["No hay clientes"])
+            
+        csv_content = output.getvalue()
+        output.close()
+        
+        return Response(
+            content=csv_content,
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=clientes_disgraf.csv"}
+        )
+    except Exception as e:
+        print("Error exportando clientes:", e)
+        raise HTTPException(status_code=500, detail=str(e))
 @router.get("/api/clientes/{client_id}")
 async def api_get_cliente(client_id: int, request: Request):
     user = get_current_user(request)
@@ -480,41 +518,3 @@ async def api_get_cuenta_corriente_pdf(client_id: int, request: Request):
         print("Error generando PDF CC:", e)
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/api/clientes/export")
-async def export_clientes(request: Request):
-    user = get_current_user(request)
-    if not user:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-        
-    db_path = os.path.join(DATA_DIR, 'disgraf_hub.db')
-    try:
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        
-        cursor.execute("SELECT * FROM clientes")
-        rows = cursor.fetchall()
-        conn.close()
-        
-        output = io.StringIO()
-        if rows:
-            fieldnames = rows[0].keys()
-            writer = csv.DictWriter(output, fieldnames=fieldnames, delimiter=';')
-            writer.writeheader()
-            for row in rows:
-                writer.writerow(dict(row))
-        else:
-            writer = csv.writer(output, delimiter=';')
-            writer.writerow(["No hay clientes"])
-            
-        csv_content = output.getvalue()
-        output.close()
-        
-        return Response(
-            content=csv_content,
-            media_type="text/csv",
-            headers={"Content-Disposition": "attachment; filename=clientes_disgraf.csv"}
-        )
-    except Exception as e:
-        print("Error exportando clientes:", e)
-        raise HTTPException(status_code=500, detail=str(e))
