@@ -531,6 +531,7 @@ window.renderClientTabs = (tab) => {
                             actions += `
                                 <button onclick="openPaymentModal('${q.id}')" class="btn-primary" style="font-size: 11px; padding: 4px 8px; background: #10b981;">Cobrar</button>
                                 <a href="/cotizador?remito_from=${q.id}" class="btn-secondary" style="font-size: 11px; padding: 4px 8px; text-decoration: none;">+ Remito</a>
+                                <a href="/cotizador?nc_from=${q.id}&tipo_original=${encodeURIComponent(tipoComp)}" class="btn-secondary" style="font-size: 11px; padding: 4px 8px; text-decoration: none; color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">+ NC</a>
                             `;
                         }
 

@@ -292,6 +292,7 @@ window.clearCart = () => {
         state.cart = [];
         dom.clientName.value = '';
         window.loadedQuoteId = null;
+        window.comprobanteAsociadoId = null;
         state.tipoB = false;
         window.selectedClientData = null;
         if(document.getElementById('tipoComprobante')) document.getElementById('tipoComprobante').value = 'Presupuesto A';
@@ -980,7 +981,8 @@ dom.btnDownloadPDF.addEventListener('click', async () => {
             total_iva: totalIva,
             total: totalFinalVenta,
             items: itemsVenta,
-            facturar_afip: facturarAfip
+            facturar_afip: facturarAfip,
+            comprobante_asociado_id: window.comprobanteAsociadoId || null
         };
 
         const resVenta = await fetch('/api/ventas/comprobantes', {
@@ -1101,6 +1103,7 @@ loadProducts();
                 // Set client fallback
                 window.selectedClientId = comprobante.cliente_id;
                 dom.clientName.value = comprobante.cliente_nombre || comprobante.cliente_id || "";
+                window.comprobanteAsociadoId = remitoFrom;
                 
                 // Populate cart
                 state.cart = comprobante.items.map(item => ({
@@ -1127,6 +1130,49 @@ loadProducts();
             }
         } catch (e) {
             console.error("Error loading remito from url param", e);
+        }
+    } else if (urlParams.get('nc_from')) {
+        const ncFrom = urlParams.get('nc_from');
+        const tipoOriginal = urlParams.get('tipo_original') || '';
+        try {
+            const res = await fetch(`/api/ventas/comprobante/${ncFrom}`);
+            if (res.ok) {
+                const comprobante = await res.json();
+                
+                window.selectedClientId = comprobante.cliente_id;
+                dom.clientName.value = comprobante.cliente_nombre || comprobante.cliente_id || "";
+                window.comprobanteAsociadoId = ncFrom;
+                
+                state.cart = comprobante.items.map(item => ({
+                    product: {
+                        id: item.producto_id,
+                        name: item.descripcion,
+                        price: item.precio_unitario,
+                        unit: 'unid.'
+                    },
+                    quantity: item.cantidad,
+                    discount: 0
+                }));
+                
+                const tComp = document.getElementById('tipoComprobante');
+                if (tComp) {
+                    if (tipoOriginal.includes('Factura Electrónica A')) {
+                        tComp.value = 'Nota de Crédito A';
+                    } else if (tipoOriginal.includes('Factura Electrónica B') || tipoOriginal.includes('Factura B (Final')) {
+                        tComp.value = 'Nota de Crédito B';
+                    } else {
+                        tComp.value = 'Nota de Crédito A';
+                    }
+                }
+                
+                if (window.handleComprobanteChange) {
+                    window.handleComprobanteChange();
+                } else {
+                    renderCart();
+                }
+            }
+        } catch (e) {
+            console.error("Error loading nc from url param", e);
         }
     }
 })();

@@ -15,7 +15,7 @@ EMISOR_NOMBRE = os.environ.get("EMISOR_NOMBRE", "DISGRAF Insumos Gráficos")
 EMISOR_RAZON_SOCIAL = os.environ.get("EMISOR_RAZON_SOCIAL", "Pablo Stiefel")
 EMISOR_CUIT = os.environ.get("EMISOR_CUIT", "20-30254446-9")
 EMISOR_CONDICION_IVA = os.environ.get("EMISOR_CONDICION_IVA", "IVA Responsable Inscripto")
-EMISOR_DOMICILIO = os.environ.get("EMISOR_DOMICILIO", "Merlo, Provincia de Buenos Aires")
+EMISOR_DOMICILIO = os.environ.get("EMISOR_DOMICILIO", "Dr. Juan Felipe Aranguren 49 CABA")
 EMISOR_INGRESOS_BRUTOS = os.environ.get("EMISOR_INGRESOS_BRUTOS", "20302544469")
 
 router = APIRouter()
