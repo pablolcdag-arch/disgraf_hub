@@ -97,11 +97,25 @@ async def crear_comprobante(comprobante: ComprobanteCreate, request: Request):
                 if row and row[0]:
                     cuit_cliente = str(row[0]).strip()
 
+            cbte_asoc = None
+            if ("Nota de Crédito" in comprobante.tipo_comprobante or "Nota de Débito" in comprobante.tipo_comprobante) and comprobante.comprobante_asociado_id:
+                with sqlite3.connect(db_path) as conn_asoc:
+                    row_asoc = conn_asoc.execute(
+                        "SELECT numero_afip, tipo_comprobante FROM comprobantes WHERE id = ?",
+                        (comprobante.comprobante_asociado_id,)
+                    ).fetchone()
+                    if row_asoc and row_asoc[0]:
+                        nro_orig = int(row_asoc[0])
+                        tipo_orig_str = row_asoc[1]
+                        tipo_num = 1 if "A" in tipo_orig_str else 6
+                        cbte_asoc = {'tipo': tipo_num, 'pto_vta': 10, 'nro': nro_orig}
+
             afip_res = afip_service.emitir_factura(
                 cliente_nro=cuit_cliente,
                 total=comprobante.total,
                 tipo_factura=comprobante.tipo_comprobante,
-                iva_reducido=comprobante.iva_reducido
+                iva_reducido=comprobante.iva_reducido,
+                cbte_asoc=cbte_asoc
             )
             cae = afip_res['cae']
             cae_vto = afip_res['cae_vto']

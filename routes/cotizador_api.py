@@ -11,6 +11,13 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 import io
 
+EMISOR_NOMBRE = os.environ.get("EMISOR_NOMBRE", "DISGRAF Insumos Gráficos")
+EMISOR_RAZON_SOCIAL = os.environ.get("EMISOR_RAZON_SOCIAL", "Pablo Stiefel")
+EMISOR_CUIT = os.environ.get("EMISOR_CUIT", "20-30254446-9")
+EMISOR_CONDICION_IVA = os.environ.get("EMISOR_CONDICION_IVA", "IVA Responsable Inscripto")
+EMISOR_DOMICILIO = os.environ.get("EMISOR_DOMICILIO", "Merlo, Provincia de Buenos Aires")
+EMISOR_INGRESOS_BRUTOS = os.environ.get("EMISOR_INGRESOS_BRUTOS", "20302544469")
+
 router = APIRouter()
 
 import sqlite3
@@ -289,24 +296,39 @@ async def api_generate_quote_pdf(request: Request):
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
     ]))
 
-    header_title_cell = Paragraph(f"<b>{title_text}</b>", title_style)
+    emisor_info = f"<b>{EMISOR_NOMBRE}</b><br/>Razón Social: {EMISOR_RAZON_SOCIAL} | CUIT: {EMISOR_CUIT}<br/>Condición de IVA: {EMISOR_CONDICION_IVA}<br/>Domicilio: {EMISOR_DOMICILIO}"
+    left_cell = Paragraph(emisor_info, info_style)
+
+    right_cell_text = f"<b>{title_text}</b><br/>"
     if numero_afip:
-        numero_afip_str = f"Nº {int(pto_vta):05d}-{int(numero_afip):08d}"
-        header_title_cell = Paragraph(f"<b>{title_text}</b><br/>{numero_afip_str}", title_style)
+        right_cell_text += f"Nº {int(pto_vta):05d}-{int(numero_afip):08d}<br/>"
+    right_cell_text += f"<b>Fecha:</b> {date_str}"
+    right_cell = Paragraph(right_cell_text, ParagraphStyle('RightHeader', parent=info_style, alignment=2))
         
     header_table = Table([
-        [header_title_cell, letter_table, Paragraph(f"<b>Fecha:</b> {date_str}", info_style)]
+        [left_cell, letter_table, right_cell]
     ], colWidths=[200, 100, 200])
     header_table.setStyle(TableStyle([
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
         ('ALIGN', (1,0), (1,0), 'CENTER'),
         ('ALIGN', (2,0), (2,0), 'RIGHT'),
     ]))
     
     elements.append(header_table)
     elements.append(Spacer(1, 15))
-    elements.append(Paragraph(f"<b>Cliente:</b> {client_name}", info_style))
-    elements.append(Paragraph(f"<b>Vendedor:</b> {user['username'].capitalize()}", info_style))
+    
+    cliente_info = f"<b>Cliente:</b> {client_name}<br/>"
+    if data.get('cliente_cuit'):
+        cliente_info += f"<b>CUIT / Doc:</b> {data.get('cliente_cuit')} | "
+    if data.get('cliente_condicion_iva'):
+        cliente_info += f"<b>Condición IVA:</b> {data.get('cliente_condicion_iva')}<br/>"
+    if data.get('cliente_domicilio'):
+        cliente_info += f"<b>Domicilio:</b> {data.get('cliente_domicilio')}<br/>"
+    if data.get('cliente_telefono'):
+        cliente_info += f"<b>Teléfono:</b> {data.get('cliente_telefono')}<br/>"
+    cliente_info += f"<b>Vendedor:</b> {user['username'].capitalize()}"
+    
+    elements.append(Paragraph(cliente_info, info_style))
     elements.append(Spacer(1, 25))
     
     is_remito = tipo_comprobante == "Remito"

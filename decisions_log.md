@@ -267,3 +267,17 @@ Este documento rastrea las decisiones estratégicas y arquitectónicas clave tom
 ## 27/09/2026 - SDD Ciclo 9.1: Hotfix AFIP en Cotizador
 - **Decisión:** Se integró la selección de facturación AFIP directamente en el `Cotizador Rápido` (el único módulo que utiliza el vendedor), bloqueando la casilla de verificación para comprobantes electrónicos (Factura A/B y Notas de Crédito A/B) para garantizar que si se elige un comprobante electrónico, se envíe a AFIP.
 - **Archivos afectados:** `templates/cotizador.html`, `routes/ventas_api.py`.
+
+## 27/09/2026 - SDD Ciclo 9.2: Migración SOAP Directo AFIP (Sprint 9.2)
+- **Decisión:** Se reemplazó la librería comercial `afip.py` (que exige token de pago mensual) por una implementación SOAP directa y gratuita que se conecta a los Web Services oficiales de AFIP/ARCA (WSAA + WSFE) usando los certificados X.509 propios del negocio.
+- **Razón:** La librería `afip.py==1.2.0` cambió su modelo de negocio y bloqueó el modo Producción sin un `access_token` de pago. La conexión SOAP directa es la forma que usan todos los ERPs profesionales argentinos y no tiene costo de licencia.
+- **Implementación:** `_build_tra()` construye el XML; `_sign_tra()` lo firma con PKCS7/SHA-256 usando `cryptography`; `get_ticket_acceso()` cachea el Token+Sign en `data/afip_ta.json` por 12hs; `emitir_factura()` llama al WSFE real.
+- **Archivos afectados:** `afip_service.py` [REESCRITO], `requirements.txt` [MODIFICADO] (`pyOpenSSL`, `lxml` reemplazan a `afip.py`).
+
+## 27/09/2026 - SDD Ciclo 9.3: Hotfixes post-deploy AFIP
+- **Decisión:** Tres hotfixes aplicados en producción tras la primera prueba real de facturación:
+  1. **SSL DH_KEY_TOO_SMALL:** `AFIPSSLAdapter` con `SECLEVEL=1` para tolerar los servidores legacy de AFIP/ARCA.
+  2. **DB Schema:** 4 columnas faltantes en producción (`comprobante_asociado_id`, `numero_afip`, `cae`, `cae_vto`) — resueltas con `migrate_comprobante_asociado.py` ejecutado por SSH.
+  3. **Factura A sin CUIT:** Validación doble (frontend JS + backend Python) que bloquea la emisión de Factura A si el cliente no tiene CUIT (DocTipo=80). AFIP prohíbe Factura A a Consumidor Final.
+- **Razón:** La Factura A es exclusivamente B2B (Responsable Inscripto → Responsable Inscripto). La Factura B admite Consumidor Final (DocTipo=99).
+- **Archivos afectados:** `afip_service.py`, `templates/cotizador.html`, `migrate_comprobante_asociado.py` [NUEVO].

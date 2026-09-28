@@ -191,6 +191,21 @@
 
                     <div id="payFieldCheque" style="display:none; margin-bottom: 15px;">
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div style="grid-column: span 2;">
+                                <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Tipo de Cheque</label>
+                                <select id="payCheckType" class="form-control" style="width:100%; padding: 8px;" onchange="toggleLibrador()">
+                                    <option value="Propio">Propio (del cliente)</option>
+                                    <option value="Tercero">De Tercero</option>
+                                </select>
+                            </div>
+                            <div id="payFieldLibradorName" style="display:none;">
+                                <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Librador (Nombre)</label>
+                                <input type="text" id="payCheckLibradorName" class="form-control" style="width:100%; padding: 8px;">
+                            </div>
+                            <div id="payFieldLibradorCuit" style="display:none;">
+                                <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Librador (CUIT)</label>
+                                <input type="text" id="payCheckLibradorCuit" class="form-control" style="width:100%; padding: 8px;">
+                            </div>
                             <div>
                                 <label style="display:block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Número de cheque</label>
                                 <input type="text" id="payCheckNumber" class="form-control" style="width:100%; padding: 8px;">
@@ -739,6 +754,14 @@ window.closePaymentModal = () => {
     document.getElementById('paymentModal').style.display = 'none';
 };
 
+window.toggleLibrador = () => {
+    const isTercero = document.getElementById('payCheckType').value === 'Tercero';
+    document.getElementById('payFieldLibradorName').style.display = isTercero ? 'block' : 'none';
+    document.getElementById('payFieldLibradorCuit').style.display = isTercero ? 'block' : 'none';
+    document.getElementById('payCheckLibradorName').required = isTercero;
+    document.getElementById('payCheckLibradorCuit').required = isTercero;
+};
+
 window.togglePaymentFields = () => {
     const method = document.getElementById('payMethod').value;
     document.getElementById('payFieldTransferencia').style.display = method === 'Transferencia' ? 'block' : 'none';
@@ -750,6 +773,7 @@ window.togglePaymentFields = () => {
     document.getElementById('payCheckNumber').required = method === 'Cheque/Echeq';
     document.getElementById('payCheckBank').required = method === 'Cheque/Echeq';
     document.getElementById('payCheckDate').required = method === 'Cheque/Echeq';
+    if (method === 'Cheque/Echeq') window.toggleLibrador();
 };
 
 window.submitPayment = async (e) => {
@@ -767,7 +791,11 @@ window.submitPayment = async (e) => {
     if (method === 'Transferencia') {
         description += ` (Banco: ${document.getElementById('payBankName').value})`;
     } else if (method === 'Cheque/Echeq') {
-        description += ` (Cheque #${document.getElementById('payCheckNumber').value} - Banco: ${document.getElementById('payCheckBank').value} - Cobro: ${document.getElementById('payCheckDate').value})`;
+        const type = document.getElementById('payCheckType').value;
+        const libName = document.getElementById('payCheckLibradorName').value;
+        const libCuit = document.getElementById('payCheckLibradorCuit').value;
+        const libradorText = type === 'Tercero' ? ` - Librador: ${libName} (CUIT: ${libCuit})` : ' (Propio)';
+        description += ` (Cheque ${type} #${document.getElementById('payCheckNumber').value} - Banco: ${document.getElementById('payCheckBank').value} - Cobro: ${document.getElementById('payCheckDate').value}${libradorText})`;
     } else if (method === 'Retención') {
         description += ` (Tipo: ${document.getElementById('payRetencionType').value})`;
     }
@@ -826,6 +854,7 @@ window.downloadPDF = async (id, tipo, fechaOriginal) => {
             if (!quote) throw new Error("Presupuesto no encontrado");
             
             payload = {
+                quote_id: id,
                 client_name: quote.client,
                 client_id: quote.client_id || "",
                 tipo_comprobante: quote.tipo_comprobante || tipo,
@@ -835,12 +864,20 @@ window.downloadPDF = async (id, tipo, fechaOriginal) => {
                 date: fechaOriginal || quote.date,
                 is_reprint: true
             };
+            
+            if (window.currentClient) {
+                payload.cliente_cuit = window.currentClient.cuit;
+                payload.cliente_condicion_iva = window.currentClient.condicion_iva;
+                payload.cliente_domicilio = window.currentClient.domicilio;
+                payload.cliente_telefono = window.currentClient.telefonos;
+            }
         } else {
             const vRes = await fetch(`/api/ventas/comprobante/${id}`);
             if (!vRes.ok) throw new Error("Comprobante no encontrado");
             const dbComp = await vRes.json();
             
             payload = {
+                quote_id: id,
                 client_name: window.currentClient ? window.currentClient.nombre : (dbComp.cliente_nombre || dbComp.cliente_id),
                 client_id: dbComp.cliente_id,
                 tipo_comprobante: dbComp.tipo_comprobante || tipo,
@@ -858,6 +895,13 @@ window.downloadPDF = async (id, tipo, fechaOriginal) => {
                     discount: 0
                 }))
             };
+            
+            if (window.currentClient) {
+                payload.cliente_cuit = window.currentClient.cuit;
+                payload.cliente_condicion_iva = window.currentClient.condicion_iva;
+                payload.cliente_domicilio = window.currentClient.domicilio;
+                payload.cliente_telefono = window.currentClient.telefonos;
+            }
         }
         
         const res = await fetch("/api/generate-quote-pdf", {
@@ -872,7 +916,10 @@ window.downloadPDF = async (id, tipo, fechaOriginal) => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${tipo.replace(/\s+/g, '_')}_${id}.pdf`;
+        const tipoArchivo = (payload.tipo_comprobante || tipo).replace('Factura Electrónica', 'Factura').replace('Nota de Crédito', 'NC').replace('Nota de Débito', 'ND').replace(/[^a-zA-Z0-9\s]/g, '').trim().replace(/\s+/g, '_');
+        const cName = payload.client_name ? payload.client_name.replace(/[^a-z0-9]/gi, '_') : 'Cliente';
+        const dateStr = new Date().toISOString().split('T')[0];
+        a.download = `${tipoArchivo}_${cName}_${dateStr}.pdf`;
         document.body.appendChild(a);
         a.click();
         a.remove();

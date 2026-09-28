@@ -291,7 +291,9 @@ window.clearCart = () => {
     if(confirm("¿Estás seguro de limpiar la pantalla actual?")) {
         state.cart = [];
         dom.clientName.value = '';
+        window.loadedQuoteId = null;
         state.tipoB = false;
+        window.selectedClientData = null;
         if(document.getElementById('tipoComprobante')) document.getElementById('tipoComprobante').value = 'Presupuesto A';
         if(document.getElementById('lblIvaReducido')) {
             document.getElementById('lblIvaReducido').style.display = 'none';
@@ -386,7 +388,10 @@ function renderHistoryList(data) {
             <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">Vendedor: ${q.seller}</div>
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <span style="font-size: 12px;">${q.products ? q.products.length : 0} productos</span>
-                <strong>${formatPrice(q.total)}</strong>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <strong>${formatPrice(q.total)}</strong>
+                    <button onclick="reprintPDF('${q.id}', '${q.tipo_comprobante || 'Presupuesto A'}', '${q.date}', event)" class="btn-secondary" style="font-size: 11px; padding: 4px 8px;" title="Descargar PDF original">📄 PDF</button>
+                </div>
             </div>
         </div>`;
     }).join('');
@@ -425,6 +430,50 @@ window.closeHistory = () => {
     document.getElementById('historyModal').style.display = 'none';
 };
 
+window.reprintPDF = async (id, tipo, fechaOriginal, event) => {
+    event.stopPropagation();
+    try {
+        if(!window._historyData) return;
+        const quote = window._historyData.find(q => String(q.id) === String(id));
+        if(!quote) throw new Error("Presupuesto no encontrado");
+        
+        const payload = {
+            quote_id: id,
+            client_name: quote.client,
+            client_id: quote.client_id || "",
+            tipo_comprobante: quote.tipo_comprobante || tipo,
+            total: quote.total,
+            products: quote.products,
+            iva_reducido: quote.iva_reducido || false,
+            date: fechaOriginal || quote.date,
+            is_reprint: true
+        };
+        
+        const res = await fetch("/api/generate-quote-pdf", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        
+        if (!res.ok) throw new Error("Error generando PDF");
+        
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const tipoArchivo = (quote.tipo_comprobante || tipo).replace('Factura Electrónica', 'Factura').replace('Nota de Crédito', 'NC').replace('Nota de Débito', 'ND').replace(/[^a-zA-Z0-9\s]/g, '').trim().replace(/\s+/g, '_');
+        const cName = quote.client ? quote.client.replace(/[^a-z0-9]/gi, '_') : 'Consumidor_Final';
+        a.download = `${tipoArchivo}_${cName}_${id}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        
+    } catch (e) {
+        showToast("Error al descargar PDF: " + e.message, true);
+    }
+};
+
 window.loadHistoryItem = (id) => {
     if(!window._historyData) return;
     const quote = window._historyData.find(q => String(q.id) === String(id));
@@ -435,6 +484,7 @@ window.loadHistoryItem = (id) => {
     }
     
     dom.clientName.value = quote.displayClientName === "Consumidor Final" ? "" : (quote.displayClientName || quote.client);
+    window.loadedQuoteId = id;
     
     // Load quote options
     state.tipoB = quote.tipoB || false;
@@ -757,7 +807,8 @@ function getQuotePayload() {
     
     const finalTotal = total * (1 - (state.globalDiscount / 100));
     
-    return {
+    let payload = {
+        quote_id: window.loadedQuoteId || null,
         client_name: dom.clientName.value.trim(),
         client_id: window.selectedClientId || null,
         products: products,
@@ -766,6 +817,15 @@ function getQuotePayload() {
         iva_reducido: ivaReducido,
         globalDiscount: state.globalDiscount
     };
+    
+    if (window.selectedClientData && window.selectedClientId) {
+        payload.cliente_cuit = window.selectedClientData.cuit;
+        payload.cliente_condicion_iva = window.selectedClientData.condicion_iva;
+        payload.cliente_domicilio = window.selectedClientData.domicilio;
+        payload.cliente_telefono = window.selectedClientData.telefonos;
+    }
+    
+    return payload;
 }
 
 // Client Autocomplete Logic
@@ -787,10 +847,11 @@ clientInput.addEventListener('input', (e) => {
         try {
             const res = await fetch(`/api/clientes/buscar?q=${encodeURIComponent(query)}`);
             const data = await res.json();
+            window.lastClientSearch = data;
             
             if(data && data.length > 0) {
                 autocompleteDiv.innerHTML = data.map(c => `
-                    <div class="autocomplete-item" style="padding: 10px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05);" onclick="selectClient('${c.id}', '${c.nombre.replace(/'/g, "\\'")}')">
+                    <div class="autocomplete-item" style="padding: 10px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05);" onclick="selectClient('${c.id}')">
                         <div style="font-weight:bold;">${c.nombre}</div>
                         <div style="font-size:11px; color:var(--text-muted);">CUIT: ${c.cuit || 'N/A'} - IVA: ${c.condicion_iva || ''}</div>
                     </div>
@@ -805,9 +866,14 @@ clientInput.addEventListener('input', (e) => {
     }, 300);
 });
 
-window.selectClient = (id, name) => {
+window.selectedClientData = null;
+window.selectClient = (id) => {
     window.selectedClientId = id;
-    clientInput.value = name;
+    const client = (window.lastClientSearch || []).find(c => String(c.id) === String(id));
+    if (client) {
+        clientInput.value = client.nombre;
+        window.selectedClientData = client;
+    }
     autocompleteDiv.style.display = 'none';
 };
 
@@ -949,8 +1015,16 @@ dom.btnDownloadPDF.addEventListener('click', async () => {
         const a = document.createElement('a');
         a.style.display = 'none';
         a.href = url;
+        const tipoArchivo = payload.tipo_comprobante
+            .replace('Factura Electrónica', 'Factura')
+            .replace('Nota de Crédito', 'NC')
+            .replace('Nota de Débito', 'ND')
+            .replace(/[^a-zA-Z0-9\s]/g, '')
+            .trim()
+            .replace(/\s+/g, '_');
         const cName = payload.client_name ? payload.client_name.replace(/[^a-z0-9]/gi, '_') : 'Consumidor_Final';
-        a.download = `Presupuesto_${cName}.pdf`;
+        const dateStr = new Date().toISOString().split('T')[0];
+        a.download = `${tipoArchivo}_${cName}_${dateStr}.pdf`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);

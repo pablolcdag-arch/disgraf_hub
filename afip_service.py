@@ -241,7 +241,7 @@ def _get_ultimo_comprobante(token: str, sign: str, pto_vta: int, tipo_cbte: int)
 # ---------------------------------------------------------------------------
 # Función 5: Emitir factura electrónica
 # ---------------------------------------------------------------------------
-def emitir_factura(cliente_nro, total: float, tipo_factura: str, iva_reducido: bool = False) -> dict:
+def emitir_factura(cliente_nro, total: float, tipo_factura: str, iva_reducido: bool = False, cbte_asoc: dict = None) -> dict:
     """
     Emite una factura electrónica ante AFIP/ARCA vía SOAP directo.
 
@@ -307,6 +307,18 @@ def emitir_factura(cliente_nro, total: float, tipo_factura: str, iva_reducido: b
     numero_cbte = ultimo + 1
     date_str = datetime.now(timezone.utc).strftime("%Y%m%d")
 
+    cbte_asoc_xml = ""
+    if cbte_asoc:
+        cbte_asoc_xml = (
+            "<ar:CbtesAsoc>"
+            "<ar:CbteAsoc>"
+            f"<ar:Tipo>{cbte_asoc['tipo']}</ar:Tipo>"
+            f"<ar:PtoVta>{cbte_asoc['pto_vta']}</ar:PtoVta>"
+            f"<ar:Nro>{cbte_asoc['nro']}</ar:Nro>"
+            "</ar:CbteAsoc>"
+            "</ar:CbtesAsoc>"
+        )
+
     # Construir SOAP FECAESolicitar
     soap_body = (
         '<soapenv:Envelope '
@@ -342,6 +354,7 @@ def emitir_factura(cliente_nro, total: float, tipo_factura: str, iva_reducido: b
         f"<ar:ImpIVA>{iva:.2f}</ar:ImpIVA>"
         "<ar:MonId>PES</ar:MonId>"
         "<ar:MonCotiz>1</ar:MonCotiz>"
+        f"{cbte_asoc_xml}"
         "<ar:Iva>"
         "<ar:AlicIva>"
         f"<ar:Id>{id_alicuota}</ar:Id>"
