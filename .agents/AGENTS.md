@@ -410,12 +410,12 @@ Después de cualquier cambio arquitectónico o decisión estratégica, el agente
 
 ---
 
-## 📊 Estado Actual del Proyecto (23/09/2026)
+## 📊 Estado Actual del Proyecto (28/09/2026)
 
 | Módulo | Estado | Deuda Técnica |
 |---|---|---|
 | Módulo de Clientes (CRM) | ✅ Funcional | ABM y carga masiva por CSV implementados (Ciclo 17). Soporte Cuenta Corriente y Listas (17.1). Ajustes manuales (Fase 2.1). |
-| Módulo de Ventas / Comprobantes | ✅ Funcional | Flujo completo E2E, Notas, Recibos y Remitos integrados (Ciclo 18.3). AFIP WebServices integrados en Sprint 9. |
+| Módulo de Ventas / Comprobantes | ✅ Funcional | Flujo completo E2E, Notas de Crédito, Recibos y Remitos integrados (Sprint 10). AFIP WebServices SOAP en producción. |
 | Login/Auth | ✅ Funcional | Migrado a JWT (Stateless) |
 | Dashboard Admin | ✅ Funcional | Historial avanzado, CRM de ventas, filtros dinámicos y Sistema de Backups Automáticos (Sprint 8). |
 | Cotizador (vendedores) | ✅ Funcional | Generación de PDFs con soporte integrado de Facturación Electrónica AFIP. |

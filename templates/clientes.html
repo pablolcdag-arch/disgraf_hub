@@ -565,7 +565,8 @@ window.renderClientTabs = (tab) => {
                     ${client.condicion_iva || 'Consumidor Final'}
                 </div>
             </div>
-            <div style="display: flex; gap: 10px; align-items: center;">
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
+                <a href="/api/clientes/${client.id}/cuenta_corriente/pdf" target="_blank" download class="btn-secondary" style="text-decoration: none; display: inline-flex; align-items: center; padding: 8px 12px; font-size: 13px;">📄 Descargar Cuenta Corriente</a>
                 {% if user and user.role == 'admin' %}
                 <button class="btn-secondary" onclick="openAjusteSaldoModal()" title="Ajuste de Saldo Inicial">⚖️ Ajuste</button>
                 {% endif %}

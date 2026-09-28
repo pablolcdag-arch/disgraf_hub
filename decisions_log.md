@@ -289,3 +289,8 @@ Este documento rastrea las decisiones estratégicas y arquitectónicas clave tom
 - Se agregó el botón "+ NC" (Nota de Crédito) en la ficha del cliente, junto al botón "+ Remito". Esto pre-carga el Cotizador enviando automáticamente el `comprobante_asociado_id`.
 - Se corrigieron los datos del emisor en los PDF generados para mostrar el domicilio real de CABA ("Dr. Juan Felipe Aranguren 49 CABA") sin confundirse con el del cliente.
 - El ingreso de cheques ahora distingue explícitamente entre "Propios" y "De Tercero" desde la UI, guardando el Nombre y CUIT del librador directamente en la descripción del Recibo de Pago.
+
+## 28/09/2026 - SDD Ciclo 10: Fixes de Comprobantes AFIP
+- **Decisión:** Se reescribió por completo la lógica de las Facturas Electrónicas para enviar de forma nativa las facturas tipo "Nota de Crédito" usando el nodo `<CbtesAsoc>`. En el front-end, se implementaron botones de vinculación directa que pasan el ID de la factura original y se modificó el payload para asegurar un tipado estricto (`String` para el ID de cliente). También se implementó un script de base de datos para asegurar que las facturas antiguas afecten la pestaña de cuenta corriente. Además se añadieron campos a la interfaz para registrar cheques de terceros con datos del librador, y se reestructuraron los PDFs con el nuevo domicilio de facturación.
+- **Razón:** La AFIP arrojaba un error crítico [10197] al intentar generar Notas de Crédito, y Pydantic levantaba excepciones HTTP 422 debido al tipado de Javascript.
+- **Archivos afectados:** `afip_service.py`, `routes/ventas_api.py`, `templates/cotizador.html`, `templates/clientes.html`, `routes/cotizador_api.py`, `data/disgraf_hub.db`

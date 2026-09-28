@@ -868,12 +868,18 @@ clientInput.addEventListener('input', (e) => {
 });
 
 window.selectedClientData = null;
-window.selectClient = (id) => {
-    window.selectedClientId = id;
-    const client = (window.lastClientSearch || []).find(c => String(c.id) === String(id));
-    if (client) {
-        clientInput.value = client.nombre;
-        window.selectedClientData = client;
+window.selectClient = (idOrObj) => {
+    if (typeof idOrObj === 'object' && idOrObj !== null) {
+        window.selectedClientId = idOrObj.id;
+        clientInput.value = idOrObj.nombre || idOrObj.razon_social;
+        window.selectedClientData = idOrObj;
+    } else {
+        window.selectedClientId = idOrObj;
+        const client = (window.lastClientSearch || []).find(c => String(c.id) === String(idOrObj));
+        if (client) {
+            clientInput.value = client.nombre;
+            window.selectedClientData = client;
+        }
     }
     autocompleteDiv.style.display = 'none';
 };
@@ -975,14 +981,14 @@ dom.btnDownloadPDF.addEventListener('click', async () => {
         const facturarAfip = document.getElementById('ventaFacturarAfip') ? document.getElementById('ventaFacturarAfip').checked : false;
 
         const ventaPayload = {
-            cliente_id: String(payload.client_id || payload.client_name || 'Consumidor Final'),
+            cliente_id: payload.client_id || payload.client_name || 'Consumidor Final',
             tipo_comprobante: payload.tipo_comprobante,
             subtotal: subtotalVenta,
             total_iva: totalIva,
             total: totalFinalVenta,
             items: itemsVenta,
             facturar_afip: facturarAfip,
-            comprobante_asociado_id: window.comprobanteAsociadoId ? parseInt(window.comprobanteAsociadoId) : null
+            comprobante_asociado_id: window.comprobanteAsociadoId || null
         };
 
         const resVenta = await fetch('/api/ventas/comprobantes', {
@@ -993,17 +999,7 @@ dom.btnDownloadPDF.addEventListener('click', async () => {
         
         if (!resVenta.ok) {
             const errData = await resVenta.json();
-            let errMsg = "Error al registrar o facturar en AFIP";
-            if (errData.detail) {
-                if (typeof errData.detail === 'string') {
-                    errMsg = errData.detail;
-                } else if (Array.isArray(errData.detail)) {
-                    errMsg = errData.detail.map(d => `${d.loc ? d.loc.join('.') : 'Error'}: ${d.msg}`).join(', ');
-                } else {
-                    errMsg = JSON.stringify(errData.detail);
-                }
-            }
-            throw new Error(errMsg);
+            throw new Error(errData.detail || "Error al registrar o facturar en AFIP");
         }
         
         // Extract CAE if returned by the backend to inject it into the PDF payload
@@ -1111,8 +1107,13 @@ loadProducts();
                 const comprobante = await res.json();
                 
                 // Set client fallback
-                window.selectedClientId = comprobante.cliente_id;
-                dom.clientName.value = comprobante.cliente_nombre || comprobante.cliente_id || "";
+                const resCliente = await fetch('/api/clientes/' + comprobante.cliente_id);
+                if (resCliente.ok) {
+                    window.selectClient(await resCliente.json());
+                } else {
+                    window.selectedClientId = comprobante.cliente_id;
+                    dom.clientName.value = comprobante.cliente_nombre || comprobante.cliente_id || "";
+                }
                 window.comprobanteAsociadoId = remitoFrom;
                 
                 // Populate cart
@@ -1149,8 +1150,13 @@ loadProducts();
             if (res.ok) {
                 const comprobante = await res.json();
                 
-                window.selectedClientId = comprobante.cliente_id;
-                dom.clientName.value = comprobante.cliente_nombre || comprobante.cliente_id || "";
+                const resCliente = await fetch('/api/clientes/' + comprobante.cliente_id);
+                if (resCliente.ok) {
+                    window.selectClient(await resCliente.json());
+                } else {
+                    window.selectedClientId = comprobante.cliente_id;
+                    dom.clientName.value = comprobante.cliente_nombre || comprobante.cliente_id || "";
+                }
                 window.comprobanteAsociadoId = ncFrom;
                 
                 state.cart = comprobante.items.map(item => ({

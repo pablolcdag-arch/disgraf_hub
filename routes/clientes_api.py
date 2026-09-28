@@ -7,6 +7,12 @@ import json
 import sqlite3
 import csv
 import io
+from fastapi.responses import Response
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+import datetime
 
 router = APIRouter()
 
@@ -304,3 +310,172 @@ async def api_get_all_clientes(request: Request):
         return {"clientes": [dict(r) for r in rows]}
     except Exception as e:
         return {"error": str(e)}
+
+EMISOR_NOMBRE = os.environ.get("EMISOR_NOMBRE", "DISGRAF Insumos Gráficos")
+EMISOR_CUIT = os.environ.get("EMISOR_CUIT", "20-30254446-9")
+EMISOR_CONDICION_IVA = os.environ.get("EMISOR_CONDICION_IVA", "IVA Responsable Inscripto")
+EMISOR_DOMICILIO = os.environ.get("EMISOR_DOMICILIO", "Dr. Juan Felipe Aranguren 49 CABA")
+
+@router.get("/api/clientes/{client_id}/cuenta_corriente/pdf")
+async def api_get_cuenta_corriente_pdf(client_id: int, request: Request):
+    user = get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+        
+    db_path = os.path.join(DATA_DIR, 'disgraf_hub.db')
+    try:
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        # Obtener datos del cliente
+        cursor.execute("SELECT * FROM clientes WHERE id = ?", (client_id,))
+        cliente_row = cursor.fetchone()
+        if not cliente_row:
+            conn.close()
+            raise HTTPException(status_code=404, detail="Cliente no encontrado")
+        
+        cliente = dict(cliente_row)
+        
+        # Obtener comprobantes de la cuenta corriente
+        cursor.execute('''
+            SELECT fecha_emision, tipo_comprobante, id, total 
+            FROM comprobantes 
+            WHERE cliente_id = ? AND impacta_cc = 1 
+            ORDER BY fecha_emision ASC
+        ''', (client_id,))
+        comprobantes = cursor.fetchall()
+        conn.close()
+        
+        # Generar PDF
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4,
+                                rightMargin=1.5*28.34, leftMargin=1.5*28.34,
+                                topMargin=1.5*28.34, bottomMargin=1.5*28.34)
+        elements = []
+        styles = getSampleStyleSheet()
+        
+        # Estilos
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=16,
+            textColor=colors.HexColor('#0f172a'),
+            spaceAfter=15,
+            alignment=1
+        )
+        info_style = ParagraphStyle(
+            'InfoStyle',
+            parent=styles['Normal'],
+            fontSize=10,
+            textColor=colors.HexColor('#334155'),
+            leading=14
+        )
+        
+        # Encabezado Emisor
+        emisor_info = f"""
+        <b>{EMISOR_NOMBRE}</b><br/>
+        <b>CUIT:</b> {EMISOR_CUIT}<br/>
+        <b>Condición IVA:</b> {EMISOR_CONDICION_IVA}<br/>
+        <b>Domicilio:</b> {EMISOR_DOMICILIO}
+        """
+        
+        # Encabezado Cliente
+        cliente_cuit = cliente.get('cuit')
+        if not cliente_cuit or cliente_cuit == '0':
+            cliente_cuit = cliente.get('documento', '')
+            
+        cliente_info = f"""
+        <b>Cliente:</b> {cliente.get('nombre', '')}<br/>
+        <b>CUIT / Doc:</b> {cliente_cuit} | 
+        <b>Condición IVA:</b> {cliente.get('condicion_iva', 'Consumidor Final')}<br/>
+        <b>Domicilio:</b> {cliente.get('domicilio', '')} {cliente.get('localidad', '')}
+        """
+        
+        header_table = Table([
+            [Paragraph(emisor_info, info_style), Paragraph(cliente_info, info_style)]
+        ], colWidths=[240, 240])
+        header_table.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ]))
+        
+        elements.append(header_table)
+        elements.append(Spacer(1, 20))
+        
+        elements.append(Paragraph("Resumen de Cuenta Corriente", title_style))
+        elements.append(Spacer(1, 10))
+        
+        # Tabla de Movimientos
+        table_data = [["Fecha", "Comprobante", "Debe", "Haber", "Saldo"]]
+        saldo = 0.0
+        
+        for c in comprobantes:
+            tipo = c['tipo_comprobante'] or ""
+            total = float(c['total'] or 0)
+            
+            fecha_str = ""
+            if c['fecha_emision']:
+                try:
+                    fecha_obj = datetime.datetime.fromisoformat(c['fecha_emision'])
+                    fecha_str = fecha_obj.strftime("%d/%m/%Y")
+                except:
+                    fecha_str = str(c['fecha_emision'])[:10]
+            
+            debe = 0.0
+            haber = 0.0
+            
+            if "Factura" in tipo or "Nota de Débito" in tipo or "Presupuesto" in tipo:
+                debe = total
+                saldo += total
+            elif "Recibo" in tipo or "Nota de Crédito" in tipo:
+                haber = total
+                saldo -= total
+            
+            debe_str = f"$ {debe:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.') if debe > 0 else ""
+            haber_str = f"$ {haber:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.') if haber > 0 else ""
+            saldo_str = f"$ {saldo:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+            
+            comp_name = f"{tipo} Nº {c['id']}"
+            
+            table_data.append([fecha_str, Paragraph(comp_name, info_style), debe_str, haber_str, saldo_str])
+        
+        t = Table(table_data, colWidths=[70, 170, 85, 85, 90])
+        t_style = [
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0ea5e9')),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+            ('ALIGN', (0,0), (-1,0), 'CENTER'),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0,0), (-1,0), 10),
+            ('BOTTOMPADDING', (0,0), (-1,0), 8),
+            ('TOPPADDING', (0,0), (-1,0), 8),
+            
+            ('BACKGROUND', (0,1), (-1,-1), colors.white),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e2e8f0')),
+            ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
+            ('FONTSIZE', (0,1), (-1,-1), 9),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            
+            ('ALIGN', (0,1), (0,-1), 'CENTER'),
+            ('ALIGN', (1,1), (1,-1), 'LEFT'),
+            ('ALIGN', (2,1), (-1,-1), 'RIGHT'),
+            
+            ('TOPPADDING', (0,1), (-1,-1), 6),
+            ('BOTTOMPADDING', (0,1), (-1,-1), 6),
+        ]
+        t.setStyle(TableStyle(t_style))
+        elements.append(t)
+        
+        doc.build(elements)
+        
+        pdf_bytes = buffer.getvalue()
+        buffer.close()
+        
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename=Cuenta_Corriente_Cliente{client_id}.pdf"}
+        )
+        
+    except Exception as e:
+        print("Error generando PDF CC:", e)
+        raise HTTPException(status_code=500, detail=str(e))
