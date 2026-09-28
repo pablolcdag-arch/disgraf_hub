@@ -3,6 +3,13 @@
 {% block title %}Cotizador Rápido - Disgraf Hub{% endblock %}
 
 {% block content %}
+<style>
+@media (max-width: 768px) {
+    .split-layout { flex-direction: column !important; max-height: none !important; }
+    .btn-primary, .btn-secondary { width: 100% !important; margin-bottom: 5px; }
+    input, select { width: 100% !important; }
+}
+</style>
 <div class="dashboard-layout">
     <aside class="glass sidebar">
         <div class="sidebar-header">
@@ -64,7 +71,7 @@
         </div>
 
         <!-- 2 Pane Layout -->
-        <div style="display: flex; gap: 20px; flex: 1; min-height: 0; max-height: calc(100vh - 240px);">
+        <div class="split-layout" style="display: flex; gap: 20px; flex: 1; min-height: 0; max-height: calc(100vh - 240px);">
             <!-- Left Pane: Search Products -->
             <div class="glass" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
                 <div style="padding: 15px; border-bottom: 1px solid var(--border-color);">

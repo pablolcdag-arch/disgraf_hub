@@ -55,3 +55,8 @@ async def marketing_page(request: Request):
 async def satellite_demo_page(request: Request):
     return templates.TemplateResponse(request=request, name="satellite_demo.html")
 
+
+@router.get("/manual", response_class=HTMLResponse)
+async def manual_page(request: Request):
+    user = get_current_user(request)
+    return templates.TemplateResponse(request=request, name="manual.html", context={"user": user})

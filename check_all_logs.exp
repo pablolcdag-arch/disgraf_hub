@@ -1,0 +1,8 @@
+#!/usr/bin/expect -f
+set timeout -1
+source .env.deploy
+
+spawn ssh -o StrictHostKeyChecking=no -p 5023 root@$VPS_HOST "journalctl -u disgraf-hub -n 50 --no-pager"
+expect "password:"
+send "$VPS_PASS\r"
+expect eof

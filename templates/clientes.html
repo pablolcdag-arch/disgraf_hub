@@ -46,6 +46,7 @@
 
                 <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
                     <button class="btn-primary" onclick="openClientModal()" style="flex:1;">+ Nuevo Cliente</button>
+                    <a href="/api/clientes/export" class="btn-primary" style="flex:1; background: #22c55e; text-decoration: none; text-align: center; display: inline-flex; align-items: center; justify-content: center;">⬇️ Exportar CSV</a>
                     <button class="btn-secondary" onclick="document.getElementById('csvFileInput').click()" style="flex:1;">Importar CSV</button>
                     <button class="btn-primary" onclick="openDeudoresModal()" style="flex:1; background: #e11d48;">💸 Ver Deudores</button>
                     <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="importCSV(this)">

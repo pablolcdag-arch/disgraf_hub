@@ -1,0 +1,8 @@
+#!/usr/bin/expect -f
+set timeout -1
+source .env.deploy
+
+spawn ssh -o StrictHostKeyChecking=no -p $VPS_PORT $VPS_USER@$VPS_HOST "curl -X POST http://127.0.0.1:8000/api/ventas/comprobantes -H 'Content-Type: application/json' -d '{\"cliente_id\": \"659\", \"tipo_comprobante\": \"Nota de Crédito A\", \"subtotal\": 8.4, \"total_iva\": 0.0, \"total\": 8.4, \"items\": [{\"producto_id\": \"N/A\", \"descripcion\": \"Productos Prueba\", \"cantidad\": 1.0, \"precio_unitario\": 8.4, \"alicuota_iva\": 0.0, \"subtotal\": 8.4}], \"facturar_afip\": true, \"comprobante_asociado_id\": 8}'"
+expect "password:"
+send "$VPS_PASSWORD\r"
+expect eof
