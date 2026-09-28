@@ -3,28 +3,6 @@
 {% block title %}Cotizador Rápido - Disgraf Hub{% endblock %}
 
 {% block content %}
-<style>
-@media (max-width: 768px) {
-    .split-layout { flex-direction: column !important; max-height: none !important; }
-    .action-card .btn-primary, .search-toolbar .btn-secondary { width: 100% !important; margin-bottom: 5px; }
-    .action-card input, .action-card select { width: 100% !important; }
-    .search-toolbar { flex-direction: column !important; }
-    #searchSaaS { padding: 12px 15px !important; font-size: 16px !important; min-height: 44px; }
-    /* Permitir que los paneles crezcan con su contenido */
-    .glass { flex: none !important; height: auto !important; overflow: visible !important; }
-    /* Evitar scroll interno en las listas, que fluyan naturalmente */
-    #saasList, #cartList { flex: none !important; height: auto !important; overflow: visible !important; min-height: 150px; }
-    
-    /* Adaptar Menú Superior */
-    .sidebar { flex-direction: column !important; align-items: stretch !important; gap: 15px; }
-    .sidebar-header { text-align: center; margin-right: 0 !important; }
-    .nav-links { flex-wrap: wrap; justify-content: center; gap: 10px !important; }
-    .sidebar-footer { margin-left: 0 !important; justify-content: space-between !important; width: 100%; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px !important; }
-    
-    /* Liberar la altura completa de la página */
-    .dashboard-layout { height: auto !important; min-height: 100vh; }
-}
-</style>
 <div class="dashboard-layout">
     <aside class="glass sidebar">
         <div class="sidebar-header">

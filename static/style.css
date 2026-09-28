@@ -256,3 +256,29 @@ body {
     color: var(--text-muted);
     margin-bottom: 20px;
 }
+
+/* --- MOBILE RESPONSIVE GLOBAL --- */
+@media (max-width: 768px) {
+    /* Adaptar Menú Superior */
+    .sidebar { flex-direction: column !important; align-items: stretch !important; gap: 15px; }
+    .sidebar-header { text-align: center; margin-right: 0 !important; }
+    .nav-links { flex-wrap: wrap; justify-content: center; gap: 10px !important; }
+    .sidebar-footer { margin-left: 0 !important; justify-content: space-between !important; width: 100%; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px !important; }
+    
+    /* Desbloquear altura y scroll nativo de la página */
+    .dashboard-layout { height: auto !important; min-height: 100vh; }
+    .main-content { height: auto !important; overflow: visible !important; flex-direction: column !important; }
+    
+    /* Apilar paneles divididos (Cotizador y Clientes) */
+    .split-layout, .main-content[style*="display: flex"] { flex-direction: column !important; max-height: none !important; }
+    .glass { max-width: 100% !important; flex: none !important; height: auto !important; overflow: visible !important; }
+    
+    /* Listas fluyentes */
+    #saasList, #cartList, #clientListContainer { flex: none !important; height: auto !important; overflow: visible !important; min-height: 150px; }
+
+    /* Specifics for inputs and action buttons in toolbars */
+    .action-card .btn-primary, .search-toolbar .btn-secondary { width: 100% !important; margin-bottom: 5px; }
+    .action-card input, .action-card select { width: 100% !important; }
+    .search-toolbar { flex-direction: column !important; }
+    #searchSaaS { padding: 12px 15px !important; font-size: 16px !important; min-height: 44px; }
+}
