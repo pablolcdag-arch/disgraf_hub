@@ -299,3 +299,8 @@ Este documento rastrea las decisiones estratégicas y arquitectónicas clave tom
 - **Decisión:** Se creó el endpoint `/api/clientes/{id}/cuenta_corriente/pdf` para descargar resúmenes en formato PDF utilizando `reportlab`. A su vez, se corrigió el autocompletado de la ficha del cliente en `cotizador.html` para que en Notas de Crédito, el cliente se asocie extrayendo correctamente el CUIT y la Condición de IVA para que queden reflejados en el PDF resultante.
 - **Razón:** El usuario necesitaba poder entregarle resúmenes estructurados a los clientes y evitar que los PDFs salieran con "Cliente: ID" en refacturaciones.
 - **Archivos afectados:** `routes/clientes_api.py`, `templates/cotizador.html`, `templates/clientes.html`
+
+## 28/09/2026 - SDD Ciclo 11: Exportación y Diseño Responsive
+- **Decisión:** Se creó una nueva ruta `/api/clientes/export` que retorna un CSV nativo de la tabla de clientes. Se adaptó `cotizador.html` para móviles inyectando una regla `@media` que apila el "2 Pane Layout". Se añadió una nueva vista `/manual` con instrucciones y capacidad de exportación nativa a PDF mediante `window.print()`.
+- **Razón:** El equipo comercial necesitaba resguardar la base de datos de clientes antes del lanzamiento y consultar/cotizar desde dispositivos móviles con comodidad. El manual HTML escalable evita el mantenimiento duro de un PDF generado estáticamente en Python.
+- **Archivos afectados:** `routes/clientes_api.py`, `routes/ui.py`, `templates/cotizador.html`, `templates/clientes.html`, `templates/manual.html`
