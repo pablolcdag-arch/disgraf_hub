@@ -457,7 +457,8 @@ async function loadClientDetails(id) {
                     seller: "Sistema",
                     total: db.total,
                     products: [{}], // Mock for UI count
-                    tipo_comprobante: db.tipo_comprobante
+                    tipo_comprobante: db.tipo_comprobante,
+                    impacta_cc: db.impacta_cc
                 }));
             }
         } catch(e) { console.error(e); }

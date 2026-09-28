@@ -982,7 +982,7 @@ dom.btnDownloadPDF.addEventListener('click', async () => {
             total: totalFinalVenta,
             items: itemsVenta,
             facturar_afip: facturarAfip,
-            comprobante_asociado_id: window.comprobanteAsociadoId || null
+            comprobante_asociado_id: window.comprobanteAsociadoId ? parseInt(window.comprobanteAsociadoId) : null
         };
 
         const resVenta = await fetch('/api/ventas/comprobantes', {
@@ -993,7 +993,17 @@ dom.btnDownloadPDF.addEventListener('click', async () => {
         
         if (!resVenta.ok) {
             const errData = await resVenta.json();
-            throw new Error(errData.detail || "Error al registrar o facturar en AFIP");
+            let errMsg = "Error al registrar o facturar en AFIP";
+            if (errData.detail) {
+                if (typeof errData.detail === 'string') {
+                    errMsg = errData.detail;
+                } else if (Array.isArray(errData.detail)) {
+                    errMsg = errData.detail.map(d => `${d.loc ? d.loc.join('.') : 'Error'}: ${d.msg}`).join(', ');
+                } else {
+                    errMsg = JSON.stringify(errData.detail);
+                }
+            }
+            throw new Error(errMsg);
         }
         
         // Extract CAE if returned by the backend to inject it into the PDF payload
