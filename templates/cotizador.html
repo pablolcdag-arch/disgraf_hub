@@ -975,7 +975,7 @@ dom.btnDownloadPDF.addEventListener('click', async () => {
         const facturarAfip = document.getElementById('ventaFacturarAfip') ? document.getElementById('ventaFacturarAfip').checked : false;
 
         const ventaPayload = {
-            cliente_id: payload.client_id || payload.client_name || 'Consumidor Final',
+            cliente_id: String(payload.client_id || payload.client_name || 'Consumidor Final'),
             tipo_comprobante: payload.tipo_comprobante,
             subtotal: subtotalVenta,
             total_iva: totalIva,
