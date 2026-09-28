@@ -8,6 +8,8 @@
     .split-layout { flex-direction: column !important; max-height: none !important; }
     .btn-primary, .btn-secondary { width: 100% !important; margin-bottom: 5px; }
     input, select { width: 100% !important; }
+    .search-toolbar { flex-direction: column !important; }
+    #searchSaaS { padding: 12px 15px !important; font-size: 16px !important; min-height: 44px; }
 }
 </style>
 <div class="dashboard-layout">
@@ -76,7 +78,7 @@
             <div class="glass" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
                 <div style="padding: 15px; border-bottom: 1px solid var(--border-color);">
                     <h3 style="font-size: 16px; margin-bottom: 10px;">Base de Productos (SaaS)</h3>
-                    <div style="display: flex; gap: 10px;">
+                    <div class="search-toolbar" style="display: flex; gap: 10px;">
                         <input type="text" id="searchSaaS" class="form-control" placeholder="Buscar por nombre o código..." style="padding: 8px 12px; flex: 1;">
                         <button onclick="addConceptoLibre()" class="btn-secondary" style="white-space: nowrap; padding: 8px 12px; font-size: 13px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; cursor: pointer;">+ Concepto Libre</button>
                     </div>
