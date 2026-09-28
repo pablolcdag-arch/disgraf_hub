@@ -207,6 +207,44 @@ async def api_generate_quote_pdf(request: Request):
             conn.close()
         except:
             pass    
+            
+    # === OBTENER DIRECCIÓN COMPLETA ===
+    cliente_id = data.get("client_id")
+    if quote_id and not cliente_id:
+        db_path = os.path.join(DATA_DIR, 'disgraf_hub.db')
+        try:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            cursor.execute('SELECT cliente_id FROM comprobantes WHERE id = ?', (quote_id,))
+            row = cursor.fetchone()
+            if row and row[0]:
+                cliente_id = row[0]
+            conn.close()
+        except:
+            pass
+
+    if cliente_id:
+        db_path = os.path.join(DATA_DIR, 'disgraf_hub.db')
+        try:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            cursor.execute('SELECT domicilio, localidad, provincia FROM clientes WHERE id = ?', (cliente_id,))
+            row = cursor.fetchone()
+            if row:
+                db_domicilio, db_localidad, db_provincia = row
+                full_address = db_domicilio or ""
+                if db_localidad:
+                    full_address += f" - {db_localidad}"
+                if db_provincia:
+                    full_address += f" ({db_provincia})"
+                
+                # Sobrescribimos o creamos el campo domicilio en el payload para que el PDF lo tome automáticamente
+                data['cliente_domicilio'] = full_address.strip()
+            conn.close()
+        except Exception as e:
+            print("Error fetching client complete address:", e)
+    # ====================================
+
     original_date = data.get("date")
     if original_date:
         try:
