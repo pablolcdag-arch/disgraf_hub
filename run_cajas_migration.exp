@@ -1,0 +1,41 @@
+#!/usr/bin/expect -f
+set timeout 30
+if {[file exists ".env.deploy"]} {
+    set f [open ".env.deploy" r]
+    while {[gets $f line] >= 0} {
+        if {[regexp {^([^#=]+)=(.*)$} $line match key value]} {
+            set env($key) $value
+        }
+    }
+    close $f
+} else {
+    puts "Error: .env.deploy no encontrado."
+    exit 1
+}
+
+set ip $env(VPS_HOST)
+set user $env(VPS_USER)
+set password $env(VPS_PASSWORD)
+set port $env(VPS_PORT)
+
+# Copiar el script de migración al VPS
+spawn scp -o StrictHostKeyChecking=no -P $port migrate_cajas.py $user@$ip:/opt/disgraf_hub/migrate_cajas.py
+expect {
+    -nocase "assword:" {
+        send "$password\r"
+        expect eof
+    }
+}
+
+# Ejecutar la migración
+spawn ssh -o StrictHostKeyChecking=no -p $port $user@$ip
+expect {
+    -nocase "assword:" {
+        send "$password\r"
+        expect "#"
+        send "cd /opt/disgraf_hub && python3 migrate_cajas.py\r"
+        expect "#"
+        send "exit\r"
+    }
+}
+expect eof
