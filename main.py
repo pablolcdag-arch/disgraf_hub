@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 # Import Routers
-from routes import auth, ui, v2, cotizador_api, catalog_api, marketing_api, clientes_api, media_api, webhook, ventas_api, admin_api
+from routes import auth, ui, v2, cotizador_api, catalog_api, marketing_api, clientes_api, media_api, webhook, ventas_api, admin_api, cajas_api
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from backup_service import send_backup_to_telegram
@@ -52,6 +52,7 @@ app.include_router(media_api.router)
 app.include_router(webhook.router)
 app.include_router(ventas_api.router)
 app.include_router(admin_api.router)
+app.include_router(cajas_api.router)
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

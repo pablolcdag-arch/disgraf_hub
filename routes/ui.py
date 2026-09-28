@@ -60,3 +60,10 @@ async def satellite_demo_page(request: Request):
 async def manual_page(request: Request):
     user = get_current_user(request)
     return templates.TemplateResponse(request=request, name="manual.html", context={"user": user})
+
+@router.get("/cajas", response_class=HTMLResponse)
+async def cajas_page(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+    return templates.TemplateResponse(request=request, name="cajas.html", context={"user": user})

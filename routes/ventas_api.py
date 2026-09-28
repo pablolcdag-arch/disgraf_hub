@@ -28,6 +28,7 @@ class ComprobanteCreate(BaseModel):
     iva_reducido: bool = False
     comprobante_asociado_id: Optional[int] = None
     facturar_afip: Optional[bool] = False
+    forma_pago: Optional[str] = None
 
 import afip_service
 
@@ -153,6 +154,20 @@ async def crear_comprobante(comprobante: ComprobanteCreate, request: Request):
                 comprobante_id, item.producto_id, item.descripcion, item.cantidad,
                 item.precio_unitario, item.alicuota_iva, item.subtotal
             ))
+
+        if comprobante.tipo_comprobante == "Recibo de Pago" and comprobante.forma_pago:
+            caja_map = {
+                "Efectivo": 1,
+                "Transferencia": 2,
+                "Cheque/Echeq": 3,
+                "Retención": 5
+            }
+            caja_id = caja_map.get(comprobante.forma_pago)
+            if caja_id:
+                cursor.execute('''
+                    INSERT INTO cajas_movimientos (caja_id, tipo, monto, usuario, concepto, comprobante_id)
+                    VALUES (?, 'Ingreso', ?, ?, ?, ?)
+                ''', (caja_id, comprobante.total, user['username'], f"Cobranza s/Recibo {comprobante_id}", comprobante_id))
 
         conn.commit()
         conn.close()

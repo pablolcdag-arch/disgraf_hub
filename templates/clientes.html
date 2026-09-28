@@ -15,6 +15,7 @@
             <li><a href="/dashboard">Panel de Control</a></li>
             <li><a href="/cotizador">Cotizador Rápido</a></li>
             <li><a href="/clientes" class="active">Ficha de Clientes</a></li>
+            <li><a href="/cajas">💵 Cajas</a></li>
             {% if user.role == "admin" %}
             <li><a href="/marketing">Marketing IA</a></li>
             <li><a href="/media">Gestor de Medios</a></li>
@@ -807,6 +808,7 @@ window.submitPayment = async (e) => {
     const payload = {
         cliente_id: clientId,
         tipo_comprobante: "Recibo de Pago",
+        forma_pago: method,
         subtotal: amount,
         total_iva: 0.0,
         total: amount,
