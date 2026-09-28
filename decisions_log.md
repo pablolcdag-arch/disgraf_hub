@@ -281,3 +281,11 @@ Este documento rastrea las decisiones estratégicas y arquitectónicas clave tom
   3. **Factura A sin CUIT:** Validación doble (frontend JS + backend Python) que bloquea la emisión de Factura A si el cliente no tiene CUIT (DocTipo=80). AFIP prohíbe Factura A a Consumidor Final.
 - **Razón:** La Factura A es exclusivamente B2B (Responsable Inscripto → Responsable Inscripto). La Factura B admite Consumidor Final (DocTipo=99).
 - **Archivos afectados:** `afip_service.py`, `templates/cotizador.html`, `migrate_comprobante_asociado.py` [NUEVO].
+
+### Sprint 10 — 28/09/2026 (Fixes Post-AFIP)
+**Decisiones:**
+- Se corrigió el problema de `impacta_cc = False` para Facturas Electrónicas, actualizando el backend y ejecutando una migración SQL en producción para corregir el histórico.
+- Se implementó el nodo `<CbtesAsoc>` obligatorio para emitir Notas de Crédito / Débito en AFIP. El backend ahora busca la factura original para enviar su número.
+- Se agregó el botón "+ NC" (Nota de Crédito) en la ficha del cliente, junto al botón "+ Remito". Esto pre-carga el Cotizador enviando automáticamente el `comprobante_asociado_id`.
+- Se corrigieron los datos del emisor en los PDF generados para mostrar el domicilio real de CABA ("Dr. Juan Felipe Aranguren 49 CABA") sin confundirse con el del cliente.
+- El ingreso de cheques ahora distingue explícitamente entre "Propios" y "De Tercero" desde la UI, guardando el Nombre y CUIT del librador directamente en la descripción del Recibo de Pago.
