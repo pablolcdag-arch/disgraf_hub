@@ -164,10 +164,25 @@ async def crear_comprobante(comprobante: ComprobanteCreate, request: Request):
             }
             caja_id = caja_map.get(comprobante.forma_pago)
             if caja_id:
+                # Buscar nombre del cliente
+                cliente_nombre = str(comprobante.cliente_id)
+                try:
+                    cursor.execute("SELECT nombre FROM clientes WHERE id = ?", (comprobante.cliente_id,))
+                    cliente_row = cursor.fetchone()
+                    if cliente_row:
+                        cliente_nombre = cliente_row[0]
+                except Exception:
+                    pass
+                
+                # Tomar la descripción del primer ítem (ya contiene detalles del banco, cheque, CUIT, etc.)
+                detalle_pago = comprobante.items[0].descripcion if comprobante.items else comprobante.forma_pago
+                
+                concepto_caja = f"{cliente_nombre} | {detalle_pago}"
+                
                 cursor.execute('''
                     INSERT INTO cajas_movimientos (caja_id, tipo, monto, usuario, concepto, comprobante_id)
                     VALUES (?, 'Ingreso', ?, ?, ?, ?)
-                ''', (caja_id, comprobante.total, user['username'], f"Cobranza s/Recibo {comprobante_id}", comprobante_id))
+                ''', (caja_id, comprobante.total, user['username'], concepto_caja, comprobante_id))
 
         conn.commit()
         conn.close()
