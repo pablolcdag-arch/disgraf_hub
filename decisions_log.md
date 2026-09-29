@@ -314,3 +314,8 @@ Este documento rastrea las decisiones estratégicas y arquitectónicas clave tom
 - **Decisión:** Se implementó el Módulo de Caja completo con 5 cajas virtuales: Diaria del Local, Banco Galicia, Cheques/Echeq, Principal y Retenciones. Los Recibos de Pago ahora rutean automáticamente a la caja correspondiente según la `forma_pago`. El saldo de cada caja es calculado dinámicamente (SUM de movimientos) para garantizar consistencia ante ediciones. Los vendedores solo visualizan la Caja Diaria del Local; los botones de transferencia y movimientos manuales son exclusivos de administradores.
 - **Razón:** El sistema necesitaba auditar el flujo de dinero físico, transferencias y cheques del local antes del lanzamiento. Las Retenciones se contabilizan como caja propia porque algunos clientes son agentes de recaudación de ARCA/AFIP.
 - **Archivos afectados:** `routes/cajas_api.py` (nuevo), `routes/ventas_api.py`, `main.py`, `templates/cajas.html` (nuevo), `templates/clientes.html`, `routes/ui.py`, `migrate_cajas.py`
+
+## 28/09/2026 - SDD Ciclo 12 (Fix UI/UX): Pre-carga Banco y Concepto Enriquecido en Cajas
+- **Decisión:** Se implementó la pre-carga por defecto de "Banco Galicia" en el formulario de cobro por transferencia. Además, se enriqueció la lógica del backend para que los movimientos de caja guarden el Nombre del Cliente y los datos detallados del cheque/transferencia (provenientes de la descripción del ítem) en el campo `concepto`.
+- **Razón:** El usuario requería auditoría completa de los movimientos en el módulo Cajas sin necesidad de ir a buscar el número de recibo original. El prellenado del banco ahorra tiempo de tipeo en mostrador.
+- **Archivos afectados:** `templates/clientes.html`, `routes/ventas_api.py`
