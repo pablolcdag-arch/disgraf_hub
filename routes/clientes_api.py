@@ -468,6 +468,12 @@ async def api_get_cuenta_corriente_pdf(client_id: int, request: Request):
             elif "Recibo" in tipo or "Nota de Crédito" in tipo:
                 haber = total
                 saldo -= total
+            elif "Ajuste de Saldo" in tipo:
+                if total >= 0:
+                    debe = total
+                else:
+                    haber = abs(total)
+                saldo += total
             
             debe_str = f"$ {debe:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.') if debe > 0 else ""
             haber_str = f"$ {haber:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.') if haber > 0 else ""
