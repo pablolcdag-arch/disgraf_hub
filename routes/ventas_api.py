@@ -341,7 +341,7 @@ async def reportes_dashboard(request: Request):
         cursor.execute('''
             
             SELECT 
-                SUM(CASE WHEN tipo_comprobante LIKE 'Factura%' OR tipo_comprobante LIKE 'Recibo%' THEN total 
+                SUM(CASE WHEN tipo_comprobante LIKE 'Factura%' THEN total 
                          WHEN tipo_comprobante LIKE 'Nota de Cr_dito%' THEN -total 
                          ELSE 0 END) as suma
             FROM comprobantes
@@ -354,7 +354,7 @@ async def reportes_dashboard(request: Request):
         # Ventas de la semana (últimos 7 días)
         cursor.execute('''
             SELECT 
-                SUM(CASE WHEN tipo_comprobante LIKE 'Factura%' OR tipo_comprobante LIKE 'Recibo%' THEN total 
+                SUM(CASE WHEN tipo_comprobante LIKE 'Factura%' THEN total 
                          WHEN tipo_comprobante LIKE 'Nota de Cr_dito%' THEN -total 
                          ELSE 0 END) as suma
             FROM comprobantes
@@ -366,7 +366,7 @@ async def reportes_dashboard(request: Request):
         # Ventas del mes (últimos 30 días)
         cursor.execute('''
             SELECT 
-                SUM(CASE WHEN tipo_comprobante LIKE 'Factura%' OR tipo_comprobante LIKE 'Recibo%' THEN total 
+                SUM(CASE WHEN tipo_comprobante LIKE 'Factura%' THEN total 
                          WHEN tipo_comprobante LIKE 'Nota de Cr_dito%' THEN -total 
                          ELSE 0 END) as suma
             FROM comprobantes
@@ -375,12 +375,13 @@ async def reportes_dashboard(request: Request):
         row_mes = cursor.fetchone()
         ventas_mes = row_mes['suma'] if row_mes and row_mes['suma'] else 0.0
         
-        # Cantidad de facturas emitidas
+        # Cantidad de facturas emitidas hoy
         cursor.execute('''
             SELECT COUNT(*) as cantidad
             FROM comprobantes
             WHERE tipo_comprobante LIKE 'Factura%'
-        ''')
+            AND fecha_emision = ?
+        ''', (fecha_hoy,))
         row_facturas = cursor.fetchone()
         cantidad_facturas = row_facturas['cantidad'] if row_facturas else 0
         

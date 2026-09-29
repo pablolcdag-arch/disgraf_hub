@@ -15,6 +15,7 @@
             <li><a href="/dashboard" class="active">Panel de Control</a></li>
             <li><a href="/cotizador">Cotizador Rápido</a></li>
             <li><a href="/clientes">Ficha de Clientes</a></li>
+            <li><a href="/cajas">💵 Cajas</a></li>
             {% if user.role == "admin" %}
             <li><a href="/marketing">Marketing IA</a></li>
             <li><a href="/media">Gestor de Medios</a></li>
@@ -357,7 +358,9 @@ async function loadAuditoria() {
         const formatter = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
         
         tbody.innerHTML = data.comprobantes.map(comp => {
-            const dateStr = comp.fecha_emision ? new Date(comp.fecha_emision).toLocaleDateString('es-AR') : 'Sin fecha';
+            const dateStr = comp.fecha_emision
+                        ? comp.fecha_emision.substring(0, 10).split('-').reverse().join('/')
+                        : 'Sin fecha';
             const tipoColor = comp.tipo_comprobante && comp.tipo_comprobante.includes('Factura') ? '#38bdf8' : (comp.tipo_comprobante && comp.tipo_comprobante.includes('Presupuesto') ? '#f59e0b' : '#10b981');
             
             let tipoHtml = comp.tipo_comprobante || '-';
