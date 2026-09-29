@@ -282,7 +282,7 @@
                         <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-muted);">
                             <th style="padding: 10px;">ID Cliente</th>
                             <th style="padding: 10px;">Nombre / Razón Social</th>
-                            <th style="padding: 10px; text-align: right;">Saldo Deudor</th>
+                            <th style="padding: 10px; text-align: right;">Saldo Actual</th>
                         </tr>
                     </thead>
                     <tbody id="deudoresTableBody">
@@ -371,7 +371,7 @@ window.openDeudoresModal = async () => {
         }
         
         if (!data.deudores || data.deudores.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 20px; color: var(--text-muted);">No hay clientes con saldo deudor.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 20px; color: var(--text-muted);">No hay clientes con saldos pendientes.</td></tr>';
             return;
         }
         
@@ -384,7 +384,7 @@ window.openDeudoresModal = async () => {
                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
                     <td style="padding: 12px 10px; color: var(--text-muted);">#${d.cliente_id}</td>
                     <td style="padding: 12px 10px; font-weight: bold; color: var(--text-main);">${clientName}</td>
-                    <td style="padding: 12px 10px; text-align: right; color: #ef4444; font-weight: bold;">
+                    <td style="padding: 12px 10px; text-align: right; color: ${d.saldo > 0 ? '#ef4444' : '#10b981'}; font-weight: bold;">
                         ${formatter.format(d.saldo)}
                     </td>
                 </tr>

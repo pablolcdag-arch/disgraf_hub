@@ -472,14 +472,14 @@ async def reportes_deudores(request: Request):
                     CASE 
                         WHEN tipo_comprobante LIKE 'Factura%' OR tipo_comprobante LIKE 'Nota de Débito%' THEN total
                         WHEN tipo_comprobante LIKE 'Recibo%' OR tipo_comprobante LIKE 'Nota de Crédito%' THEN -total
-                        WHEN tipo_comprobante = 'Ajuste de Saldo' THEN -total
+                        WHEN tipo_comprobante = 'Ajuste de Saldo' THEN total
                         ELSE 0
                     END
                 ) as saldo
             FROM comprobantes
             WHERE impacta_cc = 1
             GROUP BY cliente_id
-            HAVING saldo > 1
+            HAVING ABS(saldo) > 0.01
             ORDER BY saldo DESC
         ''')
         
