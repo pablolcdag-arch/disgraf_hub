@@ -320,7 +320,7 @@ window.submitAjusteSaldo = async (e) => {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                cliente_id: clientId,
+                cliente_id: String(clientId),
                 monto: monto,
                 concepto: concepto
             })
