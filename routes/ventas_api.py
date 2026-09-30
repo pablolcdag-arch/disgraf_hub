@@ -181,7 +181,7 @@ async def crear_comprobante(comprobante: ComprobanteCreate, request: Request):
                 
                 cursor.execute('''
                     INSERT INTO cajas_movimientos (caja_id, tipo, monto, usuario, concepto, comprobante_id)
-                    VALUES (?, 'Ingreso', ?, ?, ?, ?)
+                    VALUES (?, 'ingreso', ?, ?, ?, ?)
                 ''', (caja_id, abs(float(comprobante.total)), user['username'], concepto_caja, comprobante_id))
 
         conn.commit()
