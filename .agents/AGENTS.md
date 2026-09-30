@@ -1,6 +1,6 @@
 # AGENTS.md — Disgraf Hub
 > **Documento Maestro de Contexto para Agentes de IA**
-> Versión: 1.0 | Última actualización: 21/09/2026
+> Versión: 1.0 | Última actualización: 30/09/2026
 > **Este archivo es la fuente única de verdad para cualquier agente que trabaje en este proyecto.**
 > Antes de escribir una sola línea de código, leer este archivo completo.
 
@@ -410,7 +410,7 @@ Después de cualquier cambio arquitectónico o decisión estratégica, el agente
 
 ---
 
-## 📊 Estado Actual del Proyecto (28/09/2026)
+## 📊 Estado Actual del Proyecto (30/09/2026)
 
 | Módulo | Estado | Deuda Técnica |
 |---|---|---|
@@ -418,8 +418,8 @@ Después de cualquier cambio arquitectónico o decisión estratégica, el agente
 | Módulo de Caja | ✅ Funcional | 5 cajas virtuales (Diaria, Banco, Cheques, Principal, Retenciones). Ruteo automático desde Recibos de Pago. Saldo dinámico. Permisos por rol (Ciclo 12). |
 | Módulo de Ventas / Comprobantes | ✅ Funcional | Flujo completo E2E, Notas de Crédito, Recibos y Remitos integrados (Sprint 10). AFIP WebServices SOAP en producción. |
 | Login/Auth | ✅ Funcional | Migrado a JWT (Stateless) |
-| Dashboard Admin | ✅ Funcional | Historial avanzado, CRM de ventas, filtros dinámicos y Sistema de Backups Automáticos (Sprint 8). |
-| Cotizador (vendedores) | ✅ Funcional | Generación de PDFs con soporte integrado de Facturación Electrónica AFIP. |
+| Dashboard Admin | ✅ Funcional | Historial avanzado, CRM de ventas, filtros dinámicos (Fixes Timezone y KPIs aplicados Ciclo 13). |
+| Cotizador (vendedores) | ✅ Funcional | Generación de PDFs con soporte AFIP y Factura B Interna (Multiplicadores IVA y Razón Social corregidos). |
 | Gestión de Catálogo y Stock | ✅ Funcional | Migrado completamente de SQLite. Incluye ABM manual, Fraccionamiento y carga masiva por CSV con soporte extendido para Costo, Utilidad y Múltiples Proveedores (Sprint 7). |
 | Marketing IA | ✅ Funcional | Arquitectura de shortcodes corregida tipo CMS. Preview estilizado. (Ciclo 14) |
 | Tienda V2 (catálogo) | ✅ Funcional | Live en hub.disgraf.com.ar/v2. Ahora lee directamente desde SQLite. |
