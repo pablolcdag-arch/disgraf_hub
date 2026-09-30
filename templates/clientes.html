@@ -554,7 +554,13 @@ window.renderClientTabs = (tab) => {
                 </thead>
                 <tbody>
                     ${filteredHistory.map(q => {
-                        const dateStr = new Date(q.date).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' });
+                        let dateStr = 'Sin fecha';
+                        if (q.date) {
+                            const [dPart, tPart] = q.date.replace('T', ' ').split(' ');
+                            const d = dPart.split('-').reverse().join('/');
+                            const t = tPart ? tPart.substring(0, 5) : '';
+                            dateStr = t ? `${d} ${t}` : d;
+                        }
                         const tipoComp = q.tipo_comprobante || 'Presupuesto A';
                         let rowColor = 'inherit';
                         if (tipoComp.includes('Nota de Crédito') || tipoComp.includes('Recibo')) rowColor = '#10b981';

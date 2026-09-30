@@ -320,6 +320,9 @@ async def api_generate_quote_pdf(request: Request):
     elif tipo_comprobante == "Factura Electrónica B":
         letter = "B"
         title_text = "FACTURA B"
+    elif tipo_comprobante == "Factura B (Final / Interna)":
+        letter = "B"
+        title_text = "FACTURA B"
     elif tipo_comprobante == "Remito":
         letter = "R"
         title_text = "REMITO R"
@@ -393,8 +396,6 @@ async def api_generate_quote_pdf(request: Request):
         is_tipo_b = True
         
     multiplier = 1.0
-    if is_tipo_b:
-        multiplier = 1.105 if iva_reducido else 1.21
 
     for p in products:
         if is_recibo:
