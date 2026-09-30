@@ -25,8 +25,8 @@ JWT_ALGORITHM = "HS256"
 
 # Users Mock DB
 USERS = {
-    os.getenv("ADMIN_USERNAME", "pablo"): {"password": os.getenv("ADMIN_PASSWORD", "admin"), "role": "admin"},
-    os.getenv("SELLER_USERNAME", "ventas"): {"password": os.getenv("SELLER_PASSWORD", "ventas"), "role": "seller"},
+    os.getenv("ADMIN_USERNAME", "pablo"): {"password": os.getenv("ADMIN_PASSWORD", "admin1"), "role": "admin"},
+    os.getenv("SELLER_USERNAME", "ventas"): {"password": os.getenv("SELLER_PASSWORD", "leonel"), "role": "seller"},
 }
 
 def get_current_user(request: Request):
