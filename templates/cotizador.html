@@ -13,6 +13,7 @@
             <li><a href="/dashboard">Panel de Control</a></li>
             <li><a href="/cotizador" class="active">Cotizador Rápido</a></li>
             <li><a href="/clientes">Ficha de Clientes</a></li>
+            <li><a href="/cajas">💵 Cajas</a></li>
             {% if user.role == "admin" %}
             <li><a href="/marketing">Marketing IA</a></li>
             <li><a href="/media">Gestor de Medios</a></li>
@@ -966,7 +967,7 @@ dom.btnDownloadPDF.addEventListener('click', async () => {
         
         payload.products.forEach(p => {
             itemsVenta.push({
-                producto_id: p.id || 'N/A',
+                producto_id: String(p.id || 'N/A'),
                 descripcion: p.name,
                 cantidad: p.quantity,
                 precio_unitario: p.price,
@@ -981,14 +982,14 @@ dom.btnDownloadPDF.addEventListener('click', async () => {
         const facturarAfip = document.getElementById('ventaFacturarAfip') ? document.getElementById('ventaFacturarAfip').checked : false;
 
         const ventaPayload = {
-            cliente_id: payload.client_id || payload.client_name || 'Consumidor Final',
+            cliente_id: String(payload.client_id || payload.client_name || 'Consumidor Final'),
             tipo_comprobante: payload.tipo_comprobante,
             subtotal: subtotalVenta,
             total_iva: totalIva,
             total: totalFinalVenta,
             items: itemsVenta,
             facturar_afip: facturarAfip,
-            comprobante_asociado_id: window.comprobanteAsociadoId || null
+            comprobante_asociado_id: window.comprobanteAsociadoId ? Number(window.comprobanteAsociadoId) : null
         };
 
         const resVenta = await fetch('/api/ventas/comprobantes', {

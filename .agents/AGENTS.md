@@ -416,7 +416,7 @@ Después de cualquier cambio arquitectónico o decisión estratégica, el agente
 |---|---|---|
 | Módulo de Clientes (CRM) | ✅ Funcional | ABM y carga masiva por CSV implementados. Ruteo export OK y Schema DB productiva sincronizada (Ciclo 11.1). Soporte CC y Listas. |
 | Módulo de Caja | ✅ Funcional | 5 cajas virtuales (Diaria, Banco, Cheques, Principal, Retenciones). Ruteo automático desde Recibos de Pago. Saldo dinámico. Permisos por rol (Ciclo 12). |
-| Módulo de Ventas / Comprobantes | ✅ Funcional | Flujo completo E2E, Notas de Crédito, Recibos y Remitos integrados (Sprint 10). AFIP WebServices SOAP en producción. |
+| Módulo de Ventas / Comprobantes | ✅ Funcional | Flujo completo E2E, Notas de Crédito, Recibos y Remitos integrados (Ciclo 14). Conexión AFIP SOAP 100% nativa (eliminación de dependencia comercial afip.py). Bugs 422 resueltos. |
 | Login/Auth | ✅ Funcional | Migrado a JWT (Stateless) |
 | Dashboard Admin | ✅ Funcional | Historial avanzado, CRM de ventas, filtros dinámicos (Fixes Timezone y KPIs aplicados Ciclo 13). |
 | Cotizador (vendedores) | ✅ Funcional | Generación de PDFs con soporte AFIP y Factura B Interna (Multiplicadores IVA y Razón Social corregidos). |
