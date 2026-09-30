@@ -423,8 +423,13 @@ async def api_get_cuenta_corriente_pdf(client_id: int, request: Request):
         if not cliente_cuit or cliente_cuit == '0':
             cliente_cuit = cliente.get('documento', '')
             
+        cliente_razon = cliente.get('razon_social')
+        nombre_str = f"{cliente.get('nombre', '')}"
+        if cliente_razon:
+            nombre_str += f" | <b>Razón Social:</b> {cliente_razon}"
+            
         cliente_info = f"""
-        <b>Cliente:</b> {cliente.get('nombre', '')}<br/>
+        <b>Cliente:</b> {nombre_str}<br/>
         <b>CUIT / Doc:</b> {cliente_cuit} | 
         <b>Condición IVA:</b> {cliente.get('condicion_iva', 'Consumidor Final')}<br/>
         <b>Domicilio:</b> {cliente.get('domicilio', '')} {cliente.get('localidad', '')}

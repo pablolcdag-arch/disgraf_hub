@@ -228,10 +228,10 @@ async def api_generate_quote_pdf(request: Request):
         try:
             conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
-            cursor.execute('SELECT domicilio, localidad, provincia FROM clientes WHERE id = ?', (cliente_id,))
+            cursor.execute('SELECT domicilio, localidad, provincia, razon_social FROM clientes WHERE id = ?', (cliente_id,))
             row = cursor.fetchone()
             if row:
-                db_domicilio, db_localidad, db_provincia = row
+                db_domicilio, db_localidad, db_provincia, db_razon_social = row
                 full_address = db_domicilio or ""
                 if db_localidad:
                     full_address += f" - {db_localidad}"
@@ -240,6 +240,9 @@ async def api_generate_quote_pdf(request: Request):
                 
                 # Sobrescribimos o creamos el campo domicilio en el payload para que el PDF lo tome automáticamente
                 data['cliente_domicilio'] = full_address.strip()
+                
+                if db_razon_social:
+                    data['cliente_razon_social'] = db_razon_social
             conn.close()
         except Exception as e:
             print("Error fetching client complete address:", e)
@@ -355,7 +358,10 @@ async def api_generate_quote_pdf(request: Request):
     elements.append(header_table)
     elements.append(Spacer(1, 15))
     
-    cliente_info = f"<b>Cliente:</b> {client_name}<br/>"
+    cliente_info = f"<b>Cliente:</b> {client_name}"
+    if data.get('cliente_razon_social'):
+        cliente_info += f" | <b>Razón Social:</b> {data.get('cliente_razon_social')}"
+    cliente_info += "<br/>"
     if data.get('cliente_cuit'):
         cliente_info += f"<b>CUIT / Doc:</b> {data.get('cliente_cuit')} | "
     if data.get('cliente_condicion_iva'):
