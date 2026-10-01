@@ -30,13 +30,15 @@ Escribe un artículo de blog altamente optimizado para SEO para la empresa "Disg
 El artículo debe enfocarse en este producto o temática: "{product_name}".
 
 El objetivo del blog es educar al cliente y posicionar nuestra marca en Google.
-Incluye:
-1. Un título atractivo y llamativo (HTML <h1>).
-2. Introducción que despierte interés.
-3. Técnicas o consejos útiles para aplicar este material sobre diferentes superficies o usos comunes.
-4. Un llamado a la acción (Call to Action) invitando a comprarlo en Disgraf.
+REGLAS ESTRICTAS DE FORMATO HTML:
+1. NO generar etiqueta H1 (ya la pone el template Jinja). Para sugerir el título, ponlo al principio como '## Título del Artículo'.
+2. Introducción atrapante aplicando la técnica de la pirámide invertida.
+3. Uso estricto de jerarquía <H2> y <H3>.
+4. Inclusión obligatoria de listas (<ul><li>) para romper la monotonía visual. Incluye técnicas o consejos útiles para aplicar el material.
+5. Un <H2> final llamado "Conclusión".
+6. Un llamado a la acción (Call to Action) claro al final invitando a visitar nuestro catálogo en https://hub.disgraf.com.ar/v2 (usa un enlace HTML real).
 
-Genera SOLO código HTML válido (usando h2, p, ul, li, strong) que no dependa de estilos externos. 
+Genera SOLO código HTML válido (solo contenido interno, sin html/body) que no dependa de estilos externos. 
 No envuelvas la respuesta en ```html, solo devuelve el contenido puro HTML listo para usar.
 """
     try:
@@ -54,7 +56,7 @@ def render_and_save_post(title, content, slug=None, date_str=None, post_dict=Non
     date_str = date_str or datetime.datetime.now().strftime("%d %b, %Y")
     
     env = Environment(loader=FileSystemLoader("templates"))
-    template = env.get_template("v2_blog_post.html")
+    template = env.get_template("oficio_post.html")
     
     content_parsed = re.sub(
         r'\[FOTO:\s*(.*?)\]', 
@@ -92,10 +94,10 @@ def run_seo_workflow(product_name):
     try:
         html_content = generate_blog_post(product_name)
 
-        match = re.search(r'<h1>(.*?)</h1>', html_content, re.IGNORECASE)
-        title = match.group(1) if match else f"Guía sobre {product_name}"
+        match = re.search(r'## (.*?)\n', html_content)
+        title = match.group(1).replace("*", "").strip() if match else f"Guía sobre {product_name}"
 
-        content_clean = re.sub(r'<h1>.*?</h1>', '', html_content, flags=re.IGNORECASE).strip()
+        content_clean = re.sub(r'## (.*?)\n', '', html_content, count=1).strip()
 
         file_path = render_and_save_post(title, content_clean)
         return file_path
@@ -145,6 +147,25 @@ def rebuild_static_site():
             f.write(html_output)
             
         logger.info(f"Sitio estático reconstruido. index.html guardado en: {file_path}")
+        
+        # 3. Render and save static pages
+        static_pages = [
+            ("oficio_about.html", "about.html"),
+            ("oficio_contact.html", "contacto.html"),
+            ("oficio_legal.html", "legales.html")
+        ]
+        
+        for tpl_name, out_name in static_pages:
+            try:
+                page_tpl = env.get_template(tpl_name)
+                page_html = page_tpl.render()
+                page_out_path = os.path.join(BLOG_OUTPUT_DIR, out_name)
+                with open(page_out_path, "w", encoding="utf-8") as f:
+                    f.write(page_html)
+                logger.info(f"Página estática generada: {out_name}")
+            except Exception as e:
+                logger.error(f"Error al renderizar {tpl_name}: {e}")
+
     except Exception as e:
-        logger.error(f"Error al renderizar el index estático: {e}")
+        logger.error(f"Error al renderizar el index estático o páginas estáticas: {e}")
 

@@ -1,0 +1,20 @@
+#!/usr/bin/expect -f
+set timeout 15
+set VPS_HOST "149.50.151.121"
+set VPS_PORT "5023"
+set VPS_USER "root"
+set VPS_PASSWORD "Milanga2026-teamo"
+
+spawn ssh -o StrictHostKeyChecking=no -p $VPS_PORT $VPS_USER@$VPS_HOST
+expect "password:"
+send "$VPS_PASSWORD\r"
+expect "#"
+
+send "cd /opt/disgraf_hub\r"
+expect "#"
+
+send "source venv/bin/activate && python3 -c 'from seo_service import rebuild_static_site; rebuild_static_site()'\r"
+expect "#"
+
+send "exit\r"
+expect eof

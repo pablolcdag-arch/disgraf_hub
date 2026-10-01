@@ -1,0 +1,34 @@
+{% extends "oficio_base.html" %}
+
+{% block title %}Contacto | Oficio Cartelería{% endblock %}
+
+{% block extra_css %}
+.page-container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+.page-title {
+    font-size: 36px;
+    font-weight: 800;
+    color: #111827;
+    margin-bottom: 30px;
+    text-align: center;
+}
+.page-content {
+    font-size: 18px;
+    line-height: 1.8;
+}
+{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <h1 class="page-title">Contacto</h1>
+    <div class="page-content">
+        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam erat volutpat. Proin vehicula aliquet sapien, sed imperdiet lectus porta eget.</p>
+        <p>Email: contacto@oficiocarteleria.com.ar</p>
+        <p>Teléfono: +54 11 1234-5678</p>
+        <p>Phasellus a justo eu libero egestas accumsan vel a purus. Sed interdum nisl sit amet nulla blandit, quis ullamcorper lectus sollicitudin.</p>
+    </div>
+</div>
+{% endblock %}

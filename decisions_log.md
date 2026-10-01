@@ -339,3 +339,8 @@ Este documento rastrea las decisiones estratégicas y arquitectónicas clave tom
 - **Decisión:** Se implementó y conectó el motor de Generación de Sitios Estáticos (SSG) para el dominio satélite `oficiocarteleria.com.ar`.
 - **Razón:** Proveer al servidor Nginx de los archivos estáticos (`.html`) generados automáticamente al momento de aprobar un borrador en el CMS. Esto brinda máxima velocidad y seguridad para SEO (sin dependencia de BD o WP). Se adaptó el boceto original `satellite_demo.html` hacia un template Jinja dinámico (`oficio_index.html`).
 - **Archivos afectados:** `templates/oficio_index.html` (nuevo), `seo_service.py` (nuevo flujo rebuild_static_site), `routes/marketing_api.py` (conexión en endpoint approve).
+
+## 01/10/2026 - SDD Ciclo 17: Arquitectura y SEO Profesional del Blog Satélite
+- **Decisión:** Se reestructuró por completo el frontend estático y los prompts de la IA para el blog satélite.
+- **Razón:** El sitio inicial era solo una grilla suelta; carecía de páginas estáticas obligatorias (About, Contacto, Legales) y los artículos usaban el template viejo de la tienda. Se implementó una arquitectura maestro (`oficio_base.html`) y se forzó a Gemini mediante el backend a redactar con estructura SEO estricta (sin H1, con H2/H3, pirámide invertida y CTA).
+- **Archivos afectados:** `templates/oficio_base.html`, `templates/oficio_index.html`, `templates/oficio_post.html`, plantillas estáticas `about/contact/legal`, `routes/marketing_api.py`, `seo_service.py`.
