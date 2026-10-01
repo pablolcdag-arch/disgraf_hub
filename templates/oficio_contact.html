@@ -19,16 +19,90 @@
     font-size: 18px;
     line-height: 1.8;
 }
+.contact-intro {
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 18px;
+    color: var(--text-light);
+}
+.contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    background: var(--bg-card);
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border: 1px solid #e5e7eb;
+}
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.form-group label {
+    font-weight: 500;
+    color: var(--text-main);
+    font-size: 15px;
+}
+.form-group input, .form-group textarea {
+    padding: 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 16px;
+    font-family: inherit;
+    transition: border-color 0.2s;
+}
+.form-group input:focus, .form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+.btn-submit {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 14px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    align-self: flex-start;
+}
+.btn-submit:hover {
+    background: #1d4ed8;
+}
 {% endblock %}
 
 {% block content %}
 <div class="page-container">
     <h1 class="page-title">Contacto</h1>
     <div class="page-content">
-        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam erat volutpat. Proin vehicula aliquet sapien, sed imperdiet lectus porta eget.</p>
-        <p>Email: contacto@oficiocarteleria.com.ar</p>
-        <p>Teléfono: +54 11 1234-5678</p>
-        <p>Phasellus a justo eu libero egestas accumsan vel a purus. Sed interdum nisl sit amet nulla blandit, quis ullamcorper lectus sollicitudin.</p>
+        <p class="contact-intro">Si tenés dudas sobre materiales, técnicas de aplicación o querés asesoramiento, escribinos.</p>
+        
+        <form class="contact-form" action="#" method="POST">
+            <div class="form-group">
+                <label for="nombre">Nombre</label>
+                <input type="text" id="nombre" name="nombre" placeholder="Tu nombre completo" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" placeholder="tu@email.com" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="asunto">Asunto</label>
+                <input type="text" id="asunto" name="asunto" placeholder="¿En qué podemos ayudarte?" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="mensaje">Mensaje</label>
+                <textarea id="mensaje" name="mensaje" rows="5" placeholder="Escribí tu mensaje acá..." required></textarea>
+            </div>
+            
+            <button type="submit" class="btn-submit">Enviar</button>
+        </form>
     </div>
 </div>
 {% endblock %}

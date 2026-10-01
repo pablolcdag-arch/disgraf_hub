@@ -344,3 +344,8 @@ Este documento rastrea las decisiones estratégicas y arquitectónicas clave tom
 - **Decisión:** Se reestructuró por completo el frontend estático y los prompts de la IA para el blog satélite.
 - **Razón:** El sitio inicial era solo una grilla suelta; carecía de páginas estáticas obligatorias (About, Contacto, Legales) y los artículos usaban el template viejo de la tienda. Se implementó una arquitectura maestro (`oficio_base.html`) y se forzó a Gemini mediante el backend a redactar con estructura SEO estricta (sin H1, con H2/H3, pirámide invertida y CTA).
 - **Archivos afectados:** `templates/oficio_base.html`, `templates/oficio_index.html`, `templates/oficio_post.html`, plantillas estáticas `about/contact/legal`, `routes/marketing_api.py`, `seo_service.py`.
+
+## 01/10/2026 - SDD Ciclo 18: Diseño de Páginas Estáticas del Blog Satélite
+- **Decisión:** Se implementó el contenido final de las páginas "Sobre Nosotros", "Contacto" y "Legales" del sitio satélite.
+- **Razón:** Para cumplir con los requerimientos SEO de Google y ofrecer una experiencia profesional, se reemplazó el texto temporal (Lorem Ipsum) con contenido real, incluyendo la misión del sitio, un formulario de contacto maquetado con CSS minimalista, y los textos legales obligatorios estructurados para facilitar la lectura.
+- **Archivos afectados:** `templates/oficio_about.html`, `templates/oficio_contact.html`, `templates/oficio_legal.html`.
