@@ -38,12 +38,12 @@
                 <h1>Tesorería y Cajas</h1>
                 <p>Gestión de saldos y movimientos financieros.</p>
             </div>
-            {% if user.role == "admin" %}
             <div style="display: flex; gap: 10px;">
                 <button onclick="openIngresoEgresoModal()" class="btn-primary" style="background: #10b981;">➕ Nuevo Ingreso/Egreso</button>
+                {% if user.role == "admin" %}
                 <button onclick="openTransferModal()" class="btn-primary" style="background: #3b82f6;">🔄 Cierre / Transferir</button>
+                {% endif %}
             </div>
-            {% endif %}
         </div>
 
         <!-- Grid de Cajas -->
@@ -190,12 +190,13 @@ function updateSelectors() {
     
     selector.innerHTML = opts;
     
-    {% if user.role == "admin" %}
     const ieCaja = document.getElementById('ieCaja');
+    if (ieCaja) ieCaja.innerHTML = selectorOpts;
+
+    {% if user.role == "admin" %}
     const trOrigen = document.getElementById('trOrigen');
     const trDestino = document.getElementById('trDestino');
     
-    if (ieCaja) ieCaja.innerHTML = selectorOpts;
     if (trOrigen) trOrigen.innerHTML = selectorOpts;
     if (trDestino) trDestino.innerHTML = selectorOpts;
     {% endif %}
@@ -240,15 +241,9 @@ async function loadMovimientos() {
     }
 }
 
-{% if user.role == "admin" %}
 function openIngresoEgresoModal() {
     document.getElementById('formIngresoEgreso').reset();
     document.getElementById('ingresoEgresoModal').style.display = 'flex';
-}
-
-function openTransferModal() {
-    document.getElementById('formTransfer').reset();
-    document.getElementById('transferModal').style.display = 'flex';
 }
 
 async function submitMovimiento(e) {
@@ -272,11 +267,18 @@ async function submitMovimiento(e) {
             loadCajas();
             loadMovimientos();
         } else {
-            alert('Error al registrar movimiento.');
+            const err = await res.json();
+            alert('Error al registrar movimiento: ' + (err.detail || ''));
         }
     } catch(err) {
         alert(err.message);
     }
+}
+
+{% if user.role == "admin" %}
+function openTransferModal() {
+    document.getElementById('formTransfer').reset();
+    document.getElementById('transferModal').style.display = 'flex';
 }
 
 async function submitTransfer(e) {

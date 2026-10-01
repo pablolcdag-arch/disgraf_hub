@@ -60,8 +60,8 @@ async def crear_movimiento(mov: MovimientoCreate, request: Request):
         
     role = user.get("role")
     if role == "seller":
-        if mov.monto >= 0:
-            raise HTTPException(status_code=403, detail="Los vendedores solo tienen permiso para registrar egresos/gastos.")
+        if mov.tipo.lower() != "egreso":
+            raise HTTPException(status_code=403, detail="Los vendedores solo tienen permiso para registrar egresos.")
     elif role != "admin":
         raise HTTPException(status_code=403, detail="Solo admins pueden crear movimientos manuales")
         
