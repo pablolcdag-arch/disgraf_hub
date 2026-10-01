@@ -138,6 +138,9 @@
                         <span id="cartTotalLabel" style="font-size: 16px; color: var(--text-muted);">Total Estimado (+ IVA)</span>
                         <span id="cartTotal" style="font-size: 24px; font-weight: bold; color: #38bdf8;">$ 0,00</span>
                     </div>
+                    <div style="margin-top: 15px;">
+                        <textarea id="ventaObservaciones" class="form-control" placeholder="Observaciones..." style="width: 100%; height: 60px; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: white; border-radius: 4px; resize: vertical;"></textarea>
+                    </div>
                 </div>
             </div>
         </div>
@@ -416,15 +419,17 @@ window.deleteQuote = async (id, event) => {
     if(!confirm("¿Estás seguro de que deseas eliminar este presupuesto del historial?")) return;
     
     try {
-        const res = await fetch(`/api/history-quotes/${id}`, { method: 'DELETE' });
-        const data = await res.json();
-        if(data.error) throw new Error(data.error);
+        const res = await fetch(`/api/cotizador/historial/${id}`, { method: 'DELETE' });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || "Error al eliminar");
+        }
         
         // Reload history
         window.openHistory();
-        showToast("Presupuesto eliminado", "success");
+        showToast("Presupuesto eliminado");
     } catch(err) {
-        showToast("Error eliminando: " + err.message, "error");
+        showToast("Error eliminando: " + err.message, true);
     }
 };
 
@@ -442,10 +447,10 @@ window.reprintPDF = async (id, tipo, fechaOriginal, event) => {
         const payload = {
             quote_id: id,
             client_name: quote.client,
-            client_id: quote.client_id || "",
+            client_id: String(quote.client_id || ""),
             tipo_comprobante: quote.tipo_comprobante || tipo,
             total: quote.total,
-            products: quote.products,
+            products: quote.products ? quote.products.map(p => ({...p, producto_id: String(p.producto_id || "")})) : [],
             iva_reducido: quote.iva_reducido || false,
             date: fechaOriginal || quote.date,
             is_reprint: true
@@ -809,6 +814,9 @@ function getQuotePayload() {
     
     const finalTotal = total * (1 - (state.globalDiscount / 100));
     
+    const obsElement = document.getElementById('ventaObservaciones');
+    const obs = obsElement ? obsElement.value.trim() : "";
+    
     let payload = {
         quote_id: window.loadedQuoteId || null,
         client_name: dom.clientName.value.trim(),
@@ -817,7 +825,8 @@ function getQuotePayload() {
         total: finalTotal,
         tipo_comprobante: tipoComp,
         iva_reducido: ivaReducido,
-        globalDiscount: state.globalDiscount
+        globalDiscount: state.globalDiscount,
+        observaciones: obs
     };
     
     if (window.selectedClientData && window.selectedClientId) {

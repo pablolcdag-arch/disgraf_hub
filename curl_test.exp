@@ -1,0 +1,28 @@
+#!/usr/bin/expect -f
+set timeout -1
+if {[file exists ".env.deploy"]} {
+    set f [open ".env.deploy" r]
+    while {[gets $f line] >= 0} {
+        if {[regexp {^([^#=]+)=(.*)$} $line match key value]} {
+            set env($key) $value
+        }
+    }
+    close $f
+}
+
+set ip $env(VPS_HOST)
+set user $env(VPS_USER)
+set password $env(VPS_PASSWORD)
+set port $env(VPS_PORT)
+
+spawn ssh -o StrictHostKeyChecking=no -p $port $user@$ip
+expect {
+    -nocase "assword:" {
+        send "$password\r"
+        expect "#"
+        send "curl -X POST http://127.0.0.1:8000/api/ventas/comprobantes -H 'Content-Type: application/json' -d '{\"cliente_id\":\"1748\",\"tipo_comprobante\":\"Nota de Crédito A\",\"subtotal\":103332.14,\"total_iva\":21699.75,\"total\":125031.89,\"items\":[{\"producto_id\":\"1\",\"descripcion\":\"Posicionador\",\"cantidad\":1,\"precio_unitario\":93817.6,\"alicuota_iva\":21,\"subtotal\":93817.6}],\"facturar_afip\":true,\"comprobante_asociado_id\":\"82\"}'\r"
+        expect "#"
+        send "exit\r"
+    }
+}
+expect eof

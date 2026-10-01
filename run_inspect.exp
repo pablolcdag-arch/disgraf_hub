@@ -1,0 +1,41 @@
+#!/usr/bin/expect -f
+set timeout -1
+if {[file exists ".env.deploy"]} {
+    set f [open ".env.deploy" r]
+    while {[gets $f line] >= 0} {
+        if {[regexp {^([^#=]+)=(.*)$} $line match key value]} {
+            set env($key) $value
+        }
+    }
+    close $f
+}
+
+set ip $env(VPS_HOST)
+set user $env(VPS_USER)
+set password $env(VPS_PASSWORD)
+set port $env(VPS_PORT)
+set local_dir "/Users/pablostiefel/Documents/Disgraf_Hub"
+set remote_dir "/opt/disgraf_hub"
+
+spawn scp -o StrictHostKeyChecking=no -P $port $local_dir/inspect_db.py $user@$ip:$remote_dir/
+expect {
+    -nocase "assword:" {
+        send "$password\r"
+        exp_continue
+    }
+    eof
+}
+
+spawn ssh -o StrictHostKeyChecking=no -p $port $user@$ip
+expect {
+    -nocase "assword:" {
+        send "$password\r"
+        expect "#"
+        send "cd /opt/disgraf_hub && venv/bin/python3 inspect_db.py\r"
+        expect "#"
+        send "rm -f inspect_db.py\r"
+        expect "#"
+        send "exit\r"
+    }
+}
+expect eof

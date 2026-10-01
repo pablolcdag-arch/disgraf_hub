@@ -1,6 +1,5 @@
 #!/usr/bin/expect -f
-set timeout 10
-# Cargar variables de entorno desde .env.deploy
+set timeout -1
 if {[file exists ".env.deploy"]} {
     set f [open ".env.deploy" r]
     while {[gets $f line] >= 0} {
@@ -9,9 +8,6 @@ if {[file exists ".env.deploy"]} {
         }
     }
     close $f
-} else {
-    puts "Error: Archivo .env.deploy no encontrado. Por favor, crea uno usando .env.deploy.example como base."
-    exit 1
 }
 
 set ip $env(VPS_HOST)
@@ -24,7 +20,7 @@ expect {
     -nocase "assword:" {
         send "$password\r"
         expect "#"
-        send "journalctl -u disgraf-hub -n 200 --no-pager | grep -i 'Error AI'\r"
+        send "cat /opt/disgraf_hub/pydantic_error.log\r"
         expect "#"
         send "exit\r"
     }

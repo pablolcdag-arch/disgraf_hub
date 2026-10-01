@@ -415,11 +415,11 @@ Después de cualquier cambio arquitectónico o decisión estratégica, el agente
 | Módulo | Estado | Deuda Técnica |
 |---|---|---|
 | Módulo de Clientes (CRM) | ✅ Funcional | ABM y carga masiva por CSV implementados. Ruteo export OK y Schema DB productiva sincronizada (Ciclo 11.1). Soporte CC y Listas. |
-| Módulo de Caja | ✅ Funcional | 5 cajas virtuales (Diaria, Banco, Cheques, Principal, Retenciones). Ruteo automático desde Recibos de Pago. Saldo dinámico. Permisos por rol (Ciclo 12). |
-| Módulo de Ventas / Comprobantes | ✅ Funcional | Flujo completo E2E, Notas de Crédito, Recibos y Remitos integrados (Ciclo 14). Conexión AFIP SOAP 100% nativa (eliminación de dependencia comercial afip.py). Bugs 422 resueltos. |
+| Módulo de Caja | ✅ Funcional | 5 cajas virtuales (Diaria, Banco, Cheques, Principal, Retenciones). Ruteo automático desde Recibos de Pago. Saldo dinámico. Permisos por rol (Vendedores solo egresos - Ciclo 15). |
+| Módulo de Ventas / Comprobantes | ✅ Funcional | Flujo E2E. Conexión AFIP SOAP 100% nativa. Campo 'observaciones' incorporado en esquema y PDF (Ciclo 15). |
 | Login/Auth | ✅ Funcional | Migrado a JWT (Stateless) |
-| Dashboard Admin | ✅ Funcional | Historial avanzado, CRM de ventas, filtros dinámicos (Fixes Timezone y KPIs aplicados Ciclo 13). |
-| Cotizador (vendedores) | ✅ Funcional | Generación de PDFs con soporte AFIP y Factura B Interna (Multiplicadores IVA y Razón Social corregidos). |
+| Dashboard Admin | ✅ Funcional | Historial avanzado, CRM de ventas, filtros dinámicos completos de comprobantes (Ciclo 15). |
+| Cotizador (vendedores) | ✅ Funcional | PDFs con soporte AFIP y Observaciones. Historial rápido corregido (Fix 404 delete y 422 repetición PDF - Ciclo 15). |
 | Gestión de Catálogo y Stock | ✅ Funcional | Migrado completamente de SQLite. Incluye ABM manual, Fraccionamiento y carga masiva por CSV con soporte extendido para Costo, Utilidad y Múltiples Proveedores (Sprint 7). |
 | Marketing IA | ✅ Funcional | Arquitectura de shortcodes corregida tipo CMS. Preview estilizado. (Ciclo 14) |
 | Tienda V2 (catálogo) | ✅ Funcional | Live en hub.disgraf.com.ar/v2. Ahora lee directamente desde SQLite. |

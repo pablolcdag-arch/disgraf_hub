@@ -1,0 +1,8 @@
+#!/usr/bin/expect -f
+source .env.deploy
+set timeout 10
+spawn ssh -o StrictHostKeyChecking=no -p $env(VPS_PORT) $env(VPS_USER)@$env(VPS_HOST)
+expect "#"
+send "curl -X POST -H 'Content-Type: application/json' -d '{\"cliente_id\": 2966, \"monto\": 139014.84, \"concepto\": \"Saldo inicial\"}' http://localhost:8000/api/ventas/ajuste-saldo\r"
+expect "#"
+send "exit\r"

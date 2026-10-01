@@ -1,5 +1,5 @@
 #!/usr/bin/expect -f
-set timeout 60
+set timeout -1
 if {[file exists ".env.deploy"]} {
     set f [open ".env.deploy" r]
     while {[gets $f line] >= 0} {
@@ -15,14 +15,18 @@ set user $env(VPS_USER)
 set password $env(VPS_PASSWORD)
 set port $env(VPS_PORT)
 
+spawn scp -o StrictHostKeyChecking=no -P $port migrate_observaciones.py $user@$ip:/opt/disgraf_hub/
+expect {
+    -nocase "assword:" { send "$password\r"; exp_continue }
+    eof
+}
+
 spawn ssh -o StrictHostKeyChecking=no -p $port $user@$ip
 expect {
     -nocase "assword:" {
         send "$password\r"
         expect "#"
-        send "source /opt/disgraf_hub/venv/bin/activate && cd /opt/disgraf_hub && python3 migrate_comprobante_asociado.py\r"
-        expect "#"
-        send "systemctl restart disgraf-hub && sleep 2 && systemctl is-active disgraf-hub\r"
+        send "cd /opt/disgraf_hub && venv/bin/python3 migrate_observaciones.py\r"
         expect "#"
         send "exit\r"
     }

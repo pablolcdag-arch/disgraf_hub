@@ -1,0 +1,33 @@
+#!/usr/bin/expect -f
+set timeout -1
+if {[file exists ".env.deploy"]} {
+    set f [open ".env.deploy" r]
+    while {[gets $f line] >= 0} {
+        if {[regexp {^([^#=]+)=(.*)$} $line match key value]} {
+            set env($key) $value
+        }
+    }
+    close $f
+}
+set ip $env(VPS_HOST)
+set user $env(VPS_USER)
+set password $env(VPS_PASSWORD)
+set port $env(VPS_PORT)
+
+spawn scp -o StrictHostKeyChecking=no -P $port main.py $user@$ip:/opt/disgraf_hub/main.py
+expect {
+    -nocase "assword:" { send "$password\r"; exp_continue }
+    eof
+}
+
+spawn ssh -o StrictHostKeyChecking=no -p $port $user@$ip
+expect {
+    -nocase "assword:" {
+        send "$password\r"
+        expect "#"
+        send "systemctl restart disgraf-hub\r"
+        expect "#"
+        send "exit\r"
+    }
+}
+expect eof

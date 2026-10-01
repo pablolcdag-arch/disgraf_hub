@@ -89,8 +89,10 @@
             
             <label style="display: block; margin-bottom: 5px;">Tipo:</label>
             <select id="ieTipo" class="form-control" style="width: 100%; margin-bottom: 15px;" required>
+                {% if user.role != 'seller' %}
                 <option value="ingreso">Ingreso (+)</option>
-                <option value="egreso">Egreso (-)</option>
+                {% endif %}
+                <option value="egreso" {% if user.role == 'seller' %}selected{% endif %}>Egreso (-)</option>
             </select>
             
             <label style="display: block; margin-bottom: 5px;">Concepto:</label>

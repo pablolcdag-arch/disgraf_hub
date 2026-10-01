@@ -1,0 +1,8 @@
+#!/usr/bin/expect -f
+spawn ssh -o StrictHostKeyChecking=no -p 5023 root@149.50.151.121
+expect "password:"
+send "D6R5V8S6D7U0n*\r"
+expect "#"
+send "sqlite3 /opt/disgraf_hub/data/disgraf_hub.db \"SELECT id, tipo_comprobante, numero_afip FROM comprobantes WHERE id IN (81,82,83);\"\r"
+expect "#"
+send "exit\r"

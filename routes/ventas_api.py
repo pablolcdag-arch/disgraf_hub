@@ -29,6 +29,7 @@ class ComprobanteCreate(BaseModel):
     comprobante_asociado_id: Optional[int] = None
     facturar_afip: Optional[bool] = False
     forma_pago: Optional[str] = None
+    observaciones: Optional[str] = None
 
 import afip_service
 
@@ -109,7 +110,7 @@ async def crear_comprobante(comprobante: ComprobanteCreate, request: Request):
                         nro_orig = int(row_asoc[0])
                         tipo_orig_str = row_asoc[1]
                         tipo_num = 1 if "A" in tipo_orig_str else 6
-                        cbte_asoc = {'tipo': tipo_num, 'pto_vta': 10, 'nro': nro_orig}
+                        cbte_asoc = {'tipo': tipo_num, 'pto_vta': 10, 'nro': nro_orig, 'cuit': cuit_cliente}
 
             afip_res = afip_service.emitir_factura(
                 cliente_nro=cuit_cliente,
@@ -134,12 +135,12 @@ async def crear_comprobante(comprobante: ComprobanteCreate, request: Request):
             INSERT INTO comprobantes (
                 cliente_id, tipo_comprobante, numero_comprobante, fecha_emision,
                 es_fiscal, impacta_cc, impacta_stock, subtotal, total_iva, total,
-                comprobante_asociado_id, cae, cae_vto, numero_afip
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                comprobante_asociado_id, cae, cae_vto, numero_afip, observaciones
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             comprobante.cliente_id, comprobante.tipo_comprobante, comprobante.numero_comprobante,
             fecha_emision, es_fiscal, impacta_cc, impacta_stock, comprobante.subtotal, total_iva, comprobante.total,
-            comprobante.comprobante_asociado_id, cae, cae_vto, numero_afip
+            comprobante.comprobante_asociado_id, cae, cae_vto, numero_afip, comprobante.observaciones
         ))
         
         comprobante_id = cursor.lastrowid

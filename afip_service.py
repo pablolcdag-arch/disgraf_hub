@@ -309,12 +309,14 @@ def emitir_factura(cliente_nro, total: float, tipo_factura: str, iva_reducido: b
 
     cbte_asoc_xml = ""
     if cbte_asoc:
+        cuit_xml = f"<ar:Cuit>{cbte_asoc['cuit']}</ar:Cuit>" if cbte_asoc.get('cuit') and cbte_asoc['cuit'] != "0" else ""
         cbte_asoc_xml = (
             "<ar:CbtesAsoc>"
             "<ar:CbteAsoc>"
             f"<ar:Tipo>{cbte_asoc['tipo']}</ar:Tipo>"
             f"<ar:PtoVta>{cbte_asoc['pto_vta']}</ar:PtoVta>"
             f"<ar:Nro>{cbte_asoc['nro']}</ar:Nro>"
+            f"{cuit_xml}"
             "</ar:CbteAsoc>"
             "</ar:CbtesAsoc>"
         )

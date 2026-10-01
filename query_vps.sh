@@ -1,0 +1,11 @@
+#!/bin/bash
+source .env.deploy
+expect -c "
+spawn ssh -o StrictHostKeyChecking=no -p 5023 root@\$VPS_HOST
+expect \"password:\"
+send \"\$VPS_PASS\r\"
+expect \"#\"
+send \"sqlite3 /opt/disgraf_hub/data/disgraf_hub.db \\\"SELECT id, tipo_comprobante, numero_afip, cae FROM comprobantes ORDER BY id DESC LIMIT 5;\\\"\r\"
+expect \"#\"
+send \"exit\r\"
+"

@@ -55,8 +55,16 @@ async def get_caja_movimientos(id: int, request: Request):
 @router.post("/api/cajas/movimiento")
 async def crear_movimiento(mov: MovimientoCreate, request: Request):
     user = get_current_user(request)
-    if not user or user.get("role") != "admin":
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+        
+    role = user.get("role")
+    if role == "seller":
+        if mov.monto >= 0:
+            raise HTTPException(status_code=403, detail="Los vendedores solo tienen permiso para registrar egresos/gastos.")
+    elif role != "admin":
         raise HTTPException(status_code=403, detail="Solo admins pueden crear movimientos manuales")
+        
     db_path = os.path.join(DATA_DIR, 'disgraf_hub.db')
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
@@ -67,3 +75,4 @@ async def crear_movimiento(mov: MovimientoCreate, request: Request):
     conn.commit()
     conn.close()
     return {"status": "success"}
+

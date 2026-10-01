@@ -570,12 +570,12 @@ window.renderClientTabs = (tab) => {
                             <button onclick="downloadPDF('${q.id}', '${tipoComp}', '${q.date}')" class="btn-secondary" style="font-size: 11px; padding: 4px 8px; margin-right: 4px;" title="Ver PDF">📄</button>
                         `;
                         if (tipoComp.includes('Presupuesto')) {
-                            actions += `<a href="/cotizador?load_id=${q.id}" class="btn-secondary" style="font-size: 11px; padding: 4px 8px; text-decoration: none;" title="Facturar">$ / Facturar</a>`;
+                            actions += `<a href="/cotizador?load_id=${q.id}" class="btn-secondary" style="font-size: 11px; padding: 4px 8px; text-decoration: none; color: white;" title="Facturar">$ / Facturar</a>`;
                         } else if (tipoComp.includes('Factura')) {
                             actions += `
                                 <button onclick="openPaymentModal('${q.id}')" class="btn-primary" style="font-size: 11px; padding: 4px 8px; background: #10b981;">Cobrar</button>
-                                <a href="/cotizador?remito_from=${q.id}" class="btn-secondary" style="font-size: 11px; padding: 4px 8px; text-decoration: none;">+ Remito</a>
-                                <a href="/cotizador?nc_from=${q.id}&tipo_original=${encodeURIComponent(tipoComp)}" class="btn-secondary" style="font-size: 11px; padding: 4px 8px; text-decoration: none; color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">+ NC</a>
+                                <a href="/cotizador?remito_from=${q.id}" class="btn-secondary" style="font-size: 11px; padding: 4px 8px; text-decoration: none; color: white;">+ Remito</a>
+                                <a href="/cotizador?nc_from=${q.id}&tipo_original=${encodeURIComponent(tipoComp)}" class="btn-secondary" style="font-size: 11px; padding: 4px 8px; text-decoration: none; color: white; border-color: rgba(239, 68, 68, 0.3);">+ NC</a>
                             `;
                         }
 
@@ -615,7 +615,7 @@ window.renderClientTabs = (tab) => {
                 </div>
             </div>
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
-                <a href="/api/clientes/${client.id}/cuenta_corriente/pdf" target="_blank" download class="btn-secondary" style="text-decoration: none; display: inline-flex; align-items: center; padding: 8px 12px; font-size: 13px;">📄 Descargar Cuenta Corriente</a>
+                <a href="/api/clientes/${client.id}/cuenta_corriente/pdf" target="_blank" download class="btn-secondary" style="text-decoration: none; display: inline-flex; align-items: center; padding: 8px 12px; font-size: 13px; color: white;">📄 Descargar Cuenta Corriente</a>
                 {% if user and user.role == 'admin' %}
                 <button class="btn-secondary" onclick="openAjusteSaldoModal()" title="Ajuste de Saldo Inicial">⚖️ Ajuste</button>
                 {% endif %}
@@ -934,7 +934,7 @@ window.downloadPDF = async (id, tipo, fechaOriginal) => {
                 client_name: window.currentClient ? window.currentClient.nombre : (dbComp.cliente_nombre || dbComp.cliente_id),
                 client_id: dbComp.cliente_id,
                 tipo_comprobante: dbComp.tipo_comprobante || tipo,
-                total: dbComp.total,
+                total: dbComp.subtotal || dbComp.total,
                 iva_reducido: false,
                 date: fechaOriginal || dbComp.fecha_emision,
                 is_reprint: true,

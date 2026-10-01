@@ -487,6 +487,18 @@ async def api_generate_quote_pdf(request: Request):
     elements.append(t)
     elements.append(Spacer(1, 20))
     
+    observaciones = data.get("observaciones")
+    if observaciones:
+        obs_style = ParagraphStyle(
+            'Observaciones',
+            parent=styles['Normal'],
+            fontSize=10,
+            textColor=colors.HexColor('#475569'),
+            leading=12
+        )
+        elements.append(Paragraph(f"<b>Observaciones:</b><br/>{observaciones}", obs_style))
+        elements.append(Spacer(1, 20))
+    
     if global_discount > 0:
         elements.append(Paragraph(f"<b>Descuento especial aplicado: {global_discount}%</b>", info_style))
         elements.append(Spacer(1, 10))
