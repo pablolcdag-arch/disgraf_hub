@@ -2,6 +2,7 @@ import os
 import re
 import logging
 import datetime
+import json
 from google import genai
 from dotenv import load_dotenv
 from jinja2 import Environment, FileSystemLoader
@@ -48,26 +49,29 @@ No envuelvas la respuesta en ```html, solo devuelve el contenido puro HTML listo
         logger.error(f"Error al generar contenido con Gemini API: {str(e)}")
         raise Exception(f"Error en Gemini API: {str(e)}")
 
-def render_and_save_post(title, content):
-    slug = slugify(title)
-    date_str = datetime.datetime.now().strftime("%d %b, %Y")
+def render_and_save_post(title, content, slug=None, date_str=None, post_dict=None):
+    slug = slug or slugify(title)
+    date_str = date_str or datetime.datetime.now().strftime("%d %b, %Y")
     
     env = Environment(loader=FileSystemLoader("templates"))
     template = env.get_template("v2_blog_post.html")
     
-    import re
     content_parsed = re.sub(
         r'\[FOTO:\s*(.*?)\]', 
         r'<img src="/media/file/\1" style="max-width:350px; width:100%; height:auto; display:block; margin:20px auto; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1);" alt="Imagen ilustrativa del artículo">', 
         content
     )
     
-    post_data = {
-        "title": title,
-        "content": content_parsed,
-        "date": date_str,
-        "slug": slug
-    }
+    if post_dict:
+        post_data = dict(post_dict)
+        post_data["content"] = content_parsed
+    else:
+        post_data = {
+            "title": title,
+            "content": content_parsed,
+            "date": date_str,
+            "slug": slug
+        }
     
     html_output = template.render(post=post_data)
     
@@ -98,3 +102,49 @@ def run_seo_workflow(product_name):
     except Exception as e:
         logger.error(f"Error en el workflow SEO para '{product_name}': {str(e)}")
         raise
+
+def rebuild_static_site():
+    """Genera todo el sitio estático basándose en los posts publicados."""
+    db_path = os.path.join(os.getcwd(), 'data', 'marketing_content.json')
+    if not os.path.exists(db_path):
+        logger.warning("No hay base de datos de marketing para reconstruir.")
+        return
+
+    try:
+        with open(db_path, 'r', encoding='utf-8') as f:
+            posts = json.load(f)
+    except Exception as e:
+        logger.error(f"Error al leer marketing_content.json: {e}")
+        return
+        
+    published_posts = [p for p in posts if p.get("status") == "published"]
+    
+    # Sort by published_date descending
+    published_posts.sort(
+        key=lambda x: x.get("published_date", x.get("date", "")), 
+        reverse=True
+    )
+    
+    # 1. Generate individual HTML for each post
+    for post in published_posts:
+        title = post.get("title", "Sin Título")
+        content = post.get("content", "")
+        slug = post.get("slug", slugify(title))
+        render_and_save_post(title, content, slug=slug, post_dict=post)
+
+    # 2. Render index.html
+    env = Environment(loader=FileSystemLoader("templates"))
+    try:
+        template = env.get_template("oficio_index.html")
+        html_output = template.render(posts=published_posts)
+        
+        os.makedirs(BLOG_OUTPUT_DIR, exist_ok=True)
+        file_path = os.path.join(BLOG_OUTPUT_DIR, "index.html")
+        
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(html_output)
+            
+        logger.info(f"Sitio estático reconstruido. index.html guardado en: {file_path}")
+    except Exception as e:
+        logger.error(f"Error al renderizar el index estático: {e}")
+

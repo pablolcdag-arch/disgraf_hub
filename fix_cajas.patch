@@ -1,0 +1,66 @@
+--- routes/cajas_api.py
++++ routes/cajas_api.py
+@@ -53,9 +53,9 @@
+         
+     role = user.get("role")
+     if role == "seller":
+-        if mov.monto >= 0:
+-            raise HTTPException(status_code=403, detail="Los vendedores solo tienen permiso para registrar egresos/gastos.")
++        if mov.tipo.lower() != "egreso":
++            raise HTTPException(status_code=403, detail="Los vendedores solo tienen permiso para registrar egresos.")
+     elif role != "admin":
+         raise HTTPException(status_code=403, detail="Solo admins pueden crear movimientos manuales")
+         
+     db_path = os.path.join(DATA_DIR, 'disgraf_hub.db')
+
+--- templates/cajas.html
++++ templates/cajas.html
+@@ -38,12 +38,12 @@
+                 <h1>Tesorería y Cajas</h1>
+                 <p>Gestión de saldos y movimientos financieros.</p>
+             </div>
+-            {% if user.role == "admin" %}
+             <div style="display: flex; gap: 10px;">
+                 <button onclick="openIngresoEgresoModal()" class="btn-primary" style="background: #10b981;">➕ Nuevo Ingreso/Egreso</button>
++                {% if user.role == "admin" %}
+                 <button onclick="openTransferModal()" class="btn-primary" style="background: #3b82f6;">🔄 Cierre / Transferir</button>
++                {% endif %}
+             </div>
+-            {% endif %}
+         </div>
+ 
+         <!-- Grid de Cajas -->
+@@ -190,15 +190,15 @@
+     
+     selector.innerHTML = opts;
+     
+-    {% if user.role == "admin" %}
+     const ieCaja = document.getElementById('ieCaja');
++    if (ieCaja) ieCaja.innerHTML = selectorOpts;
++
++    {% if user.role == "admin" %}
+     const trOrigen = document.getElementById('trOrigen');
+     const trDestino = document.getElementById('trDestino');
+     
+-    if (ieCaja) ieCaja.innerHTML = selectorOpts;
+     if (trOrigen) trOrigen.innerHTML = selectorOpts;
+     if (trDestino) trDestino.innerHTML = selectorOpts;
+     {% endif %}
+ }
+ 
+@@ -239,7 +239,6 @@
+     }
+ }
+ 
+-{% if user.role == "admin" %}
+ function openIngresoEgresoModal() {
+     document.getElementById('formIngresoEgreso').reset();
+     document.getElementById('ingresoEgresoModal').style.display = 'flex';
+@@ -279,6 +278,7 @@
+     }
+ }
+ 
++{% if user.role == "admin" %}
+ async function submitTransfer(e) {
+     e.preventDefault();
+     const o = document.getElementById('trOrigen').value;

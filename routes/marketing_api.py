@@ -10,7 +10,8 @@ import requests
 import shutil
 import asyncio
 from bs4 import BeautifulSoup
-from seo_service import run_seo_workflow
+import csv
+from seo_service import run_seo_workflow, rebuild_static_site
 from utils import slugify
 
 router = APIRouter()
@@ -22,7 +23,7 @@ async def api_get_marketing_config(request: Request):
         
     config_path = os.path.join(DATA_DIR, 'marketing_config.json')
     if os.path.exists(config_path):
-        import json
+
         with open(config_path, 'r', encoding='utf-8') as f:
             return json.load(f)
             
@@ -36,7 +37,7 @@ async def api_get_marketing_config(request: Request):
     }
 
 def get_catalog_summary(data_dir):
-    import csv
+
     csv_path = os.path.join(data_dir, 'maestro_productos.csv')
     if not os.path.exists(csv_path): return ""
     product_units = {}
@@ -77,7 +78,7 @@ async def api_save_marketing_config(request: Request):
     data = await request.json()
     config_path = os.path.join(DATA_DIR, 'marketing_config.json')
     
-    import json
+
     with open(config_path, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=4)
         
@@ -89,10 +90,10 @@ async def api_generate_article(request: Request):
     if not user or user.get("role") != "admin":
         return {"error": "Unauthorized"}
         
-    import json, os, datetime, re
-    import random
-    import requests
-    from bs4 import BeautifulSoup
+
+
+
+
     
     data = await request.json()
     channel = data.get("channel", "oficio_carteleria")
@@ -216,7 +217,7 @@ async def api_get_marketing_drafts(request: Request):
     if not user or user.get("role") != "admin":
         return []
     
-    import json, os
+
     db_path = os.path.join(DATA_DIR, 'marketing_content.json')
     if not os.path.exists(db_path):
         return []
@@ -233,7 +234,7 @@ async def api_delete_draft(request: Request, post_id: str):
     if not user or user.get("role") != "admin":
         return {"error": "Unauthorized"}
         
-    import json, os
+
     db_path = os.path.join(DATA_DIR, 'marketing_content.json')
     if not os.path.exists(db_path):
         return {"error": "No database"}
@@ -264,7 +265,7 @@ async def api_update_draft(request: Request, post_id: str):
     if not new_title or not new_content:
         return {"error": "Title and content are required"}
         
-    import json, os
+
     db_path = os.path.join(DATA_DIR, 'marketing_content.json')
     if not os.path.exists(db_path):
         return {"error": "No database"}
@@ -297,7 +298,7 @@ async def api_approve_draft(request: Request, post_id: str):
     if not user or user.get("role") != "admin":
         return {"error": "Unauthorized"}
         
-    import json, os
+
     db_path = os.path.join(DATA_DIR, 'marketing_content.json')
     if not os.path.exists(db_path):
         return {"error": "No database"}
@@ -306,7 +307,7 @@ async def api_approve_draft(request: Request, post_id: str):
         with open(db_path, 'r', encoding='utf-8') as f:
             posts = json.load(f)
             
-        import datetime
+
         for p in posts:
             if p.get("id") == post_id:
                 p["status"] = "published"
@@ -315,6 +316,7 @@ async def api_approve_draft(request: Request, post_id: str):
         with open(db_path, 'w', encoding='utf-8') as f:
             json.dump(posts, f, indent=4)
             
+        rebuild_static_site()
         return {"status": "success"}
     except Exception as e:
         return {"error": str(e)}
@@ -325,7 +327,7 @@ async def api_upload_draft_image(request: Request, post_id: str, file: UploadFil
     if not user or user.get("role") != "admin":
         return {"error": "Unauthorized"}
         
-    import json, os, shutil
+
     db_path = os.path.join(DATA_DIR, 'marketing_content.json')
     if not os.path.exists(db_path):
         return {"error": "No hay borradores"}
@@ -367,7 +369,7 @@ async def api_upload_draft_image(request: Request, post_id: str, file: UploadFil
 
 @router.get("/api/marketing/drafts/{post_id}/preview", response_class=HTMLResponse)
 async def api_preview_draft(request: Request, post_id: str):
-    import json, os
+
     db_path = os.path.join(DATA_DIR, 'marketing_content.json')
     if not os.path.exists(db_path):
         return "Not found"
@@ -379,7 +381,7 @@ async def api_preview_draft(request: Request, post_id: str):
             if not post:
                 return "Not found"
             
-            import re
+
             content_parsed = re.sub(
                 r'\[FOTO:\s*(.*?)\]', 
                 r'<img src="/media/file/\1" style="max-width:200px; width:100%; height:auto; display:block; margin:20px auto; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1);" alt="Imagen ilustrativa del artículo">', 
@@ -394,7 +396,7 @@ async def api_preview_draft(request: Request, post_id: str):
             html += f"<h1 style='margin-bottom:30px; line-height:1.2;'>{post.get('title')}</h1>"
             html += f"<div style='font-size:18px; line-height:1.8; color:#333;'>{content_parsed}</div>"
             html += "</div></body></html>"
-            from fastapi.responses import HTMLResponse
+
             return HTMLResponse(content=html)
     except Exception as e:
         return str(e)
@@ -402,7 +404,7 @@ async def api_preview_draft(request: Request, post_id: str):
 @router.get("/api/public/content/{channel}")
 async def api_public_content(request: Request, channel: str):
     """ Headless CMS Endpoint for satellite domains """
-    import json, os
+
     db_path = os.path.join(DATA_DIR, 'marketing_content.json')
     if not os.path.exists(db_path):
         return []
@@ -413,7 +415,7 @@ async def api_public_content(request: Request, channel: str):
             
         # Filter by channel and status published
         published = [p for p in posts if p.get("status") == "published" and p.get("channel") == channel]
-        import re
+
         for p in published:
             p["content"] = re.sub(
                 r'\[FOTO:\s*(.*?)\]', 
