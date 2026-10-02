@@ -51,9 +51,10 @@ No envuelvas la respuesta en ```html, solo devuelve el contenido puro HTML listo
         logger.error(f"Error al generar contenido con Gemini API: {str(e)}")
         raise Exception(f"Error en Gemini API: {str(e)}")
 
-def render_and_save_post(title, content, slug=None, date_str=None, post_dict=None):
+def render_and_save_post(title, content, slug=None, date_str=None, post_dict=None, categories=None):
     slug = slug or slugify(title)
     date_str = date_str or datetime.datetime.now().strftime("%d %b, %Y")
+    categories = categories or []
     
     env = Environment(loader=FileSystemLoader("templates"))
     template = env.get_template("oficio_post.html")
@@ -75,7 +76,7 @@ def render_and_save_post(title, content, slug=None, date_str=None, post_dict=Non
             "slug": slug
         }
     
-    html_output = template.render(post=post_data)
+    html_output = template.render(post=post_data, categories=categories)
     
     try:
         os.makedirs(BLOG_OUTPUT_DIR, exist_ok=True)
@@ -127,18 +128,27 @@ def rebuild_static_site():
         reverse=True
     )
     
+    unique_categories = {}
+    for p in published_posts:
+        cat_name = p.get("category", "Sin Categoría")
+        cat_slug = slugify(cat_name)
+        if cat_slug not in unique_categories:
+            unique_categories[cat_slug] = {"name": cat_name, "slug": cat_slug}
+            
+    categories = list(unique_categories.values())
+    
     # 1. Generate individual HTML for each post
     for post in published_posts:
         title = post.get("title", "Sin Título")
         content = post.get("content", "")
         slug = post.get("slug", slugify(title))
-        render_and_save_post(title, content, slug=slug, post_dict=post)
+        render_and_save_post(title, content, slug=slug, post_dict=post, categories=categories)
 
     # 2. Render index.html
     env = Environment(loader=FileSystemLoader("templates"))
     try:
         template = env.get_template("oficio_index.html")
-        html_output = template.render(posts=published_posts)
+        html_output = template.render(posts=published_posts, categories=categories)
         
         os.makedirs(BLOG_OUTPUT_DIR, exist_ok=True)
         file_path = os.path.join(BLOG_OUTPUT_DIR, "index.html")
@@ -158,13 +168,54 @@ def rebuild_static_site():
         for tpl_name, out_name in static_pages:
             try:
                 page_tpl = env.get_template(tpl_name)
-                page_html = page_tpl.render()
+                page_html = page_tpl.render(categories=categories)
                 page_out_path = os.path.join(BLOG_OUTPUT_DIR, out_name)
                 with open(page_out_path, "w", encoding="utf-8") as f:
                     f.write(page_html)
                 logger.info(f"Página estática generada: {out_name}")
             except Exception as e:
                 logger.error(f"Error al renderizar {tpl_name}: {e}")
+                
+        # 4. Generar páginas de categorías
+        cat_dir = os.path.join(BLOG_OUTPUT_DIR, "categoria")
+        os.makedirs(cat_dir, exist_ok=True)
+        for cat in categories:
+            cat_posts = [p for p in published_posts if slugify(p.get("category", "Sin Categoría")) == cat["slug"]]
+            cat_html = template.render(posts=cat_posts, categories=categories, current_category=cat)
+            cat_file_path = os.path.join(cat_dir, f"{cat['slug']}.html")
+            with open(cat_file_path, "w", encoding="utf-8") as f:
+                f.write(cat_html)
+            logger.info(f"Página de categoría generada: {cat['slug']}.html")
+            
+        # 5. Generate sitemap.xml
+        sitemap_urls = []
+        base_url = "https://oficiocarteleria.com.ar"
+        
+        # Home
+        sitemap_urls.append(base_url + "/")
+        
+        # Static pages
+        for _, out_name in static_pages:
+            sitemap_urls.append(f"{base_url}/{out_name}")
+            
+        # Categories
+        for cat in categories:
+            sitemap_urls.append(f"{base_url}/categoria/{cat['slug']}.html")
+            
+        # Posts
+        for post in published_posts:
+            sitemap_urls.append(f"{base_url}/{post.get('slug')}.html")
+            
+        sitemap_content = '<?xml version="1.0" encoding="UTF-8"?>\n'
+        sitemap_content += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        for url in sitemap_urls:
+            sitemap_content += f'  <url>\n    <loc>{url}</loc>\n  </url>\n'
+        sitemap_content += '</urlset>'
+        
+        sitemap_path = os.path.join(BLOG_OUTPUT_DIR, "sitemap.xml")
+        with open(sitemap_path, "w", encoding="utf-8") as f:
+            f.write(sitemap_content)
+        logger.info(f"sitemap.xml generado en: {sitemap_path}")
 
     except Exception as e:
         logger.error(f"Error al renderizar el index estático o páginas estáticas: {e}")

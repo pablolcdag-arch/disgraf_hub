@@ -1,0 +1,44 @@
+#!/usr/bin/expect -f
+set timeout 15
+set VPS_HOST "149.50.151.121"
+set VPS_PORT "5023"
+set VPS_USER "root"
+set VPS_PASSWORD "Milanga2026-teamo"
+
+spawn ssh -o StrictHostKeyChecking=no -p $VPS_PORT $VPS_USER@$VPS_HOST
+expect "password:"
+send "$VPS_PASSWORD\r"
+expect "#"
+
+send "cat << 'NGINX_EOF' > /etc/nginx/sites-available/oficiocarteleria\n"
+send "server {\n"
+send "    listen 80;\n"
+send "    listen 443 ssl;\n"
+send "    server_name oficiocarteleria.com.ar www.oficiocarteleria.com.ar;\n"
+send "\n"
+send "    root /opt/disgraf_hub/data/blog_output;\n"
+send "    index index.html;\n"
+send "\n"
+send "    ssl_certificate /etc/letsencrypt/live/hub.disgraf.com.ar/fullchain.pem;\n"
+send "    ssl_certificate_key /etc/letsencrypt/live/hub.disgraf.com.ar/privkey.pem;\n"
+send "\n"
+send "    location / {\n"
+send "        try_files \$uri \$uri/ =404;\n"
+send "    }\n"
+send "\n"
+send "    location /static/ {\n"
+send "        alias /opt/disgraf_hub/static/;\n"
+send "    }\n"
+send "\n"
+send "    location /media/file/ {\n"
+send "        alias /opt/disgraf_hub/data/media/;\n"
+send "    }\n"
+send "}\n"
+send "NGINX_EOF\n"
+expect "#"
+
+send "nginx -t && systemctl reload nginx\n"
+expect "#"
+
+send "exit\r"
+expect eof

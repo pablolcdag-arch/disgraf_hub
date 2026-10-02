@@ -102,6 +102,9 @@
             <a href="/" class="logo">Oficio Cartelería</a>
             <nav class="nav-menu">
                 <a href="/">Inicio</a>
+                {% for cat in categories %}
+                <a href="/categoria/{{ cat.slug }}.html">{{ cat.name }}</a>
+                {% endfor %}
                 <a href="/sobre-nosotros.html">Sobre Nosotros</a>
                 <a href="/contacto.html">Contacto</a>
             </nav>

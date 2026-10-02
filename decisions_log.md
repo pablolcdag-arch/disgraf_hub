@@ -349,3 +349,13 @@ Este documento rastrea las decisiones estratégicas y arquitectónicas clave tom
 - **Decisión:** Se implementó el contenido final de las páginas "Sobre Nosotros", "Contacto" y "Legales" del sitio satélite.
 - **Razón:** Para cumplir con los requerimientos SEO de Google y ofrecer una experiencia profesional, se reemplazó el texto temporal (Lorem Ipsum) con contenido real, incluyendo la misión del sitio, un formulario de contacto maquetado con CSS minimalista, y los textos legales obligatorios estructurados para facilitar la lectura.
 - **Archivos afectados:** `templates/oficio_about.html`, `templates/oficio_contact.html`, `templates/oficio_legal.html`.
+
+## 01/10/2026 - SDD Ciclo 18.2: Corrección de Rutas Estáticas en Nginx y UX del Dashboard
+- **Decisión:** Se agregaron alias en el bloque Nginx de `oficiocarteleria.com.ar` para `/static/` y `/media/file/`. Se modificó la API de marketing (`api_update_draft`) para disparar el SSG automáticamente al editar artículos ya publicados.
+- **Razón:** Los artículos generaban URLs relativas a las carpetas del ERP, lo que causaba error 404 en el dominio público. Además, el flujo del usuario requería que la actualización de un artículo en vivo fuera instantánea sin botones adicionales.
+- **Archivos afectados:** `/etc/nginx/sites-available/oficiocarteleria`, `routes/marketing_api.py`.
+
+## 01/10/2026 - SDD Ciclo 19: Categorías y Sitemap SSG del Blog Satélite
+- **Decisión:** Se agregó soporte para Categorías en los artículos del blog satélite mediante SSG, guardándolas en `marketing_content.json`. Se inyectó dinámicamente la lista de categorías en el contexto Jinja global (para armar la navbar en `oficio_base.html`) y se crearon páginas estáticas filtradas en `categoria/{slug}.html`. Adicionalmente, se implementó la autogeneración del archivo `sitemap.xml` en cada build para potenciar el posicionamiento SEO.
+- **Razón:** Proveer una mejor navegabilidad estructurada a los visitantes del blog y garantizar que los motores de búsqueda indexen de inmediato las nuevas entradas estáticas, cumpliendo las prácticas recomendadas de SEO off-page sin sacrificar rendimiento.
+- **Archivos afectados:** `routes/marketing_api.py`, `seo_service.py`, `templates/marketing.html`, `templates/oficio_base.html`, `templates/oficio_index.html`, `tests/test_seo_service.py`.

@@ -26,8 +26,11 @@ def test_render_and_save_post(monkeypatch, tmp_path):
     monkeypatch.setattr(seo_service, "BLOG_OUTPUT_DIR", str(tmp_path))
     
     class MockTemplate:
-        def render(self, post):
-            return f"<html>{post['title']} - {post['content']} - {post['date']} - {post['slug']}</html>"
+        def render(self, **kwargs):
+            post = kwargs.get('post', {})
+            if post:
+                return f"<html>{post['title']} - {post['content']} - {post['date']} - {post['slug']}</html>"
+            return "<html>mocked template</html>"
             
     class MockEnv:
         def __init__(self, **kwargs):
@@ -68,8 +71,11 @@ def test_run_seo_workflow(monkeypatch, tmp_path):
     monkeypatch.setattr(seo_service, "BLOG_OUTPUT_DIR", str(tmp_path))
     
     class MockTemplate:
-        def render(self, post):
-            return f"<html>{post['title']} - {post['content']}</html>"
+        def render(self, **kwargs):
+            post = kwargs.get('post', {})
+            if post:
+                return f"<html>{post['title']} - {post['content']}</html>"
+            return "<html>mocked template</html>"
             
     class MockEnv:
         def __init__(self, **kwargs):
@@ -81,7 +87,7 @@ def test_run_seo_workflow(monkeypatch, tmp_path):
     
     file_path = seo_service.run_seo_workflow("Producto Test")
     
-    assert "guia-de-producto.html" in file_path
+    assert "guia-sobre-producto-test.html" in file_path
     assert os.path.exists(file_path)
     
     with open(file_path, "r", encoding="utf-8") as f:

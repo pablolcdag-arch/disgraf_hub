@@ -1,0 +1,17 @@
+#!/usr/bin/expect -f
+set timeout 10
+set VPS_HOST "149.50.151.121"
+set VPS_PORT "5023"
+set VPS_USER "root"
+set VPS_PASSWORD "Milanga2026-teamo"
+
+spawn ssh -o StrictHostKeyChecking=no -p $VPS_PORT $VPS_USER@$VPS_HOST
+expect "password:"
+send "$VPS_PASSWORD\r"
+expect "#"
+
+send "curl -I -s -H 'Host: oficiocarteleria.com.ar' http://127.0.0.1/static/uploads/marketing/draft_20260921215651.jpg\r"
+expect "#"
+
+send "exit\r"
+expect eof

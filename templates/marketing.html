@@ -150,6 +150,9 @@
                 <label style="display: block; margin-bottom: 5px; color: #cbd5e1; font-size: 14px;">Título</label>
                 <input type="text" id="editTitle" class="form-control" style="width: 100%; padding: 10px; margin-bottom: 15px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: #fff; border-radius: 6px;">
                 
+                <label style="display: block; margin-bottom: 5px; color: #cbd5e1; font-size: 14px;">Categoría</label>
+                <input type="text" id="editCategory" class="form-control" placeholder="Ej: Vinilos, Herrajes" style="width: 100%; padding: 10px; margin-bottom: 15px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: #fff; border-radius: 6px;">
+                
                 <label style="display: block; margin-bottom: 5px; color: #cbd5e1; font-size: 14px;">Contenido HTML</label>
                 <textarea id="editContent" class="form-control" style="width: 100%; height: 350px; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: #fff; border-radius: 6px; font-family: monospace; font-size: 13px; line-height: 1.5; resize: vertical;"></textarea>
             </div>
@@ -169,6 +172,7 @@
             
             document.getElementById('editPostId').value = draft.id;
             document.getElementById('editTitle').value = draft.title;
+            document.getElementById('editCategory').value = draft.category || 'Sin Categoría';
             document.getElementById('editContent').value = draft.content || '';
             document.getElementById('editModal').style.display = 'flex';
         }
@@ -180,6 +184,7 @@
         async function saveDraftEdit() {
             const id = document.getElementById('editPostId').value;
             const title = document.getElementById('editTitle').value;
+            const category = document.getElementById('editCategory').value || 'Sin Categoría';
             const content = document.getElementById('editContent').value;
             const btn = document.getElementById('btnSaveEdit');
             
@@ -190,7 +195,7 @@
                 const res = await fetch(`/api/marketing/drafts/${id}`, {
                     method: 'PUT',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ title, content })
+                    body: JSON.stringify({ title, category, content })
                 });
                 const data = await res.json();
                 

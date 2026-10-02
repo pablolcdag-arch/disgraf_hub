@@ -1,0 +1,19 @@
+#!/usr/bin/expect -f
+set timeout 10
+set VPS_HOST "149.50.151.121"
+set VPS_PORT "5023"
+set VPS_USER "root"
+set VPS_PASSWORD "Milanga2026-teamo"
+
+spawn ssh -o StrictHostKeyChecking=no -p $VPS_PORT $VPS_USER@$VPS_HOST
+expect "password:"
+send "$VPS_PASSWORD\r"
+expect "#"
+
+send "cat /opt/disgraf_hub/data/marketing_content.json | grep -i 'image_url'\r"
+expect "#"
+send "cat /opt/disgraf_hub/data/marketing_content.json | grep -i '<img'\r"
+expect "#"
+
+send "exit\r"
+expect eof

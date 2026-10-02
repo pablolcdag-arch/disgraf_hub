@@ -182,6 +182,7 @@ async def api_generate_article(request: Request):
 
     date_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
     slug = f"{slugify(title)}-{datetime.datetime.now().strftime('%H%M%S')}"
+    category = data.get("category", "Sin Categoría").strip() or "Sin Categoría"
     
     new_post = {
         "id": f"draft_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}",
@@ -191,6 +192,7 @@ async def api_generate_article(request: Request):
         "content": content,
         "source": source,
         "channel": channel,
+        "category": category,
         "status": "draft"
     }
     
@@ -248,6 +250,12 @@ async def api_delete_draft(request: Request, post_id: str):
         with open(db_path, 'w', encoding='utf-8') as f:
             json.dump(posts, f, indent=4)
             
+        # Rebuild if the post is already published
+        for p in posts:
+            if p.get("id") == post_id and p.get("status") == "published":
+                rebuild_static_site()
+                break
+                
         return {"status": "success"}
     except Exception as e:
         return {"error": str(e)}
@@ -261,6 +269,7 @@ async def api_update_draft(request: Request, post_id: str):
     data = await request.json()
     new_title = data.get("title")
     new_content = data.get("content")
+    new_category = data.get("category")
     
     if not new_title or not new_content:
         return {"error": "Title and content are required"}
@@ -279,6 +288,8 @@ async def api_update_draft(request: Request, post_id: str):
             if p.get("id") == post_id:
                 p["title"] = new_title
                 p["content"] = new_content
+                if new_category is not None:
+                    p["category"] = new_category.strip() or "Sin Categoría"
                 updated = True
                 break
                 
@@ -288,6 +299,12 @@ async def api_update_draft(request: Request, post_id: str):
         with open(db_path, 'w', encoding='utf-8') as f:
             json.dump(posts, f, indent=4)
             
+        # Rebuild if the post is already published
+        for p in posts:
+            if p.get("id") == post_id and p.get("status") == "published":
+                rebuild_static_site()
+                break
+                
         return {"status": "success"}
     except Exception as e:
         return {"error": str(e)}
@@ -355,6 +372,7 @@ async def api_upload_draft_image(request: Request, post_id: str, file: UploadFil
                     shutil.copyfileobj(file.file, buffer)
                 
                 p["image_url"] = f"/static/uploads/marketing/{filename}"
+                is_published = p.get("status") == "published"
                 break
                 
         if not post_found:
@@ -362,6 +380,9 @@ async def api_upload_draft_image(request: Request, post_id: str, file: UploadFil
             
         with open(db_path, 'w', encoding='utf-8') as f:
             json.dump(posts, f, indent=4)
+            
+        if is_published:
+                rebuild_static_site()
             
         return {"status": "success", "image_url": f"/static/uploads/marketing/{filename}"}
     except Exception as e:

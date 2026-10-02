@@ -1,0 +1,17 @@
+#!/usr/bin/expect -f
+set timeout 10
+set VPS_HOST "149.50.151.121"
+set VPS_PORT "5023"
+set VPS_USER "root"
+set VPS_PASSWORD "Milanga2026-teamo"
+
+spawn ssh -o StrictHostKeyChecking=no -p $VPS_PORT $VPS_USER@$VPS_HOST
+expect "password:"
+send "$VPS_PASSWORD\r"
+expect "#"
+
+send "python3 -c '\nimport json\nwith open(\"/opt/disgraf_hub/data/marketing_content.json\") as f:\n  posts = json.load(f)\n  for p in posts:\n    if \"Lona Frontlite\" in p.get(\"title\",\"\"):\n      import re\n      imgs = re.findall(r\"<img[^>]*>\", p.get(\"content\",\"\"))\n      print(\"RAW IMG TAGS:\", imgs)\n      fotos = re.findall(r\"\\\[FOTO:[^\\\]]*\\\]\", p.get(\"content\",\"\"))\n      print(\"FOTO SHORTCODES:\", fotos)\n'\r"
+expect "#"
+
+send "exit\r"
+expect eof

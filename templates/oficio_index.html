@@ -92,8 +92,13 @@
 {% block content %}
 <div class="container">
     <div class="header-title">
+        {% if current_category_name %}
+        <h1>Categoría: {{ current_category_name }}</h1>
+        <p>Todos los artículos sobre {{ current_category_name }}.</p>
+        {% else %}
         <h1>Blog para Profesionales Gráficos</h1>
         <p>Descubre técnicas, secretos y los mejores materiales del rubro.</p>
+        {% endif %}
     </div>
 
     <div class="blog-grid">
@@ -105,7 +110,7 @@
                 <h2 class="card-title">{{ post.title }}</h2>
                 <p class="card-excerpt">{{ post.content | striptags | truncate(150) }}</p>
                 <div class="card-footer">
-                    <div class="author-ai">Redacción IA</div>
+                    <div class="author-ai">Oficio Cartelería</div>
                     <div>{{ post.published_date }}</div>
                 </div>
             </div>
