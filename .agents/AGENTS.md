@@ -423,7 +423,7 @@ Después de cualquier cambio arquitectónico o decisión estratégica, el agente
 | Gestión de Catálogo y Stock | ✅ Funcional | Migrado completamente de SQLite. Incluye ABM manual, Fraccionamiento y carga masiva por CSV con soporte extendido para Costo, Utilidad y Múltiples Proveedores (Sprint 7). |
 | Marketing IA | ✅ Funcional | Arquitectura de shortcodes corregida tipo CMS. Preview estilizado. (Ciclo 14) |
 | Tienda V2 (catálogo) | ✅ Funcional | Live en hub.disgraf.com.ar/v2. Ahora lee directamente desde SQLite. |
-| Blog SEO (Satélite) | ✅ Funcional | Categorías dinámicas, Sitemap XML autogenerado y arquitectura SSG (Ciclos 17-19). |
+| Blog SEO (Satélite) | ✅ Funcional | Categorías dinámicas, Sitemap XML autogenerado y arquitectura SSG (Ciclos 17-20). |
 | Tests automatizados | ✅ Completado | Suite completa con pytest |
 | Refactor main.py | ✅ Completado | Dividido en múltiples APIRouters en directorio routes/ |
 | Git/Control de versiones | ✅ Configurado | — |

@@ -359,3 +359,8 @@ Este documento rastrea las decisiones estratégicas y arquitectónicas clave tom
 - **Decisión:** Se agregó soporte para Categorías en los artículos del blog satélite mediante SSG, guardándolas en `marketing_content.json`. Se inyectó dinámicamente la lista de categorías en el contexto Jinja global (para armar la navbar en `oficio_base.html`) y se crearon páginas estáticas filtradas en `categoria/{slug}.html`. Adicionalmente, se implementó la autogeneración del archivo `sitemap.xml` en cada build para potenciar el posicionamiento SEO.
 - **Razón:** Proveer una mejor navegabilidad estructurada a los visitantes del blog y garantizar que los motores de búsqueda indexen de inmediato las nuevas entradas estáticas, cumpliendo las prácticas recomendadas de SEO off-page sin sacrificar rendimiento.
 - **Archivos afectados:** `routes/marketing_api.py`, `seo_service.py`, `templates/marketing.html`, `templates/oficio_base.html`, `templates/oficio_index.html`, `tests/test_seo_service.py`.
+
+## 02/10/2026 - SDD Ciclo 20: Refactor UI de Categorías
+- **Decisión:** Se extrajo la lista dinámica de categorías del menú institucional principal en el blog satélite y se reubicó en una barra secundaria de navegación deslizante (horizontal scroll).
+- **Razón:** El menú original se recargaba visualmente y mezclaba ruteos internos con externos. Esta nueva estructura optimiza el UX en dispositivos móviles (scroll táctil horizontal natural, evitando los problemáticos hover-dropdowns) y garantiza que los rastreadores SEO indexen los clústeres como enlaces planos visibles.
+- **Archivos afectados:** `templates/oficio_base.html`.
