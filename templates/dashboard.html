@@ -270,7 +270,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             const quotesContainer = document.getElementById('latestQuotesList');
             if (data.ultimos_presupuestos && data.ultimos_presupuestos.length > 0) {
                 quotesContainer.innerHTML = data.ultimos_presupuestos.map(q => {
-                    const dateStr = q.fecha_emision ? new Date(q.fecha_emision).toLocaleDateString('es-AR') : 'Sin fecha';
+                    let dateStr = 'Sin fecha';
+                    if (q.fecha_emision && q.fecha_emision.includes('-')) {
+                        const parts = q.fecha_emision.split(' ')[0].split('-'); // Cortamos si llegara a tener hora
+                        if (parts.length === 3) {
+                            dateStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                        }
+                    }
                     return `
                         <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid transparent; transition: background 0.2s;">
                             <div>

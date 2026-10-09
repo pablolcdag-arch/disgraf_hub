@@ -364,3 +364,8 @@ Este documento rastrea las decisiones estratégicas y arquitectónicas clave tom
 - **Decisión:** Se eliminó el "fallback silencioso" que asignaba automáticamente la titularidad a 'Consumidor Final' si el vendedor dejaba vacío el campo de cliente. Ahora, el sistema bloquea los botones de PDF y WhatsApp obligando explícitamente a tipear o seleccionar un cliente válido.
 - **Razón:** Mantenimiento de la integridad de los datos en la auditoría de ventas. Esto previene que los vendedores generen comprobantes o facturas B con clientes `undefined` u omitidos por descuido durante la atención rápida.
 - **Archivos afectados:** `templates/cotizador.html`.
+
+## 08/10/2026 - Fix UI: Zona Horaria en Dashboard
+- **Decisión:** Se refactorizó la extracción de fecha (`fecha_emision`) en la vista de "Últimos Presupuestos" del Panel de Administración, reemplazando el objeto nativo `new Date()` por partición y mapeo de string (`split`).
+- **Razón:** El objeto `new Date` generaba un desplazamiento horario (UTC a UTC-3) para fechas estáticas en formato ISO, restando horas y haciendo figurar la fecha del día anterior en el dashboard.
+- **Archivos afectados:** `templates/dashboard.html`.
