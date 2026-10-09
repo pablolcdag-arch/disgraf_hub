@@ -212,12 +212,14 @@ async def get_cliente_comprobantes(cliente_id: str, request: Request):
         cursor = conn.cursor()
         
         cursor.execute('''
-            SELECT id, cliente_id, tipo_comprobante, numero_comprobante, fecha_emision,
-                   es_fiscal, impacta_cc, impacta_stock, subtotal, total_iva, total,
-                   estado, comprobante_asociado_id, cae, cae_vto, numero_afip
-            FROM comprobantes
-            WHERE cliente_id = ?
-            ORDER BY fecha_emision DESC, id DESC
+            SELECT c1.id, c1.cliente_id, c1.tipo_comprobante, c1.numero_comprobante, c1.fecha_emision,
+                   c1.es_fiscal, c1.impacta_cc, c1.impacta_stock, c1.subtotal, c1.total_iva, c1.total,
+                   c1.estado, c1.comprobante_asociado_id, c1.cae, c1.cae_vto, c1.numero_afip,
+                   c2.tipo_comprobante AS asociado_tipo
+            FROM comprobantes c1
+            LEFT JOIN comprobantes c2 ON c1.comprobante_asociado_id = c2.id
+            WHERE c1.cliente_id = ?
+            ORDER BY c1.fecha_emision DESC, c1.id DESC
         ''', (cliente_id,))
         
         rows = cursor.fetchall()

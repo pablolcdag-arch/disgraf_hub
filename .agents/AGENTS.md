@@ -414,7 +414,7 @@ Después de cualquier cambio arquitectónico o decisión estratégica, el agente
 
 | Módulo | Estado | Deuda Técnica |
 |---|---|---|
-| Módulo de Clientes (CRM) | ✅ Funcional | ABM y carga masiva por CSV implementados. Ruteo export OK y Schema DB productiva sincronizada (Ciclo 11.1). Soporte CC y Listas. |
+| Módulo de Clientes (CRM) | ✅ Funcional | ABM y carga masiva por CSV implementados. Ruteo export OK y Schema DB productiva sincronizada (Ciclo 11.1). Soporte CC, Listas y trazabilidad visual de vinculaciones (Ciclo 22). |
 | Módulo de Caja | ✅ Funcional | 5 cajas virtuales (Diaria, Banco, Cheques, Principal, Retenciones). Ruteo automático desde Recibos de Pago. Saldo dinámico. Permisos por rol (Vendedores solo egresos - Ciclo 15). |
 | Módulo de Ventas / Comprobantes | ✅ Funcional | Flujo E2E. Conexión AFIP SOAP 100% nativa. Campo 'observaciones' incorporado en esquema y PDF (Ciclo 15). |
 | Login/Auth | ✅ Funcional | Migrado a JWT (Stateless) |

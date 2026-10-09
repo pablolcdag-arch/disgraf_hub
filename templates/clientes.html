@@ -561,7 +561,11 @@ window.renderClientTabs = (tab) => {
                             const t = tPart ? tPart.substring(0, 5) : '';
                             dateStr = t ? `${d} ${t}` : d;
                         }
-                        const tipoComp = q.tipo_comprobante || 'Presupuesto A';
+                        let tipoComp = q.tipo_comprobante || 'Presupuesto A';
+                        if (q.comprobante_asociado_id) {
+                            let parentType = (q.asociado_tipo || "comprobante").split(' ')[0].toLowerCase();
+                            tipoComp += `<br><span style="font-size: 11px; font-weight: normal; color: var(--text-muted);">Vinculado a ${parentType} numero ${q.comprobante_asociado_id}</span>`;
+                        }
                         let rowColor = 'inherit';
                         if (tipoComp.includes('Nota de Crédito') || tipoComp.includes('Recibo')) rowColor = '#10b981';
                         if (tipoComp.includes('Nota de Débito')) rowColor = '#ef4444';
