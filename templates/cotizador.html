@@ -491,6 +491,7 @@ window.loadHistoryItem = (id) => {
     }
     
     dom.clientName.value = quote.displayClientName === "Consumidor Final" ? "" : (quote.displayClientName || quote.client);
+    window.selectedClientId = quote.client_id || quote.client;
     window.loadedQuoteId = id;
     
     // Load quote options
@@ -901,8 +902,9 @@ document.addEventListener('click', (e) => {
 });
 
 dom.btnCopyWa.addEventListener('click', async () => {
-    if (!dom.clientName.value.trim()) {
-        showToast("Debes seleccionar un cliente. Si no está registrado, escribe 'Consumidor Final'.", true);
+    const cName = dom.clientName.value.trim();
+    if (!cName || !window.selectedClientId) {
+        showToast("⚠️ Debes buscar y seleccionar obligatoriamente un cliente de la lista desplegable.", true);
         return;
     }
     if (state.cart.length === 0) {
@@ -951,8 +953,9 @@ dom.btnCopyWa.addEventListener('click', async () => {
 });
 
 dom.btnDownloadPDF.addEventListener('click', async () => {
-    if (!dom.clientName.value.trim()) {
-        showToast("Debes seleccionar un cliente. Si no está registrado, escribe 'Consumidor Final'.", true);
+    const cName = dom.clientName.value.trim();
+    if (!cName || !window.selectedClientId) {
+        showToast("⚠️ Debes buscar y seleccionar obligatoriamente un cliente de la lista desplegable.", true);
         return;
     }
     if (state.cart.length === 0) {
