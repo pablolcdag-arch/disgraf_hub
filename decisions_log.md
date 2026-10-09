@@ -369,3 +369,8 @@ Este documento rastrea las decisiones estratégicas y arquitectónicas clave tom
 - **Decisión:** Se refactorizó la extracción de fecha (`fecha_emision`) en la vista de "Últimos Presupuestos" del Panel de Administración, reemplazando el objeto nativo `new Date()` por partición y mapeo de string (`split`).
 - **Razón:** El objeto `new Date` generaba un desplazamiento horario (UTC a UTC-3) para fechas estáticas en formato ISO, restando horas y haciendo figurar la fecha del día anterior en el dashboard.
 - **Archivos afectados:** `templates/dashboard.html`.
+
+## 09/10/2026 - SDD Ciclo 21: Saneamiento de Base de Datos y Bloqueo de UI (Cotizador)
+- **Decisión:** Se implementó una doble validación estricta en el Cotizador Frontend para bloquear la generación de presupuestos y enlaces de WhatsApp si el vendedor no selecciona explícitamente un cliente de la lista de autocompletado (el fallback silencioso fue removido). Adicionalmente, se ejecutó un script remoto de mantenimiento para sanear la tabla `comprobantes`, unificando nombres de clientes guardados como texto (ej. "Consumidor final", "Augusto Marinell") a sus correspondientes IDs numéricos reales en la base de datos de producción.
+- **Razón:** Para proteger la integridad referencial y asegurar el correcto funcionamiento del módulo de "Clientes Deudores", el cual no agrupaba correctamente los saldos debido a la presencia de strings huérfanos en la columna `cliente_id`.
+- **Archivos afectados:** `templates/cotizador.html`, `fix_clientes_db.py`.

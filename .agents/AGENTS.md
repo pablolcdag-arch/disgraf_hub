@@ -418,8 +418,8 @@ Después de cualquier cambio arquitectónico o decisión estratégica, el agente
 | Módulo de Caja | ✅ Funcional | 5 cajas virtuales (Diaria, Banco, Cheques, Principal, Retenciones). Ruteo automático desde Recibos de Pago. Saldo dinámico. Permisos por rol (Vendedores solo egresos - Ciclo 15). |
 | Módulo de Ventas / Comprobantes | ✅ Funcional | Flujo E2E. Conexión AFIP SOAP 100% nativa. Campo 'observaciones' incorporado en esquema y PDF (Ciclo 15). |
 | Login/Auth | ✅ Funcional | Migrado a JWT (Stateless) |
-| Dashboard Admin | ✅ Funcional | Historial avanzado, CRM de ventas, filtros dinámicos y fix de fechas UTC (Ciclo 15). |
-| Cotizador (vendedores) | ✅ Funcional | PDFs con soporte AFIP y Observaciones. Historial rápido corregido. Validación estricta de cliente vacío (Fix Auditoría). |
+| Dashboard Admin | ✅ Funcional | Historial avanzado, CRM de ventas, filtros dinámicos y fix de fechas UTC (Ciclo 21). |
+| Cotizador (vendedores) | ✅ Funcional | PDFs con soporte AFIP y Observaciones. Historial rápido corregido. Validación estricta UI y saneamiento DB (Ciclo 21). |
 | Gestión de Catálogo y Stock | ✅ Funcional | Migrado completamente de SQLite. Incluye ABM manual, Fraccionamiento y carga masiva por CSV con soporte extendido para Costo, Utilidad y Múltiples Proveedores (Sprint 7). |
 | Marketing IA | ✅ Funcional | Arquitectura de shortcodes corregida tipo CMS. Preview estilizado. (Ciclo 14) |
 | Tienda V2 (catálogo) | ✅ Funcional | Live en hub.disgraf.com.ar/v2. Ahora lee directamente desde SQLite. |
