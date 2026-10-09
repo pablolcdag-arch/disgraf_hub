@@ -359,3 +359,8 @@ Este documento rastrea las decisiones estratégicas y arquitectónicas clave tom
 - **Decisión:** Se agregó soporte para Categorías en los artículos del blog satélite mediante SSG, guardándolas en `marketing_content.json`. Se inyectó dinámicamente la lista de categorías en el contexto Jinja global (para armar la navbar en `oficio_base.html`) y se crearon páginas estáticas filtradas en `categoria/{slug}.html`. Adicionalmente, se implementó la autogeneración del archivo `sitemap.xml` en cada build para potenciar el posicionamiento SEO.
 - **Razón:** Proveer una mejor navegabilidad estructurada a los visitantes del blog y garantizar que los motores de búsqueda indexen de inmediato las nuevas entradas estáticas, cumpliendo las prácticas recomendadas de SEO off-page sin sacrificar rendimiento.
 - **Archivos afectados:** `routes/marketing_api.py`, `seo_service.py`, `templates/marketing.html`, `templates/oficio_base.html`, `templates/oficio_index.html`, `tests/test_seo_service.py`.
+
+## 08/10/2026 - Fix de Auditoría: Cotizador Rápido
+- **Decisión:** Se eliminó el "fallback silencioso" que asignaba automáticamente la titularidad a 'Consumidor Final' si el vendedor dejaba vacío el campo de cliente. Ahora, el sistema bloquea los botones de PDF y WhatsApp obligando explícitamente a tipear o seleccionar un cliente válido.
+- **Razón:** Mantenimiento de la integridad de los datos en la auditoría de ventas. Esto previene que los vendedores generen comprobantes o facturas B con clientes `undefined` u omitidos por descuido durante la atención rápida.
+- **Archivos afectados:** `templates/cotizador.html`.

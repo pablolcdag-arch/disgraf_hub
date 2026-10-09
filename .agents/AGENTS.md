@@ -419,7 +419,7 @@ Después de cualquier cambio arquitectónico o decisión estratégica, el agente
 | Módulo de Ventas / Comprobantes | ✅ Funcional | Flujo E2E. Conexión AFIP SOAP 100% nativa. Campo 'observaciones' incorporado en esquema y PDF (Ciclo 15). |
 | Login/Auth | ✅ Funcional | Migrado a JWT (Stateless) |
 | Dashboard Admin | ✅ Funcional | Historial avanzado, CRM de ventas, filtros dinámicos completos de comprobantes (Ciclo 15). |
-| Cotizador (vendedores) | ✅ Funcional | PDFs con soporte AFIP y Observaciones. Historial rápido corregido (Fix 404 delete y 422 repetición PDF - Ciclo 15). |
+| Cotizador (vendedores) | ✅ Funcional | PDFs con soporte AFIP y Observaciones. Historial rápido corregido. Validación estricta de cliente vacío (Fix Auditoría). |
 | Gestión de Catálogo y Stock | ✅ Funcional | Migrado completamente de SQLite. Incluye ABM manual, Fraccionamiento y carga masiva por CSV con soporte extendido para Costo, Utilidad y Múltiples Proveedores (Sprint 7). |
 | Marketing IA | ✅ Funcional | Arquitectura de shortcodes corregida tipo CMS. Preview estilizado. (Ciclo 14) |
 | Tienda V2 (catálogo) | ✅ Funcional | Live en hub.disgraf.com.ar/v2. Ahora lee directamente desde SQLite. |
