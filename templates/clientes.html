@@ -296,6 +296,8 @@
 </div>
 
 <script>
+const IS_ADMIN = {{ 'true' if user and user.role == 'admin' else 'false' }};
+
 window.openAjusteSaldoModal = () => {
     document.getElementById('ajusteSaldoForm').reset();
     document.getElementById('ajusteSaldoModal').style.display = 'flex';
@@ -460,7 +462,10 @@ async function loadClientDetails(id) {
                     total: db.total,
                     products: [{}], // Mock for UI count
                     tipo_comprobante: db.tipo_comprobante,
-                    impacta_cc: db.impacta_cc
+                    impacta_cc: db.impacta_cc,
+                    comprobante_asociado_id: db.comprobante_asociado_id,
+                    asociado_tipo: db.asociado_tipo,
+                    cae: db.cae
                 }));
             }
         } catch(e) { console.error(e); }
@@ -561,32 +566,43 @@ window.renderClientTabs = (tab) => {
                             const t = tPart ? tPart.substring(0, 5) : '';
                             dateStr = t ? `${d} ${t}` : d;
                         }
-                        let tipoComp = q.tipo_comprobante || 'Presupuesto A';
+                        let tipoCompRaw = q.tipo_comprobante || 'Presupuesto A';
+                        let tipoCompHTML = tipoCompRaw;
                         if (q.comprobante_asociado_id) {
                             let parentType = (q.asociado_tipo || "comprobante").split(' ')[0].toLowerCase();
-                            tipoComp += `<br><span style="font-size: 11px; font-weight: normal; color: var(--text-muted);">Vinculado a ${parentType} numero ${q.comprobante_asociado_id}</span>`;
+                            tipoCompHTML += `<br><span style="font-size: 11px; font-weight: normal; color: var(--text-muted);">Vinculado a ${parentType} numero ${q.comprobante_asociado_id}</span>`;
                         }
                         let rowColor = 'inherit';
-                        if (tipoComp.includes('Nota de Crédito') || tipoComp.includes('Recibo')) rowColor = '#10b981';
-                        if (tipoComp.includes('Nota de Débito')) rowColor = '#ef4444';
+                        if (tipoCompRaw.includes('Nota de Crédito') || tipoCompRaw.includes('Recibo')) rowColor = '#10b981';
+                        if (tipoCompRaw.includes('Nota de Débito')) rowColor = '#ef4444';
                         
                         let actions = `
-                            <button onclick="downloadPDF('${q.id}', '${tipoComp}', '${q.date}')" class="btn-secondary" style="font-size: 11px; padding: 4px 8px; margin-right: 4px;" title="Ver PDF">📄</button>
+                            <button onclick="downloadPDF('${q.id}', '${tipoCompRaw}', '${q.date}')" class="btn-secondary" style="font-size: 11px; padding: 4px 8px; margin-right: 4px;" title="Ver PDF">📄</button>
                         `;
-                        if (tipoComp.includes('Presupuesto')) {
+                        if (tipoCompRaw.includes('Presupuesto')) {
                             actions += `<a href="/cotizador?load_id=${q.id}" class="btn-secondary" style="font-size: 11px; padding: 4px 8px; text-decoration: none; color: white;" title="Facturar">$ / Facturar</a>`;
-                        } else if (tipoComp.includes('Factura')) {
+                        } else if (tipoCompRaw.includes('Factura')) {
                             actions += `
                                 <button onclick="openPaymentModal('${q.id}')" class="btn-primary" style="font-size: 11px; padding: 4px 8px; background: #10b981;">Cobrar</button>
                                 <a href="/cotizador?remito_from=${q.id}" class="btn-secondary" style="font-size: 11px; padding: 4px 8px; text-decoration: none; color: white;">+ Remito</a>
-                                <a href="/cotizador?nc_from=${q.id}&tipo_original=${encodeURIComponent(tipoComp)}" class="btn-secondary" style="font-size: 11px; padding: 4px 8px; text-decoration: none; color: white; border-color: rgba(239, 68, 68, 0.3);">+ NC</a>
+                                <a href="/cotizador?nc_from=${q.id}&tipo_original=${encodeURIComponent(tipoCompRaw)}" class="btn-secondary" style="font-size: 11px; padding: 4px 8px; text-decoration: none; color: white; border-color: rgba(239, 68, 68, 0.3);">+ NC</a>
+                            `;
+                        } else if (tipoCompRaw.includes('Nota de Crédito')) {
+                            actions += `
+                                <a href="/cotizador?nd_from=${q.id}&tipo_original=${encodeURIComponent(tipoCompRaw)}" class="btn-secondary" style="font-size: 11px; padding: 4px 8px; text-decoration: none; color: white; border-color: rgba(239, 68, 68, 0.3);">+ ND</a>
+                            `;
+                        }
+
+                        if (IS_ADMIN && !q.cae && tipoCompRaw.includes('Recibo')) {
+                            actions += `
+                                <button onclick="eliminarRecibo('${q.id}', '${tipoCompRaw}')" class="btn-secondary" style="font-size: 11px; padding: 4px 8px; color: #ef4444; border-color: rgba(239, 68, 68, 0.3);" title="Eliminar recibo">🗑️</button>
                             `;
                         }
 
                         return `
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s; color: ${rowColor};">
                             <td style="padding: 12px 10px; font-size: 13px;">${dateStr}</td>
-                            <td style="padding: 12px 10px; font-size: 13px; font-weight: bold;">${tipoComp}</td>
+                            <td style="padding: 12px 10px; font-size: 13px; font-weight: bold;">${tipoCompHTML}</td>
                             <td style="padding: 12px 10px; font-size: 13px; color: var(--text-muted);">${q.id}</td>
                             ${tab === 'todos' ? `
                             <td style="padding: 12px 10px; font-size: 13px; text-align: right; color: #ef4444;">${q.debe ? '$' + q.debe.toLocaleString('es-AR', {minimumFractionDigits: 2}) : ''}</td>
@@ -984,6 +1000,24 @@ window.downloadPDF = async (id, tipo, fechaOriginal) => {
         
     } catch (e) {
         alert("Error al descargar PDF: " + e.message);
+    }
+};
+
+window.eliminarRecibo = async (id, tipo) => {
+    if (!confirm(`¿Estás seguro de que deseas eliminar este ${tipo || 'recibo'} (#${id})? Esta acción revertirá el pago en la cuenta corriente y en la caja.`)) return;
+    try {
+        const res = await fetch(`/api/ventas/comprobante/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            alert("Recibo eliminado correctamente.");
+            if (window.currentClient && window.currentClient.id) {
+                loadClientDetails(window.currentClient.id);
+            }
+        } else {
+            const data = await res.json();
+            alert("Error: " + (data.detail || "No se pudo eliminar el comprobante"));
+        }
+    } catch (e) {
+        alert("Error de red al intentar eliminar el comprobante.");
     }
 };
 

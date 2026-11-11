@@ -370,6 +370,23 @@ Para usar el coordinador sin que pierda contexto, abre una conversación nueva y
 
 **Regla para el Verificador:** Si falla 3 veces en la misma subtarea → escalar al usuario con diagnóstico.
 
+### ⚡ Regla de Reporte Unificado y Ultraconciso (Estándar Soteria)
+Todo Implementador o Verificador (sea ERP/Backend o Frontend) debe concluir su intervención emitiendo **ÚNICAMENTE un bloque de código markdown de 4 acentos graves (````markdown ... ````)** titulado `# REPORTE PARA EL COORDINADOR`, con un **máximo estricto de 8 a 12 líneas ejecutivas**.
+
+> [!IMPORTANT]
+> **PROHIBIDO volcar código fuente completo, archivos enteros o logs gigantes dentro del reporte.**  
+> El reporte existe para que el usuario haga clic en el botón de **"Copy code"** de la UI y lo traslade de inmediato al chat del Coordinador sin gastar tokens ni saturar la ventana de contexto.
+
+#### Estructura Obligatoria del Bloque Copiable:
+````markdown
+# REPORTE PARA EL COORDINADOR
+- **Rol:** [Implementador ERP | Verificador ERP | Implementador Front | Verificador Front]
+- **Archivos auditados/modificados:** [Rutas relativas concisas, ej: `routes/ventas_api.py`]
+- **Resultado de tests/auditoría:** [Sintético: Pytest 100% OK, sin errores de sintaxis]
+- **Veredicto:** [APROBADO ✅ | RECHAZADO ❌ | LISTO PARA AUDITORÍA]
+- **Siguiente paso:** [Acción sugerida al usuario: "Copiar al Coordinador para solicitar prompt de Verificación / Deploy"]
+````
+
 ### MCPs Disponibles
 - **Context7:** Documentación actualizada de librerías en tiempo real (FastAPI, google-generativeai)
 - **SQLite MCP:** Inspección directa de `disgraf_hub.db` sin escribir Python
@@ -410,16 +427,16 @@ Después de cualquier cambio arquitectónico o decisión estratégica, el agente
 
 ---
 
-## 📊 Estado Actual del Proyecto (30/09/2026)
+## 📊 Estado Actual del Proyecto (11/11/2026)
 
 | Módulo | Estado | Deuda Técnica |
 |---|---|---|
-| Módulo de Clientes (CRM) | ✅ Funcional | ABM y carga masiva por CSV implementados. Ruteo export OK y Schema DB productiva sincronizada (Ciclo 11.1). Soporte CC, Listas y trazabilidad visual de vinculaciones (Ciclo 22). |
-| Módulo de Caja | ✅ Funcional | 5 cajas virtuales (Diaria, Banco, Cheques, Principal, Retenciones). Ruteo automático desde Recibos de Pago. Saldo dinámico. Permisos por rol (Vendedores solo egresos - Ciclo 15). |
-| Módulo de Ventas / Comprobantes | ✅ Funcional | Flujo E2E. Conexión AFIP SOAP 100% nativa. Campo 'observaciones' incorporado en esquema y PDF (Ciclo 15). |
+| Módulo de Clientes (CRM) | ✅ Funcional | ABM y carga masiva por CSV implementados. Ruteo export OK y Schema DB productiva sincronizada (Ciclo 11.1). Soporte CC, Listas y trazabilidad visual de vinculaciones completa (Ciclo 24). Botón + ND en NC (Ciclo 25). Eliminación segura de Recibos no fiscales y reversión reactiva de saldo CC para Admin (Ciclo 27). |
+| Módulo de Caja | ✅ Funcional | 5 cajas virtuales (Diaria, Banco, Cheques, Principal, Retenciones). Ruteo automático desde Recibos de Pago. Saldo dinámico. Permisos por rol (Vendedores solo egresos - Ciclo 15). Borrado en cascada en `cajas_movimientos` al anular recibo (Ciclo 27). |
+| Módulo de Ventas / Comprobantes | ✅ Funcional | Flujo E2E. Conexión AFIP SOAP 100% nativa (Facturas A/B, NC A/B y ND A/B - Ciclo 25). Campo 'observaciones' en esquema y PDF (Ciclo 15). Sanitización numérica estricta de CUIT con guiones en AFIP (Ciclo 27). |
 | Login/Auth | ✅ Funcional | Migrado a JWT (Stateless) |
-| Dashboard Admin | ✅ Funcional | Historial avanzado, CRM de ventas, filtros dinámicos y fix de fechas UTC (Ciclo 21). |
-| Cotizador (vendedores) | ✅ Funcional | PDFs con soporte AFIP y Observaciones. Historial rápido corregido. Validación estricta UI y saneamiento DB (Ciclo 21). |
+| Dashboard Admin | ✅ Funcional | Historial avanzado, CRM de ventas, filtros dinámicos, fix de fechas UTC (Ciclo 21) y métricas de ventas por calendario estricto semana/mes (Ciclo 26). |
+| Cotizador (vendedores) | ✅ Funcional | PDFs con soporte AFIP y Observaciones. Historial rápido corregido. Validación estricta UI, fix Doble IVA, preservación de descuentos en NC y soporte nd_from (Ciclo 25). |
 | Gestión de Catálogo y Stock | ✅ Funcional | Migrado completamente de SQLite. Incluye ABM manual, Fraccionamiento y carga masiva por CSV con soporte extendido para Costo, Utilidad y Múltiples Proveedores (Sprint 7). |
 | Marketing IA | ✅ Funcional | Arquitectura de shortcodes corregida tipo CMS. Preview estilizado. (Ciclo 14) |
 | Tienda V2 (catálogo) | ✅ Funcional | Live en hub.disgraf.com.ar/v2. Ahora lee directamente desde SQLite. |

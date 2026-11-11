@@ -379,3 +379,48 @@ Este documento rastrea las decisiones estratégicas y arquitectónicas clave tom
 - **Decisión:** Se modificó la consulta SQL de `get_cliente_comprobantes` para incluir un `LEFT JOIN` con la misma tabla y obtener el tipo del comprobante padre (`asociado_tipo`). En la interfaz gráfica (`clientes.html`), se agregó lógica para mostrar una leyenda debajo del tipo de comprobante (ej. "Vinculado a factura numero 267") si el registro posee un `comprobante_asociado_id`.
 - **Razón:** Mejorar la auditoría visual y la trazabilidad de la cuenta corriente de los clientes. Esto permite a los usuarios identificar rápidamente a qué factura o documento original corresponde un Recibo de Pago, Nota de Crédito o Remito, sin necesidad de navegar a los detalles del mismo.
 - **Archivos afectados:** `routes/ventas_api.py`, `templates/clientes.html`.
+
+## 09/10/2026 - SDD Ciclo 23: Fix Doble IVA y Leyenda HTML en Cuentas Corrientes
+- **Decisión:** Se corrigió un error en el Cotizador que calculaba doblemente el IVA al emitir Notas de Crédito sobre Facturas B, dividiendo el importe original traído de la base de datos por el divisor correspondiente (ej. 1.21) antes de enviarlo al frontend. Además, se separaron las variables de visualización HTML y los strings puros en el renderizado del historial de Cuentas Corrientes para los comprobantes asociados.
+- **Razón:** El precio de los ítems de Facturas B se almacena con IVA incluido (bruto) en la base de datos. Al cargar esos ítems vía `nc_from` para una Nota de Crédito B, la lógica los asumía como valores netos y volvía a recargar el 21%, desvirtuando el saldo final. Por otro lado, la etiqueta HTML de "Vinculado a..." se estaba inyectando dentro del atributo `onclick` del botón de PDF, lo cual rompía el parseo del DOM del navegador, inutilizaba el botón y hacía invisible la leyenda en pantalla.
+- **Archivos afectados:** `templates/cotizador.html`, `templates/clientes.html`.
+
+## 13/10/2026 - SDD Ciclo 24: Preservación de Descuentos en Notas de Crédito y Mapeo de Vinculación en Cuenta Corriente
+- **Decisión:** 
+  1. En `templates/cotizador.html`, se implementó la reconstrucción matemática del porcentaje de descuento efectivo al cargar ítems mediante `nc_from`, comparando el subtotal facturado con el precio nominal de lista.
+  2. En `templates/clientes.html`, se corrigió la función que consulta `/api/ventas/cliente/{id}` incorporando `comprobante_asociado_id` y `asociado_tipo` al objeto mapeado para la tabla de la Cuenta Corriente.
+- **Razón:** 
+  1. Al emitir una Nota de Crédito sobre una Factura con ítems que tenían descuento (ej. 5%), el Cotizador reseteaba el descuento a 0%, provocando que la Nota de Crédito se generara por un importe mayor al de la factura original.
+  2. El array `dbHistory` en el frontend descartaba las propiedades de asociación retornadas por la API, provocando que la leyenda "Vinculado a..." no se renderizara en pantalla.
+- **Archivos afectados:** `templates/cotizador.html`, `templates/clientes.html`.
+
+## 13/10/2026 - SDD Ciclo 25: Soporte Integral de Notas de Débito A y B en AFIP/ARCA y UI
+- **Decisión:** 
+  1. En `afip_service.py`, se agregaron los tipos de comprobante de AFIP para Notas de Débito: "Nota de Débito A" (código 2) y "Nota de Débito B" (código 7), y se extendió la exigencia de CUIT a todos los comprobantes clase 'A' (1, 2, 3).
+  2. En `routes/ventas_api.py`, se implementó el diccionario `tipo_asoc_map` para enviar a AFIP el código exacto del comprobante padre asociado (`CbtesAsoc`), permitiendo asociar Notas de Débito a Notas de Crédito (código 3) o Facturas (código 1 o 6).
+  3. En `templates/clientes.html`, se incorporó la acción `+ ND` en las filas de Notas de Crédito de la Cuenta Corriente.
+  4. En `templates/cotizador.html`, se agregó el manejador del parámetro `nd_from` para precargar de manera automática cliente, ítems, descuentos y vinculación hacia Notas de Débito.
+- **Razón:** La emisión de Notas de Débito A fallaba ante el Web Service de AFIP por falta del mapeo de tipo de comprobante. Adicionalmente, se habilitó el circuito completo para anular o compensar notas de crédito erróneas directamente desde la Cuenta Corriente.
+- **Archivos afectados:** `afip_service.py`, `routes/ventas_api.py`, `templates/clientes.html`, `templates/cotizador.html`.
+
+## 30/10/2026 - SDD Ciclo 26: Métricas de Dashboard por Calendario Estricto
+- **Decisión:** 
+  1. En `routes/ventas_api.py` (`reportes_dashboard`), se reemplazaron las consultas con ventana móvil (`-30 days` y `-7 days`) por rangos de fecha de calendario estricto:
+     - **Ventas del Mes:** Del 1 de cada mes al último día del mes en curso (`today.replace(day=1)` hasta `today.replace(day=ultimo_dia_mes)`).
+     - **Ventas de la Semana:** De Lunes a Domingo de la semana en curso (`today - timedelta(days=today.weekday())` hasta `lunes + timedelta(days=6)`).
+  2. Se mantuvo la exclusión estricta de las Notas de Débito del total de ventas (`ELSE 0 END`), reconociéndolas como ajustes contables/financieros (ej. cheques devueltos) y no como salidas comerciales de mercadería.
+  3. Se incorporaron a la metodología del proyecto las reglas de rol estricto de despliegue exclusivo del Coordinador y reporte unificado ultraconciso de 8-12 líneas (Estándar Soteria).
+- **Razón:** La ventana móvil de `-30 days` provocaba que las ventas cayeran día a día al salir del rango rodante de 30 días, en lugar de acumular el mes en curso. La semana móvil de `-7 days` sumaba días de la semana anterior (ej. viernes anterior).
+- **Archivos afectados:** `routes/ventas_api.py`, `.agents/AGENTS.md`, `decisions_log.md`.
+
+## 11/11/2026 - SDD Ciclo 27: Eliminación Segura de Recibos (Sincronización CC y Cajas) y Sanitización CUIT AFIP
+- **Decisión:** 
+  1. En `routes/ventas_api.py` (`delete_comprobante`), se incorporó la eliminación en cascada en la tabla `cajas_movimientos` (`WHERE comprobante_id = ?`) previo al borrado en `comprobantes_items` y `comprobantes`.
+  2. En `afip_service.py` (`emitir_factura`), se implementó la sanitización numérica estricta con `"".join(filter(str.isdigit, ...))` para admitir CUITs registrados con guiones o espacios sin degradarlos a Consumidor Final ni fallar en la validación de comprobantes 'A'.
+  3. En `templates/clientes.html`, se expuso `IS_ADMIN` vía Jinja en JavaScript, se incluyó `cae: db.cae` en `dbHistory`, y se añadió el botón `🗑️` para recibos no fiscales junto con la función `window.eliminarRecibo` que solicita confirmación, ejecuta la petición `DELETE` y recarga automáticamente la ficha del cliente actualizando el saldo de la Cuenta Corriente.
+- **Razón:** Permitir a los administradores corregir recibos emitidos por error o duplicados restaurando tanto la cuenta corriente como el balance de las cajas virtuales (Banco, Efectivo, etc.), y asegurar la compatibilidad con clientes cuyos CUITs contienen caracteres de formato.
+- **Archivos afectados:** `routes/ventas_api.py`, `afip_service.py`, `templates/clientes.html`.
+
+
+
+

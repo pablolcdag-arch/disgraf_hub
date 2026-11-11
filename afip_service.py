@@ -256,11 +256,12 @@ def emitir_factura(cliente_nro, total: float, tipo_factura: str, iva_reducido: b
     """
     pto_vta = PTO_VTA
 
-    # Determinar tipo de comprobante
     tipo_map = {
         "Factura Electrónica A": 1,
-        "Factura Electrónica B": 6,
+        "Nota de Débito A": 2,
         "Nota de Crédito A": 3,
+        "Factura Electrónica B": 6,
+        "Nota de Débito B": 7,
         "Nota de Crédito B": 8,
     }
     tipo_cbte = tipo_map.get(tipo_factura)
@@ -268,7 +269,8 @@ def emitir_factura(cliente_nro, total: float, tipo_factura: str, iva_reducido: b
         raise ValueError(f"Tipo de factura no reconocido: '{tipo_factura}'")
 
     # Determinar tipo y número de documento del receptor
-    doc_nro_str = str(cliente_nro).strip() if cliente_nro else ""
+    doc_nro_raw = str(cliente_nro).strip() if cliente_nro else ""
+    doc_nro_str = "".join(filter(str.isdigit, doc_nro_raw))
     if doc_nro_str.isdigit() and int(doc_nro_str) > 0:
         doc_nro = int(doc_nro_str)
         if len(doc_nro_str) == 11:
@@ -279,11 +281,10 @@ def emitir_factura(cliente_nro, total: float, tipo_factura: str, iva_reducido: b
         doc_tipo = 99  # Consumidor Final
         doc_nro = 0
 
-    # Regla AFIP: Factura A (tipo_cbte=1) solo puede emitirse con CUIT válido (DocTipo=80)
-    if tipo_cbte == 1 and (doc_tipo != 80 or doc_nro == 0):
+    # Regla AFIP: Comprobantes A (1, 2, 3) solo pueden emitirse con CUIT válido (DocTipo=80)
+    if tipo_cbte in (1, 2, 3) and (doc_tipo != 80 or doc_nro == 0):
         raise ValueError(
-            "Factura A requiere un cliente Responsable Inscripto con CUIT válido. "
-            "No se puede emitir Factura A a Consumidor Final."
+            "Los comprobantes 'A' (Factura, Nota de Débito y Nota de Crédito) requieren un cliente Responsable Inscripto con CUIT válido."
         )
 
     # Calcular montos de IVA

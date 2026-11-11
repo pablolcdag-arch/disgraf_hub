@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Request, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
-from datetime import date
+from datetime import date, timedelta
+import calendar
 import sqlite3
 import os
 from dependencies import get_current_user, DATA_DIR
@@ -109,7 +110,15 @@ async def crear_comprobante(comprobante: ComprobanteCreate, request: Request):
                     if row_asoc and row_asoc[0]:
                         nro_orig = int(row_asoc[0])
                         tipo_orig_str = row_asoc[1]
-                        tipo_num = 1 if "A" in tipo_orig_str else 6
+                        tipo_asoc_map = {
+                            "Factura Electrónica A": 1,
+                            "Nota de Débito A": 2,
+                            "Nota de Crédito A": 3,
+                            "Factura Electrónica B": 6,
+                            "Nota de Débito B": 7,
+                            "Nota de Crédito B": 8,
+                        }
+                        tipo_num = tipo_asoc_map.get(tipo_orig_str, 1 if "A" in tipo_orig_str else 6)
                         cbte_asoc = {'tipo': tipo_num, 'pto_vta': 10, 'nro': nro_orig, 'cuit': cuit_cliente}
 
             afip_res = afip_service.emitir_factura(
@@ -338,7 +347,19 @@ async def reportes_dashboard(request: Request):
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
-        fecha_hoy = str(date.today())
+        today = date.today()
+        fecha_hoy = str(today)
+        
+        lunes_semana = today - timedelta(days=today.weekday())
+        domingo_semana = lunes_semana + timedelta(days=6)
+        fecha_inicio_semana = str(lunes_semana)
+        fecha_fin_semana = str(domingo_semana)
+        
+        inicio_mes = today.replace(day=1)
+        ultimo_dia_mes = calendar.monthrange(today.year, today.month)[1]
+        fin_mes = today.replace(day=ultimo_dia_mes)
+        fecha_inicio_mes = str(inicio_mes)
+        fecha_fin_mes = str(fin_mes)
         
         # Ventas de hoy
         cursor.execute('''
@@ -354,27 +375,27 @@ async def reportes_dashboard(request: Request):
         row_hoy = cursor.fetchone()
         ventas_hoy = row_hoy['suma'] if row_hoy and row_hoy['suma'] else 0.0
         
-        # Ventas de la semana (últimos 7 días)
+        # Ventas de la semana (Lunes a Domingo)
         cursor.execute('''
             SELECT 
                 SUM(CASE WHEN tipo_comprobante LIKE 'Factura%' THEN total 
                          WHEN tipo_comprobante LIKE 'Nota de Cr_dito%' THEN -total 
                          ELSE 0 END) as suma
             FROM comprobantes
-            WHERE fecha_emision >= date('now', '-7 days') 
-        ''')
+            WHERE fecha_emision >= ? AND fecha_emision <= ?
+        ''', (fecha_inicio_semana, fecha_fin_semana))
         row_semana = cursor.fetchone()
         ventas_semana = row_semana['suma'] if row_semana and row_semana['suma'] else 0.0
         
-        # Ventas del mes (últimos 30 días)
+        # Ventas del mes (Primer al último día del mes actual)
         cursor.execute('''
             SELECT 
                 SUM(CASE WHEN tipo_comprobante LIKE 'Factura%' THEN total 
                          WHEN tipo_comprobante LIKE 'Nota de Cr_dito%' THEN -total 
                          ELSE 0 END) as suma
             FROM comprobantes
-            WHERE fecha_emision >= date('now', '-30 days') 
-        ''')
+            WHERE fecha_emision >= ? AND fecha_emision <= ?
+        ''', (fecha_inicio_mes, fecha_fin_mes))
         row_mes = cursor.fetchone()
         ventas_mes = row_mes['suma'] if row_mes and row_mes['suma'] else 0.0
         
@@ -519,6 +540,7 @@ async def delete_comprobante(id: int, request: Request):
             conn.close()
             raise HTTPException(status_code=403, detail="No se puede eliminar un comprobante emitido en AFIP.")
 
+        cursor.execute("DELETE FROM cajas_movimientos WHERE comprobante_id = ?", (id,))
         cursor.execute("DELETE FROM comprobantes_items WHERE comprobante_id = ?", (id,))
         cursor.execute("DELETE FROM comprobantes WHERE id = ?", (id,))
         conn.commit()

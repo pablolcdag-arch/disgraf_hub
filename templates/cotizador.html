@@ -1180,16 +1180,28 @@ loadProducts();
                 }
                 window.comprobanteAsociadoId = ncFrom;
                 
-                state.cart = comprobante.items.map(item => ({
-                    product: {
-                        id: item.producto_id,
-                        name: item.descripcion,
-                        price: item.precio_unitario,
-                        unit: 'unid.'
-                    },
-                    quantity: item.cantidad,
-                    discount: 0
-                }));
+                let isOriginalTipoB = tipoOriginal.includes('B') || tipoOriginal.includes('Interna');
+                let ivaDivisor = isOriginalTipoB ? 1.21 : 1.0;
+                
+                state.cart = comprobante.items.map(item => {
+                    let basePrice = (item.precio_unitario || 0) / ivaDivisor;
+                    let lineSubtotal = (item.subtotal || 0) / ivaDivisor;
+                    let nominalTotal = basePrice * item.cantidad;
+                    let disc = 0;
+                    if (nominalTotal > 0 && lineSubtotal < nominalTotal) {
+                        disc = Math.round((1 - (lineSubtotal / nominalTotal)) * 10000) / 100;
+                    }
+                    return {
+                        product: {
+                            id: item.producto_id,
+                            name: item.descripcion,
+                            price: basePrice,
+                            unit: 'unid.'
+                        },
+                        quantity: item.cantidad,
+                        discount: disc
+                    };
+                });
                 
                 const tComp = document.getElementById('tipoComprobante');
                 if (tComp) {
@@ -1210,6 +1222,64 @@ loadProducts();
             }
         } catch (e) {
             console.error("Error loading nc from url param", e);
+        }
+    } else if (urlParams.get('nd_from')) {
+        const ndFrom = urlParams.get('nd_from');
+        const tipoOriginal = urlParams.get('tipo_original') || '';
+        try {
+            const res = await fetch(`/api/ventas/comprobante/${ndFrom}`);
+            if (res.ok) {
+                const comprobante = await res.json();
+                
+                const resCliente = await fetch('/api/clientes/' + comprobante.cliente_id);
+                if (resCliente.ok) {
+                    window.selectClient(await resCliente.json());
+                } else {
+                    window.selectedClientId = comprobante.cliente_id;
+                    dom.clientName.value = comprobante.cliente_nombre || comprobante.cliente_id || "";
+                }
+                window.comprobanteAsociadoId = ndFrom;
+                
+                let isOriginalTipoB = tipoOriginal.includes('B') || tipoOriginal.includes('Interna');
+                let ivaDivisor = isOriginalTipoB ? 1.21 : 1.0;
+                
+                state.cart = comprobante.items.map(item => {
+                    let basePrice = (item.precio_unitario || 0) / ivaDivisor;
+                    let lineSubtotal = (item.subtotal || 0) / ivaDivisor;
+                    let nominalTotal = basePrice * item.cantidad;
+                    let disc = 0;
+                    if (nominalTotal > 0 && lineSubtotal < nominalTotal) {
+                        disc = Math.round((1 - (lineSubtotal / nominalTotal)) * 10000) / 100;
+                    }
+                    return {
+                        product: {
+                            id: item.producto_id,
+                            name: item.descripcion,
+                            price: basePrice,
+                            unit: 'unid.'
+                        },
+                        quantity: item.cantidad,
+                        discount: disc
+                    };
+                });
+                
+                const tComp = document.getElementById('tipoComprobante');
+                if (tComp) {
+                    if (tipoOriginal.includes('A')) {
+                        tComp.value = 'Nota de Débito A';
+                    } else {
+                        tComp.value = 'Nota de Débito B';
+                    }
+                }
+                
+                if (window.handleComprobanteChange) {
+                    window.handleComprobanteChange();
+                } else {
+                    renderCart();
+                }
+            }
+        } catch (e) {
+            console.error("Error loading nd from url param", e);
         }
     }
 })();
