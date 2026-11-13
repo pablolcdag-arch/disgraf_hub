@@ -1,6 +1,6 @@
 # AGENTS.md — Disgraf Hub
 > **Documento Maestro de Contexto para Agentes de IA**
-> Versión: 1.0 | Última actualización: 30/09/2026
+> Versión: 2.0 | Última actualización: 12/11/2026
 > **Este archivo es la fuente única de verdad para cualquier agente que trabaje en este proyecto.**
 > Antes de escribir una sola línea de código, leer este archivo completo.
 
@@ -111,7 +111,8 @@ google-genai            # SDK oficial Google Gemini (migrado desde google-genera
 ```
 Disgraf_Hub/
 ├── .agents/
-│   └── AGENTS.md          ← ESTE ARCHIVO (fuente de verdad)
+│   ├── AGENTS.md          ← ESTE ARCHIVO (fuente de verdad)
+│   └── skills/            ← Skills operativas (cierre-sdd, agent-browser, webapp-testing, grilling, design-taste-frontend)
 ├── .env                   ← Variables de entorno (NO commitear)
 ├── .env.example           ← Template de variables (SÍ commitear)
 ├── README.md              ← Visión general y roadmap (sincronizar con este archivo)
@@ -325,18 +326,33 @@ Extraen las credenciales locales desde el archivo `.env.deploy` (el cual está e
 ./check_logs.exp
 ```
 
-### ⚠️ Regla de deploy general
+### ⚠️ Regla de deploy general y Las 7 Reglas Operativas Inviolables
 Nunca empujar a `main` ni ejecutar `deploy.exp` sin haber verificado localmente que la app inicia y los tests pasan localmente sin errores.
 
-**REGLA ESTRICTA DE ROLES (DEPLOY):** **SOLO EL AGENTE COORDINADOR TIENE PERMITIDO EJECUTAR `./deploy.exp` O `git push`.** Los Agentes Implementadores y Verificadores tienen PROHIBIDO HACER COMMITS, PUSH O DEPLOYS. Su trabajo finaliza entregando el código testeado. El Coordinador será quien empaquete los cambios, actualice la documentación y ejecute el despliegue a producción.
+**LAS 7 REGLAS OPERATIVAS INVIOLABLES (ESTÁNDAR CANÓNICO):**
+
+1. **Regla 1 (Exclusividad de Deploy y Git):** **SOLO EL AGENTE COORDINADOR**, con autorización expresa del usuario, ejecuta deploys (`./deploy.exp`), `git commit` o `git push`. Los Agentes Implementadores y Verificadores tienen PROHIBIDO hacer commits, push o deploys; su trabajo finaliza entregando el código verificado.
+2. **Regla 2 (Exclusividad de Documentación Estratégica):** **SOLO EL AGENTE COORDINADOR** edita `.agents/AGENTS.md` y `decisions_log.md`. Los Implementadores y Verificadores tienen terminantemente prohibido modificar estos archivos.
+3. **Regla 3 (Aislamiento de Código del Coordinador):** El Coordinador **NUNCA** escribe ni modifica código de aplicación en `routes/`, `templates/`, `main.py` ni archivos `.py` o `.html`. Su única función operativa es auditar, planificar, redactar prompts, actualizar documentación estratégica y ejecutar deploys autorizados.
+4. **Regla 4 (Rigor Técnico Senior — Prohibición de Complacencia):** Prohibición estricta de complacencia o adulación (*"tenés toda la razón"*, *"excelente idea"*, *"brillante sugerencia"*). El Coordinador opera con rigor técnico senior: crítico, objetivo, quirúrgico y honesto, diagnosticando causas raíz con evidencia técnica.
+5. **Regla 5 (Auditoría Automatizada Pre-Deploy):** Ningún cambio se commitea ni despliega sin superar al 100% la auditoría automatizada con `pytest` (`pytest tests/ -v`) y los scripts de verificación de Cotizador y facturación AFIP antes de autorizar deploys.
+6. **Regla 6 (Protocolo Grill-Me Proactivo Obligatorio):** Antes de especificar o implementar cambios en **CRM (`clientes`), Cajas (`cajas`), Cotizador (`cotizador`) o Tienda V2 (`v2`)**, el Coordinador debe activar obligatoriamente el protocolo **Grill-Me** (`.agents/skills/grilling/SKILL.md`), mapeando flujos de punta a punta, impacto contable/fiscal, casos borde y UX antes de redactar especificaciones o derivar prompts a los implementadores.
+7. **Regla 7 (Asignación Explícita de Modelos por Rol):**
+   - Cada vez que el Coordinador genere un prompt para un Agente Implementador o Verificador, **DEBE indicar obligatoriamente AFUERA del bloque de código markdown (en texto visible previo al bloque)** y en el encabezado interno del prompt:
+     `👉 Modelo a seleccionar en Antigravity para esta conversación: [Nombre Exacto del Modelo]`
+   - **Matriz Canónica de Selección:**
+     * **Coordinador:** `Orchestrator (Argon)` o `Gemini 4 Argon`.
+     * **Implementador Front & Verificador Front (HTML, Jinja2, CSS, UI Tienda V2):** `Claude Sonnet 5.5`.
+     * **Implementador ERP & Backend (FastAPI, SQLite, ReportLab, AFIP SOAP):** `Gemini 4 Argon` o `Claude Sonnet 5.5`.
+     * **Verificador ERP / Auditorías de Facturación y Cajas:** `Claude Opus 5.5`.
 
 ---
 
 ## 🤖 Patrones Agenticos
 
-### Modelo de Razonamiento
-- **Modelo para todas las tareas:** Claude Sonnet 4.6 (suscripción Pro de Antigravity)
-- **Gestión de quota:** No iniciar tareas que no puedan completarse en el turno actual
+### Modelo de Razonamiento (Arquitectura Multi-Modelo de Antigravity)
+- **Selección por Rol:** El sistema opera bajo la arquitectura multi-modelo de Antigravity regida por la Matriz Canónica de la **Regla 7** según la especialidad del agente.
+- **Gestión de quota:** No iniciar tareas que no puedan completarse en el turno actual.
 
 ### Bucle SDD (Especificar → Plan → Tareas → Implementar → Verificar)
 Todo desarrollo de features significativas sigue este bucle:
@@ -387,9 +403,17 @@ Todo Implementador o Verificador (sea ERP/Backend o Frontend) debe concluir su i
 - **Siguiente paso:** [Acción sugerida al usuario: "Copiar al Coordinador para solicitar prompt de Verificación / Deploy"]
 ````
 
-### MCPs Disponibles
-- **Context7:** Documentación actualizada de librerías en tiempo real (FastAPI, google-generativeai)
-- **SQLite MCP:** Inspección directa de `disgraf_hub.db` sin escribir Python
+### 📱💻 Regla Mandatoria de Diseño y Verificación Multi-Dispositivo (Omni-Responsive: 360px a 1920px)
+> **Toda modificación, agregado, rediseño o eliminación visual en la Tienda V2 y el Cotizador de mostrador (así como CRM y Cajas) DEBE ser concebida y validada de forma obligatoria en todo el rango de 360px a 1920px.**
+1. **Móviles / Smartphones (360px a 430px):** Prioridad mobile-first, cero desbordes horizontales (`overflow-x`), áreas táctiles mínimas de 44px, tablas y controles adaptativos sin solapamientos.
+2. **Tablets (768px a 1024px):** Disposición fluida en mostrador vertical y horizontal, grillas equilibradas y navegación clara.
+3. **Desktop / Monitores (1280px a 1920px):** Contenedores centrados con márgenes simétricos, jerarquía tipográfica clara y alta densidad operativa para mostrador y administración.
+4. **Estándar Visual Anti-Slop y Verificación Empírica:** Se adopta `.agents/skills/design-taste-frontend/SKILL.md` como estándar visual de referencia y es obligatorio verificar los cambios en 360px/390px, 768px y 1440px/1920px mediante `webapp-testing` y `agent-browser` antes de aprobar un cambio frontend.
+
+### MCPs y Skills Operativas Disponibles
+- **Uso Mandatorio de MCP `context7`:** Consulta obligatoria de documentación oficial en tiempo real para **FastAPI**, **ReportLab** y **Google GenAI (`google-genai`)** antes de implementar o modificar integraciones de esas librerías.
+- **SQLite MCP:** Inspección directa en solo lectura de `data/disgraf_hub.db` sin escribir scripts ad-hoc.
+- **Skills Operativas (`.agents/skills/`):** `cierre-sdd`, `agent-browser`, `webapp-testing`, `grilling`, `design-taste-frontend`.
 
 ---
 

@@ -421,6 +421,23 @@ Este documento rastrea las decisiones estratégicas y arquitectónicas clave tom
 - **Razón:** Permitir a los administradores corregir recibos emitidos por error o duplicados restaurando tanto la cuenta corriente como el balance de las cajas virtuales (Banco, Efectivo, etc.), y asegurar la compatibilidad con clientes cuyos CUITs contienen caracteres de formato.
 - **Archivos afectados:** `routes/ventas_api.py`, `afip_service.py`, `templates/clientes.html`.
 
+## 12/11/2026 - SDD Ciclo 28: Actualización de Gobernanza Metodológica, Arquitectura Multi-Modelo y Adopción de Reglas Inviolables 1 a 7
+- **Decisión:** 
+  1. En `.agents/AGENTS.md` (v2.0), se eliminó la directiva obsoleta de `Claude Sonnet 4.6` y se adoptó la arquitectura multi-modelo de Antigravity.
+  2. Se formalizaron las **7 Reglas Operativas Inviolables**:
+     - Regla 1: Exclusividad del Coordinador para ejecutar deploys, `git commit` o `git push` bajo autorización expresa.
+     - Regla 2: Exclusividad del Coordinador para editar `.agents/AGENTS.md` y `decisions_log.md`.
+     - Regla 3: Prohibición estricta para el Coordinador de escribir código de producción en `routes/`, `templates/` o `main.py`.
+     - Regla 4: Rigor técnico senior con prohibición de complacencia o adulación.
+     - Regla 5: Auditoría automatizada pre-deploy con `pytest` y scripts de verificación de cotizador/AFIP.
+     - Regla 6: Protocolo proactivo `Grill-Me` obligatorio antes de implementar cambios en CRM, Cajas, Cotizador o Tienda V2.
+     - Regla 7: Asignación explícita de modelos por rol afuera del markdown y en el encabezado de cada prompt (`Orchestrator (Argon)` / `Gemini 4 Argon` para Coordinador; `Claude Sonnet 5.5` para Front; `Gemini 4 Argon` o `Claude Sonnet 5.5` para ERP & Backend; `Claude Opus 5.5` para Verificador ERP y auditorías críticas de facturación/cajas).
+  3. Se pautó el uso mandatorio del MCP `context7` para consultas sobre FastAPI, ReportLab y Google GenAI (`google-genai`), y la Regla Omni-Responsive (360px a 1920px) para la Tienda V2 y el Cotizador de mostrador.
+  4. Se instalaron en `.agents/skills/` las skills operativas `agent-browser`, `webapp-testing`, `grilling` y `design-taste-frontend`.
+- **Razón:** Homologar la gobernanza y disciplina operativa de Disgraf Hub con el estándar canónico de TuWebLista, garantizando rigor arquitectónico, prevención de regresiones en facturación AFIP/cajas y validación multi-dispositivo consistente.
+- **Archivos afectados:** `.agents/AGENTS.md`, `decisions_log.md`, `.agents/skills/`.
+
+
 
 
 
